@@ -3,7 +3,7 @@ EXTRA_DIST =
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
   -I../module \
-  -I../../../common
+  -I../../common
 
 xrdpmouse_drv_la_LTLIBRARIES = xrdpmouse_drv.la
 

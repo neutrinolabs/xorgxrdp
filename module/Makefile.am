@@ -2,7 +2,7 @@ EXTRA_DIST =
 
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
-  -I../../../common
+  -I../../common
 
 libxorgxrdp_la_LTLIBRARIES = libxorgxrdp.la
 
