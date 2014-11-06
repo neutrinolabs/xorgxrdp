@@ -5,6 +5,8 @@
 Use this to push
 git remote set-url origin git@github.com:neutrinolabs/xorgxrdp.git
 
+moved to here from xrdp/xorg/server
+
 ------------------------------------------------------
 11/01/2014
 ------------------------------------------------------
