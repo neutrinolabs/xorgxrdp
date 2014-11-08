@@ -536,8 +536,6 @@ rdpClientConProcessMsgVersion(rdpPtr dev, rdpClientCon *clientCon,
     return 0;
 }
 
-#define LALIGN(_num, _po2) ((_num + ((_po2) - 1)) & ~((_po2) - 1))
-
 /******************************************************************************/
 /*
     this from miScreenInit
@@ -717,8 +715,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     if (clientCon->client_info.capture_code == 2) /* RFX */
     {
         LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
-        clientCon->cap_width = LALIGN(clientCon->rdp_width, 64);
-        clientCon->cap_height = LALIGN(clientCon->rdp_height, 64);
+        clientCon->cap_width = RDPALIGN(clientCon->rdp_width, 64);
+        clientCon->cap_height = RDPALIGN(clientCon->rdp_height, 64);
         LLOGLN(0, ("  cap_width %d cap_height %d",
                clientCon->cap_width, clientCon->cap_height));
         if (clientCon->shmemptr != 0)
