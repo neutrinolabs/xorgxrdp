@@ -2028,7 +2028,8 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     LLOGLN(10, ("rdpDeferredUpdateCallback: capture_code %d",
            clientCon->client_info.capture_code));
     if (rdpCapture(clientCon, clientCon->dirtyRegion, &rects, &num_rects,
-                   id.pixels, id.width, id.height,
+                   id.pixels, clientCon->cap_left, clientCon->cap_top,
+                   id.width, id.height,
                    id.lineBytes, XRDP_a8r8g8b8, id.shmem_pixels,
                    clientCon->cap_width, clientCon->cap_height,
                    clientCon->cap_width * clientCon->rdp_Bpp,

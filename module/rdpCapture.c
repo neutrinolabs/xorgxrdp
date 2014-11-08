@@ -450,7 +450,8 @@ rdpCopyBox_a8r8g8b8_to_r3g3b2(rdpClientCon *clientCon,
 static Bool
 rdpCapture0(rdpClientCon *clientCon,
             RegionPtr in_reg, BoxPtr *out_rects, int *num_out_rects,
-            void *src, int src_width, int src_height,
+            void *src, int src_left, int src_top,
+            int src_width, int src_height,
             int src_stride, int src_format,
             void *dst, int dst_width, int dst_height,
             int dst_stride, int dst_format, int max_rects)
@@ -466,10 +467,12 @@ rdpCapture0(rdpClientCon *clientCon,
 
     rv = TRUE;
 
-    rect.x1 = 0;
-    rect.y1 = 0;
-    rect.x2 = RDPMIN(dst_width, src_width);
-    rect.y2 = RDPMIN(dst_height, src_height);
+    rect.x1 = src_left;
+    rect.y1 = src_top;
+    rect.x2 = src_left + src_width;
+    rect.x2 = RDPMIN(dst_width, rect.x2);
+    rect.y2 = src_top + src_height;
+    rect.y2 = RDPMIN(dst_height, rect.y2);
     rdpRegionInit(&reg, &rect, 0);
     rdpRegionIntersect(&reg, in_reg, &reg);
 
@@ -494,35 +497,35 @@ rdpCapture0(rdpClientCon *clientCon,
     {
         rdpCopyBox_a8r8g8b8_to_a8r8g8b8(clientCon,
                                         src, src_stride, 0, 0,
-                                        dst, dst_stride, 0, 0,
+                                        dst, dst_stride, src_left, src_top,
                                         psrc_rects, num_rects);
     }
     else if ((src_format == XRDP_a8r8g8b8) && (dst_format == XRDP_a8b8g8r8))
     {
         rdpCopyBox_a8r8g8b8_to_a8b8g8r8(clientCon,
                                         src, src_stride, 0, 0,
-                                        dst, dst_stride, 0, 0,
+                                        dst, dst_stride, src_left, src_top,
                                         psrc_rects, num_rects);
     }
     else if ((src_format == XRDP_a8r8g8b8) && (dst_format == XRDP_r5g6b5))
     {
         rdpCopyBox_a8r8g8b8_to_r5g6b5(clientCon,
                                       src, src_stride, 0, 0,
-                                      dst, dst_stride, 0, 0,
+                                      dst, dst_stride, src_left, src_top,
                                       psrc_rects, num_rects);
     }
     else if ((src_format == XRDP_a8r8g8b8) && (dst_format == XRDP_a1r5g5b5))
     {
         rdpCopyBox_a8r8g8b8_to_a1r5g5b5(clientCon,
                                         src, src_stride, 0, 0,
-                                        dst, dst_stride, 0, 0,
+                                        dst, dst_stride, src_left, src_top,
                                         psrc_rects, num_rects);
     }
     else if ((src_format == XRDP_a8r8g8b8) && (dst_format == XRDP_r3g3b2))
     {
         rdpCopyBox_a8r8g8b8_to_r3g3b2(clientCon,
                                       src, src_stride, 0, 0,
-                                      dst, dst_stride, 0, 0,
+                                      dst, dst_stride, src_left, src_top,
                                       psrc_rects, num_rects);
     }
     else
@@ -538,7 +541,8 @@ rdpCapture0(rdpClientCon *clientCon,
 static Bool
 rdpCapture1(rdpClientCon *clientCon,
             RegionPtr in_reg, BoxPtr *out_rects, int *num_out_rects,
-            void *src, int src_width, int src_height,
+            void *src, int src_left, int src_top,
+            int src_width, int src_height,
             int src_stride, int src_format,
             void *dst, int dst_width, int dst_height,
             int dst_stride, int dst_format, int max_rects)
@@ -716,7 +720,8 @@ rdpCapture1(rdpClientCon *clientCon,
 static Bool
 rdpCapture2(rdpClientCon *clientCon,
             RegionPtr in_reg, BoxPtr *out_rects, int *num_out_rects,
-            void *src, int src_width, int src_height,
+            void *src, int src_left, int src_top,
+            int src_width, int src_height,
             int src_stride, int src_format,
             void *dst, int dst_width, int dst_height,
             int dst_stride, int dst_format, int max_rects)
@@ -830,7 +835,8 @@ rdpCapture2(rdpClientCon *clientCon,
 Bool
 rdpCapture(rdpClientCon *clientCon,
            RegionPtr in_reg, BoxPtr *out_rects, int *num_out_rects,
-           void *src, int src_width, int src_height,
+           void *src, int src_left, int src_top,
+           int src_width, int src_height,
            int src_stride, int src_format,
            void *dst, int dst_width, int dst_height,
            int dst_stride, int dst_format, int mode)
@@ -841,19 +847,19 @@ rdpCapture(rdpClientCon *clientCon,
     {
         case 0:
             return rdpCapture0(clientCon, in_reg, out_rects, num_out_rects,
-                               src, src_width, src_height,
+                               src, src_left, src_top, src_width, src_height,
                                src_stride, src_format,
                                dst, dst_width, dst_height,
                                dst_stride, dst_format, 15);
         case 1:
             return rdpCapture1(clientCon, in_reg, out_rects, num_out_rects,
-                               src, src_width, src_height,
+                               src, src_left, src_top, src_width, src_height,
                                src_stride, src_format,
                                dst, dst_width, dst_height,
                                dst_stride, dst_format, 15);
         case 2:
             return rdpCapture2(clientCon, in_reg, out_rects, num_out_rects,
-                               src, src_width, src_height,
+                               src, src_left, src_top, src_width, src_height,
                                src_stride, src_format,
                                dst, dst_width, dst_height,
                                dst_stride, dst_format, 15);
