@@ -65,9 +65,9 @@ Bool
 rdpRegionCopy(RegionPtr dst, RegionPtr src)
 {
 #if XRDP_REG == 1
-  return miRegionCopy(dst, src);
+    return miRegionCopy(dst, src);
 #else
-  return RegionCopy(dst, src);
+    return RegionCopy(dst, src);
 #endif
 }
 
@@ -76,9 +76,9 @@ void
 rdpRegionTranslate(RegionPtr pReg, int x, int y)
 {
 #if XRDP_REG == 1
-  miTranslateRegion(pReg, x, y);
+    miTranslateRegion(pReg, x, y);
 #else
-  RegionTranslate(pReg, x, y);
+    RegionTranslate(pReg, x, y);
 #endif
 }
 
@@ -87,9 +87,9 @@ Bool
 rdpRegionNotEmpty(RegionPtr pReg)
 {
 #if XRDP_REG == 1
-  return miRegionNotEmpty(pReg);
+    return miRegionNotEmpty(pReg);
 #else
-  return RegionNotEmpty(pReg);
+    return RegionNotEmpty(pReg);
 #endif
 }
 
@@ -98,9 +98,9 @@ Bool
 rdpRegionIntersect(RegionPtr newReg, RegionPtr reg1, RegionPtr reg2)
 {
 #if XRDP_REG == 1
-  return miIntersect(newReg, reg1, reg2);
+    return miIntersect(newReg, reg1, reg2);
 #else
-  return RegionIntersect(newReg, reg1, reg2);
+    return RegionIntersect(newReg, reg1, reg2);
 #endif
 }
 
@@ -109,9 +109,9 @@ int
 rdpRegionContainsRect(RegionPtr region, BoxPtr prect)
 {
 #if XRDP_REG == 1
-  return miRectIn(region, prect);
+    return miRectIn(region, prect);
 #else
-  return RegionContainsRect(region, prect);
+    return RegionContainsRect(region, prect);
 #endif
 }
 
@@ -120,9 +120,9 @@ void
 rdpRegionInit(RegionPtr pReg, BoxPtr rect, int size)
 {
 #if XRDP_REG == 1
-  miRegionInit(pReg, rect, size);
+    miRegionInit(pReg, rect, size);
 #else
-  RegionInit(pReg, rect, size);
+    RegionInit(pReg, rect, size);
 #endif
 }
 
@@ -131,9 +131,9 @@ void
 rdpRegionUninit(RegionPtr pReg)
 {
 #if XRDP_REG == 1
-  miRegionUninit(pReg);
+    miRegionUninit(pReg);
 #else
-  RegionUninit(pReg);
+    RegionUninit(pReg);
 #endif
 }
 
@@ -142,9 +142,9 @@ RegionPtr
 rdpRegionFromRects(int nrects, xRectanglePtr prect, int ctype)
 {
 #if XRDP_REG == 1
-  return miRectsToRegion(nrects, prect, ctype);
+    return miRectsToRegion(nrects, prect, ctype);
 #else
-  return RegionFromRects(nrects, prect, ctype);
+    return RegionFromRects(nrects, prect, ctype);
 #endif
 }
 
@@ -153,9 +153,9 @@ void
 rdpRegionDestroy(RegionPtr pReg)
 {
 #if XRDP_REG == 1
-  miRegionDestroy(pReg);
+    miRegionDestroy(pReg);
 #else
-  RegionDestroy(pReg);
+    RegionDestroy(pReg);
 #endif
 }
 
@@ -164,9 +164,9 @@ RegionPtr
 rdpRegionCreate(BoxPtr rect, int size)
 {
 #if XRDP_REG == 1
-  return miRegionCreate(rect, size);
+    return miRegionCreate(rect, size);
 #else
-  return RegionCreate(rect, size);
+    return RegionCreate(rect, size);
 #endif
 }
 
@@ -175,9 +175,9 @@ Bool
 rdpRegionUnion(RegionPtr newReg, RegionPtr reg1, RegionPtr reg2)
 {
 #if XRDP_REG == 1
-  return miUnion(newReg, reg1, reg2);
+    return miUnion(newReg, reg1, reg2);
 #else
-  return RegionUnion(newReg, reg1, reg2);
+    return RegionUnion(newReg, reg1, reg2);
 #endif
 }
 
@@ -186,9 +186,9 @@ Bool
 rdpRegionSubtract(RegionPtr newReg, RegionPtr reg1, RegionPtr reg2)
 {
 #if XRDP_REG == 1
-  return miSubtract(newReg, reg1, reg2);
+    return miSubtract(newReg, reg1, reg2);
 #else
-  return RegionSubtract(newReg, reg1, reg2);
+    return RegionSubtract(newReg, reg1, reg2);
 #endif
 }
 
@@ -197,9 +197,9 @@ Bool
 rdpRegionInverse(RegionPtr newReg, RegionPtr reg1, BoxPtr invRect)
 {
 #if XRDP_REG == 1
-  return miInverse(newReg, reg1, invRect);
+    return miInverse(newReg, reg1, invRect);
 #else
-  return RegionInverse(newReg, reg1, invRect);
+    return RegionInverse(newReg, reg1, invRect);
 #endif
 }
 
