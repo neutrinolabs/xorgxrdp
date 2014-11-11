@@ -61,7 +61,7 @@ do8_uv:
     psubw xmm1, xmm7
     psllw xmm1, 4
 
-    ; v
+    ; u
     movd xmm2, [rdx]     ; 4 at a time
     lea rdx, [rdx + 4]
     punpcklbw xmm2, xmm2
@@ -124,8 +124,6 @@ do8:
 
 PROC i420_to_rgb32_amd64_sse2
     push rbx
-    push rsi
-    push rdi
     push rbp
 
     push rdi
@@ -239,8 +237,6 @@ loop_x:
 
     mov rax, 0
     pop rbp
-    pop rdi
-    pop rsi
     pop rbx
     ret
     align 16
