@@ -399,6 +399,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
         if (lndex == last_lndex)
         {
             /* repeat line */
+            LLOGLN(10, ("stretch_RGB32_RGB32: repeat line"));
             dst32 = dst + index * dst_w;
             src32 = dst32 - dst_w;
             g_memcpy(dst32, src32, dst_w * 4);
@@ -414,6 +415,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
                 *dst32 = pix;
                 while (ih > (1 << 16) - 1)
                 {
+                    /* goes in here alot when downsizing */
                     ih -= 1 << 16;
                     src32++;
                 }
@@ -425,6 +427,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
         last_lndex = lndex;
         while (iv > (1 << 16) - 1)
         {
+            /* goes in here alot when downsizing */
             iv -= 1 << 16;
             lndex++;
         }
