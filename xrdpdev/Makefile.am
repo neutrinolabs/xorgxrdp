@@ -1,5 +1,4 @@
-EXTRA_DIST = \
-  xorg.conf
+EXTRA_DIST =
 
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
@@ -15,3 +14,9 @@ xrdpdev_drv_ladir = $(moduledir)/drivers
 xrdpdev_drv_la_SOURCES = xrdpdev.c
 
 xrdpdev_drv_la_LIBADD =
+
+xrdpdevsysconfdir=$(sysconfdir)/X11/xrdp
+
+xrdpdevsysconf_DATA = \
+  xorg.conf
+
