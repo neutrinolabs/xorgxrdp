@@ -24,6 +24,34 @@ if test "x${prefix}" = "xNONE" ; then
 sysconfdir="/etc";
 fi
 
+# SIMD is optional
+AC_ARG_WITH([simd],
+    AC_HELP_STRING([--without-simd],[Omit SIMD extensions.]))
+if test "x${with_simd}" != "xno"; then
+  # Check if we're on a supported CPU
+  AC_MSG_CHECKING([if we have SIMD optimisations for cpu type])
+  case "$host_cpu" in
+    x86_64 | amd64)
+      AC_MSG_RESULT([yes (x86_64)])
+      AC_PROG_NASM
+      simd_arch=x86_64
+    ;;
+    i*86 | x86 | ia32)
+      AC_MSG_RESULT([yes (i386)])
+      AC_PROG_NASM
+      simd_arch=i386
+    ;;
+    *)
+      AC_MSG_RESULT([no ("$host_cpu")])
+      AC_MSG_WARN([SIMD support not available for this CPU.  Performance will suffer.])
+      with_simd=no;
+    ;;
+  esac
+  if test "x${with_simd}" != "xno"; then
+    AC_DEFINE([WITH_SIMD], [1], [Use accelerated SIMD routines.])
+  fi
+fi
+
 AC_CONFIG_FILES([Makefile
                  module/Makefile
                  xrdpdev/Makefile
