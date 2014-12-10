@@ -13,7 +13,7 @@ EXTRA_FLAGS += -DSIMD_USE_ACCEL=1
 endif
 
 if WITH_SIMD_X86
-EXTRA_SOURCES += amd64/cpuid_amd64.asm \
+EXTRA_SOURCES += x86/cpuid_x86.asm \
   x86/yv12_to_rgb32_x86_sse2.asm \
   x86/i420_to_rgb32_x86_sse2.asm \
   x86/yuy2_to_rgb32_x86_sse2.asm \
