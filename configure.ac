@@ -52,6 +52,9 @@ if test "x${with_simd}" != "xno"; then
   fi
 fi
 
+AM_CONDITIONAL(WITH_SIMD_AMD64, [test x$simd_arch = xx86_64])
+AM_CONDITIONAL(WITH_SIMD_X86, [test x$simd_arch = xi386])
+
 AC_CONFIG_FILES([Makefile
                  module/Makefile
                  xrdpdev/Makefile
