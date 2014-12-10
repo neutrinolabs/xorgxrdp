@@ -17,7 +17,8 @@ EXTRA_SOURCES += x86/cpuid_x86.asm \
   x86/yv12_to_rgb32_x86_sse2.asm \
   x86/i420_to_rgb32_x86_sse2.asm \
   x86/yuy2_to_rgb32_x86_sse2.asm \
-  x86/uyvy_to_rgb32_x86_sse2.asm
+  x86/uyvy_to_rgb32_x86_sse2.asm \
+  x86/a8r8g8b8_to_a8b8g8r8_box_x86_sse2.asm
 EXTRA_FLAGS += -DSIMD_USE_ACCEL=1
 endif
 
