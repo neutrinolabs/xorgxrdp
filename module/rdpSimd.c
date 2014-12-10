@@ -86,6 +86,7 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
             dev->i420_to_rgb32 = i420_to_rgb32_amd64_sse2;
             dev->yuy2_to_rgb32 = yuy2_to_rgb32_amd64_sse2;
             dev->uyvy_to_rgb32 = uyvy_to_rgb32_amd64_sse2;
+            dev->a8r8g8b8_to_a8b8g8r8_box = a8r8g8b8_to_a8b8g8r8_box_amd64_sse2;
             LLOGLN(0, ("rdpSimdInit: sse2 amd64 yuv functions assigned"));
         }
 #elif defined(__x86__) || defined(_M_IX86) || defined(__i386__)

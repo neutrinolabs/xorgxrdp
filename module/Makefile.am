@@ -8,7 +8,8 @@ EXTRA_SOURCES += amd64/cpuid_amd64.asm \
   amd64/yv12_to_rgb32_amd64_sse2.asm \
   amd64/i420_to_rgb32_amd64_sse2.asm \
   amd64/yuy2_to_rgb32_amd64_sse2.asm \
-  amd64/uyvy_to_rgb32_amd64_sse2.asm
+  amd64/uyvy_to_rgb32_amd64_sse2.asm \
+  amd64/a8r8g8b8_to_a8b8g8r8_box_amd64_sse2.asm
 EXTRA_FLAGS += -DSIMD_USE_ACCEL=1
 endif
 
