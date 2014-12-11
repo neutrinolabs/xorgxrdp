@@ -1,3 +1,37 @@
+;
+;Copyright 2014 Jay Sorg
+;
+;Permission to use, copy, modify, distribute, and sell this software and its
+;documentation for any purpose is hereby granted without fee, provided that
+;the above copyright notice appear in all copies and that both that
+;copyright notice and this permission notice appear in supporting
+;documentation.
+;
+;The above copyright notice and this permission notice shall be included in
+;all copies or substantial portions of the Software.
+;
+;THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+;OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+;AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+;CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+;
+;YUY2 to RGB32
+;amd64 SSE2
+;
+; RGB to YUV
+;   0.299    0.587    0.114
+;  -0.14713 -0.28886  0.436
+;   0.615   -0.51499 -0.10001
+; YUV to RGB
+;   1        0        1.13983
+;   1       -0.39465 -0.58060
+;   1        2.03211  0
+; shift left 12
+;   4096     0        4669
+;   4096    -1616    -2378
+;   4096     9324     0
 
 SECTION .data
 align 16
