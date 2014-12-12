@@ -18,7 +18,7 @@
 ;CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ;
 ;ARGB to ABGR
-;amd64 SSE2 32 bit
+;amd64 SSE2
 ;
 
 SECTION .data
@@ -38,6 +38,9 @@ SECTION .text
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
 
+; s8 and d8 do not need to be alighed but they should match
+; in the lsb nibble, ie. s8 & 0xf == d8 & 0xf
+; if not, it won't make use of the simd
 ;int
 ;a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(char *s8, int src_stride,
 ;                                    char *d8, int dst_stride,
@@ -101,16 +104,12 @@ loop_xpre:
     jmp loop_xpre;
 done_loop_xpre:
 
-    prefetchnta [rsi]
-
 ; A R G B A R G B A R G B A R G B to
 ; A B G R A B G R A B G R A B G R
 
 loop_x8:
     cmp rcx, 8
     jl done_loop_x8
-
-    prefetchnta [rsi + 32]
 
     movdqa xmm0, [rsi]
     lea rsi, [rsi + 16]

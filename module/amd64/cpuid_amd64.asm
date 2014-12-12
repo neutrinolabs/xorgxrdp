@@ -36,6 +36,6 @@ PROC cpuid_amd64
     mov eax, 0
     ; restore registers
     pop rbx
-    ret;
+    ret
     align 16
 
