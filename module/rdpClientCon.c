@@ -564,7 +564,7 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
     {
         clientCon->rdp_Bpp = 1;
         clientCon->rdp_Bpp_mask = 0xff;
-        clientCon->rdp_format = PIXMAN_r3g3b2;
+        clientCon->rdp_format = XRDP_r3g3b2;
     }
     else if (bpp == 15)
     {
