@@ -72,7 +72,7 @@ PROC yuy2_to_rgb32_x86_sse2
 
 loop1:
     ; hi                                           lo
-    ; v7 y3 u6 y3 v5 y2 u4 y2 v3 y1 u2 y1 v1 y0 u0 y0
+    ; v3 y7 u3 y6 v2 y5 u2 y4 v1 y3 u1 y2 v0 y1 u0 y0
     movdqu xmm0, [esi]      ; 8 pixels at a time
     lea esi, [esi + 16]
 
