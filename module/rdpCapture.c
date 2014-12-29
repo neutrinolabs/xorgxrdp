@@ -179,12 +179,9 @@ rdpCopyBox_a8r8g8b8_to_yuvalp(int ax, int ay,
                 v = (r *  32756 + g * -27429 + b *  -5327) >> 16;
                 u = u + 128;
                 v = v + 128;
-                y = max(y, 0);
-                u = max(u, 0);
-                v = max(v, 0);
-                y = min(y, 255);
-                u = min(u, 255);
-                v = min(v, 255);
+                y = RDPCLAMP(y, 0, 255);
+                u = RDPCLAMP(u, 0, 255);
+                v = RDPCLAMP(v, 0, 255);
                 *(yptr++) = y;
                 *(uptr++) = u;
                 *(vptr++) = v;
