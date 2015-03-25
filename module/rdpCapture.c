@@ -1,22 +1,26 @@
-/**
- * xrdp: A Remote Desktop Protocol server.
- *
- * Copyright (C) Laxmikant Rashinkar 2014
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * Routines to copy regions from framebuffer to shared memory
- */
+/*
+Copyright 2014 Laxmikant Rashinkar
+Copyright 2014-2015 Jay Sorg
+
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+capture
+
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -980,7 +984,8 @@ rdpCapture3(rdpClientCon *clientCon,
     Bool rv;
 
     LLOGLN(10, ("rdpCapture3:"));
-    LLOGLN(10, ("rdpCapture3: src_left %d src_top %d src_stride %d dst_stride %d", src_left, src_top, src_stride, dst_stride));
+    LLOGLN(10, ("rdpCapture3: src_left %d src_top %d src_stride %d "
+           "dst_stride %d", src_left, src_top, src_stride, dst_stride));
 
     rv = TRUE;
 
@@ -1018,12 +1023,14 @@ rdpCapture3(rdpClientCon *clientCon,
     while (index < num_rects)
     {
         rect = psrc_rects[index];
-        LLOGLN(10, ("old x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.x2, rect.x2, rect.y2));
+        LLOGLN(10, ("old x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.x2,
+               rect.x2, rect.y2));
         rect.x1 -= rect.x1 & 1;
         rect.y1 -= rect.y1 & 1;
         rect.x2 += rect.x2 & 1;
         rect.y2 += rect.y2 & 1;
-        LLOGLN(10, ("new x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.x2, rect.x2, rect.y2));
+        LLOGLN(10, ("new x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.x2,
+               rect.x2, rect.y2));
         (*out_rects)[index] = rect;
         index++;
     }
