@@ -88,6 +88,7 @@ struct _rdpClientCon
     int cap_top;
     int cap_width;
     int cap_height;
+    int cap_stride_bytes;
 
     int rdpIndex; /* current os target */
 

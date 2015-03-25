@@ -585,6 +585,8 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
         clientCon->rdp_format = XRDP_a8r8g8b8;
     }
 
+    clientCon->cap_stride_bytes = clientCon->rdp_width * clientCon->rdp_Bpp;
+
     if (clientCon->shmemptr != 0)
     {
         shmdt(clientCon->shmemptr);
@@ -707,11 +709,6 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     i1 = clientCon->client_info.offscreen_cache_entries;
     LLOGLN(0, ("  offscreen entries %d", i1));
 
-    if (clientCon->client_info.capture_format != 0)
-    {
-        clientCon->rdp_format = clientCon->client_info.capture_format;
-    }
-
     if (clientCon->client_info.capture_code == 2) /* RFX */
     {
         LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
@@ -731,6 +728,46 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         LLOGLN(0, ("rdpClientConProcessMsgClientInfo: shmemid %d shmemptr %p "
                "bytes %d", clientCon->shmemid, clientCon->shmemptr, bytes));
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
+        clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+    }
+    else if (clientCon->client_info.capture_code == 3) /* H264 */
+    {
+        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got H264 capture"));
+        clientCon->cap_width = clientCon->rdp_width;
+        clientCon->cap_height = clientCon->rdp_height;
+        LLOGLN(0, ("  cap_width %d cap_height %d",
+               clientCon->cap_width, clientCon->cap_height));
+        if (clientCon->shmemptr != 0)
+        {
+            shmdt(clientCon->shmemptr);
+        }
+        bytes = clientCon->cap_width * clientCon->cap_height * 2;
+        clientCon->shmemid = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0777);
+        clientCon->shmemptr = shmat(clientCon->shmemid, 0, 0);
+        shmctl(clientCon->shmemid, IPC_RMID, NULL);
+        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: shmemid %d shmemptr %p "
+               "bytes %d", clientCon->shmemid, clientCon->shmemptr, bytes));
+        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
+        clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+    }
+
+    if (clientCon->client_info.capture_format != 0)
+    {
+        clientCon->rdp_format = clientCon->client_info.capture_format;
+        switch (clientCon->rdp_format)
+        {
+            case XRDP_a8r8g8b8:
+            case XRDP_a8b8g8r8:
+                clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+                break;
+            case XRDP_r5g6b5:
+            case XRDP_a1r5g5b5:
+                clientCon->cap_stride_bytes = clientCon->cap_width * 2;
+                break;
+            default:
+                clientCon->cap_stride_bytes = clientCon->cap_width * 1;
+                break;
+        }
     }
 
     if (clientCon->client_info.offscreen_support_level > 0)
@@ -2030,7 +2067,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
                    id.width, id.height,
                    id.lineBytes, XRDP_a8r8g8b8, id.shmem_pixels,
                    clientCon->cap_width, clientCon->cap_height,
-                   clientCon->cap_width * clientCon->rdp_Bpp,
+                   clientCon->cap_stride_bytes,
                    clientCon->rdp_format, clientCon->client_info.capture_code))
     {
         LLOGLN(10, ("rdpDeferredUpdateCallback: num_rects %d", num_rects));

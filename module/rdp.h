@@ -74,6 +74,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XRDP_r3g3b2 \
 ((8 << 24) | (2 << 16) | (0 << 12) | (3 << 8) | (3 << 4) | 2)
 
+/* XRDP_nv12 */
+#define XRDP_nv12 \
+((12 << 24) | (64 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
+/* XRDP_nv12 */
+#define XRDP_i420 \
+((12 << 24) | (65 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
+
 #define PixelDPI 100
 #define PixelToMM(_size) (((_size) * 254 + (PixelDPI) * 5) / ((PixelDPI) * 10))
 
