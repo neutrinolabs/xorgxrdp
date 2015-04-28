@@ -371,6 +371,15 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
 
     rdpResizeSession(dev, 1024, 768);
 
+    if (pRRScrPriv->numOutputs > 0)
+    {
+        /* set the primary */
+        pRRScrPriv->primaryOutput = pRRScrPriv->outputs[0];
+        RROutputChanged(pRRScrPriv->outputs[0], 0);
+        pRRScrPriv->layoutChanged = TRUE;
+        RRTellChanged(pScreen);
+    }
+
     envvar = getenv("XRDP_START_WIDTH");
     if (envvar != 0)
     {
