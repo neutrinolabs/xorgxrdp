@@ -229,18 +229,59 @@ rdpRROutputGetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property)
 
 /******************************************************************************/
 static int
+get_minfo_index(rdpPtr dev, int aindex, int is_primary)
+{
+    int index;
+    int lindex;
+
+    if (is_primary)
+    {
+        for (index = 0; index < 16; index++)
+        {
+            if (dev->minfo[index].is_primary)
+            {
+                return index;
+            }
+        }
+    }
+    else
+    {
+        lindex = 0;
+        for (index = 0; index < 16; index++)
+        {
+            if (dev->minfo[index].is_primary == 0)
+            {
+                lindex++;
+                if (lindex == aindex)
+                {
+                    return index;
+                }
+            }
+        }
+    }
+    return -1;
+}
+
+/******************************************************************************/
+static int
 get_rect(rdpPtr dev, const char *name, BoxPtr rect)
 {
     int index;
+    int lindex;
     char text[256];
 
     if (strcmp("default", name) == 0)
     {
         /* should be primary */
-        rect->x1 = dev->minfo[0].left;
-        rect->y1 = dev->minfo[0].top;
-        rect->x2 = dev->minfo[0].right + 1;
-        rect->y2 = dev->minfo[0].bottom + 1;
+        lindex = get_minfo_index(dev, 0, 1);
+        if (lindex < 0)
+        {
+            return 1;
+        }
+        rect->x1 = dev->minfo[lindex].left;
+        rect->y1 = dev->minfo[lindex].top;
+        rect->x2 = dev->minfo[lindex].right + 1;
+        rect->y2 = dev->minfo[lindex].bottom + 1;
         return 0;
     }
     for (index = 1; index < 16; index++)
@@ -248,10 +289,15 @@ get_rect(rdpPtr dev, const char *name, BoxPtr rect)
         snprintf(text, 255, "default%d", index);
         if (strcmp(text, name) == 0)
         {
-            rect->x1 = dev->minfo[index].left;
-            rect->y1 = dev->minfo[index].top;
-            rect->x2 = dev->minfo[index].right + 1;
-            rect->y2 = dev->minfo[index].bottom + 1;
+            lindex = get_minfo_index(dev, index, 0);
+            if (lindex < 0)
+            {
+                return 1;
+            }
+            rect->x1 = dev->minfo[lindex].left;
+            rect->y1 = dev->minfo[lindex].top;
+            rect->x2 = dev->minfo[lindex].right + 1;
+            rect->y2 = dev->minfo[lindex].bottom + 1;
             return 0;
         }
     }
@@ -301,7 +347,8 @@ rdpRRGetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
                             }
                             else
                             {
-                                LLOGLN(0, ("rdpRRGetPanning: %s not found", crtc->outputs[0]->name));
+                                LLOGLN(0, ("rdpRRGetPanning: %s not found",
+                                       crtc->outputs[0]->name));
                             }
                         }
                     }
