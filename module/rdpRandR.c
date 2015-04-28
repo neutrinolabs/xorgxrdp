@@ -228,29 +228,96 @@ rdpRROutputGetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property)
 }
 
 /******************************************************************************/
+static int
+get_rect(rdpPtr dev, const char *name, BoxPtr rect)
+{
+    int index;
+    char text[256];
+
+    if (strcmp("default", name) == 0)
+    {
+        /* should be primary */
+        rect->x1 = dev->minfo[0].left;
+        rect->y1 = dev->minfo[0].top;
+        rect->x2 = dev->minfo[0].right + 1;
+        rect->y2 = dev->minfo[0].bottom + 1;
+        return 0;
+    }
+    for (index = 1; index < 16; index++)
+    {
+        snprintf(text, 255, "default%d", index);
+        if (strcmp(text, name) == 0)
+        {
+            rect->x1 = dev->minfo[index].left;
+            rect->y1 = dev->minfo[index].top;
+            rect->x2 = dev->minfo[index].right + 1;
+            rect->y2 = dev->minfo[index].bottom + 1;
+            return 0;
+        }
+    }
+    /* not found */
+    return 1;
+}
+
+/******************************************************************************/
 Bool
 rdpRRGetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
                 BoxPtr trackingArea, INT16 *border)
 {
     rdpPtr dev;
+    BoxRec totalAreaRect;
+    BoxRec trackingAreaRect;
 
     LLOGLN(0, ("rdpRRGetPanning: %p", crtc));
     dev = rdpGetDevFromScreen(pScreen);
 
+    totalAreaRect.x1 = 0;
+    totalAreaRect.y1 = 0;
+    totalAreaRect.x2 = dev->width;
+    totalAreaRect.y2 = dev->height;
+
+    trackingAreaRect.x1 = 0;
+    trackingAreaRect.y1 = 0;
+    trackingAreaRect.x2 = dev->width;
+    trackingAreaRect.y2 = dev->height;
+
+    if (dev->doMultimon)
+    {
+        if (crtc != 0)
+        {
+            if (crtc->numOutputs > 0)
+            {
+                if (crtc->outputs != 0)
+                {
+                    if (crtc->outputs[0] != 0)
+                    {
+                        if (crtc->outputs[0]->name != 0)
+                        {
+                            if (get_rect(dev, crtc->outputs[0]->name,
+                                         &totalAreaRect) == 0)
+                            {
+                                LLOGLN(0, ("rdpRRGetPanning: get_rect ok"));
+                                trackingAreaRect = totalAreaRect;
+                            }
+                            else
+                            {
+                                LLOGLN(0, ("rdpRRGetPanning: %s not found", crtc->outputs[0]->name));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if (totalArea != 0)
     {
-        totalArea->x1 = 0;
-        totalArea->y1 = 0;
-        totalArea->x2 = dev->width;
-        totalArea->y2 = dev->height;
+        *totalArea = totalAreaRect;
     }
 
     if (trackingArea != 0)
     {
-        trackingArea->x1 = 0;
-        trackingArea->y1 = 0;
-        trackingArea->x2 = dev->width;
-        trackingArea->y2 = dev->height;
+        *trackingArea = trackingAreaRect;
     }
 
     if (border != 0)
@@ -271,3 +338,97 @@ rdpRRSetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
     LLOGLN(0, ("rdpRRSetPanning:"));
     return TRUE;
 }
+
+/******************************************************************************/
+static int
+rdpRRAddOutput(rdpPtr dev, const char *aname)
+{
+    RRModePtr mode;
+    RRCrtcPtr crtc;
+    RROutputPtr output;
+    xRRModeInfo modeInfo;
+    char name[64];
+
+    sprintf (name, "%dx%d", dev->width, dev->height);
+    memset (&modeInfo, 0, sizeof(modeInfo));
+    modeInfo.width = dev->width;
+    modeInfo.height = dev->height;
+    modeInfo.nameLength = strlen(name);
+    mode = RRModeGet(&modeInfo, name);
+    if (mode == 0)
+    {
+        LLOGLN(0, ("rdpRRAddOutput: RRModeGet failed"));
+        return 1;
+    }
+    crtc = RRCrtcCreate(dev->pScreen, NULL);
+    if (crtc == 0)
+    {
+        LLOGLN(0, ("rdpRRAddOutput: RRCrtcCreate failed"));
+        RRModeDestroy(mode);
+        return 1;
+    }
+    output = RROutputCreate(dev->pScreen, aname, strlen(aname), NULL);
+    if (output == 0)
+    {
+        LLOGLN(0, ("rdpRRAddOutput: RROutputCreate failed"));
+        RRCrtcDestroy(crtc);
+        RRModeDestroy(mode);
+        return 1;
+    }
+    if (!RROutputSetClones(output, NULL, 0))
+    {
+        LLOGLN(0, ("rdpRRAddOutput: RROutputSetClones failed"));
+    }
+    if (!RROutputSetModes(output, &mode, 1, 0))
+    {
+        LLOGLN(0, ("rdpRRAddOutput: RROutputSetModes failed"));
+    }
+    if (!RROutputSetCrtcs(output, &crtc, 1))
+    {
+        LLOGLN(0, ("rdpRRAddOutput: RROutputSetCrtcs failed"));
+    }
+    if (!RROutputSetConnection(output, RR_Connected))
+    {
+        LLOGLN(0, ("rdpRRAddOutput: RROutputSetConnection failed"));
+    }
+    RRCrtcNotify(crtc, mode, 0, 0, RR_Rotate_0, NULL, 1, &output);
+
+    dev->output[dev->extra_outputs] = output;
+    dev->crtc[dev->extra_outputs] = crtc;
+    dev->extra_outputs++;
+
+    return 0;
+}
+
+/******************************************************************************/
+int
+rdpRRSetExtraOutputs(rdpPtr dev, int extra_outputs)
+{
+    char text[256];
+    RRCrtcPtr crtc;
+    RROutputPtr output;
+
+    if (dev->extra_outputs == extra_outputs)
+    {
+        return 0;
+    }
+    while (dev->extra_outputs < extra_outputs)
+    {
+        snprintf(text, 255, "default%d", dev->extra_outputs + 1);
+        if (rdpRRAddOutput(dev, text) != 0)
+        {
+            LLOGLN(0, ("rdpRRSetNumOutputs: rdpRRAddOutput failed"));
+            return 1;
+        }
+    }
+    while ((dev->extra_outputs > 0) && (dev->extra_outputs > extra_outputs))
+    {
+        dev->extra_outputs--;
+        crtc = dev->crtc[dev->extra_outputs];
+        RRCrtcDestroy(crtc);
+        output = dev->output[dev->extra_outputs];
+        RROutputDestroy(output);
+    }
+    return 0;
+}
+

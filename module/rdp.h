@@ -33,6 +33,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "rdpPri.h"
 
+/* in xrdp/common */
+#include "xrdp_client_info.h"
+#include "xrdp_constants.h"
+
 #define XRDP_MODULE_NAME "XRDPMOD"
 #define XRDP_DRIVER_NAME "XRDPDEV"
 #define XRDP_MOUSE_NAME "XRDPMOUSE"
@@ -293,6 +297,13 @@ struct _rdpRec
     OsTimerPtr xv_timer;
 
     copy_box_proc a8r8g8b8_to_a8b8g8r8_box;
+
+    /* multimon */
+    int extra_outputs;
+    RRCrtcPtr crtc[16];
+    RROutputPtr output[16];
+    struct monitor_info minfo[16]; /* client monitor data */
+    int doMultimon;
 
 };
 typedef struct _rdpRec rdpRec;

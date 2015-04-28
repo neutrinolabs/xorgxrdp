@@ -155,8 +155,8 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     rdpAllocRec(pScrn);
     dev = XRDPPTR(pScrn);
 
-    dev->width = 1024;
-    dev->height = 768;
+    dev->width = 800;
+    dev->height = 600;
 
     pScrn->monitor = pScrn->confScreen->monitor;
     pScrn->bitsPerPixel = g_bpp;
@@ -369,7 +369,7 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
     pRRScrPriv->rrGetPanning         = rdpRRGetPanning;
     pRRScrPriv->rrSetPanning         = rdpRRSetPanning;
 
-    rdpResizeSession(dev, dev->width, dev->height);
+    rdpResizeSession(dev, 1024, 768);
 
     envvar = getenv("XRDP_START_WIDTH");
     if (envvar != 0)
