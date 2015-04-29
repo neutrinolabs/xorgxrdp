@@ -44,6 +44,7 @@ Client connection to xrdp
 #include "rdpInput.h"
 #include "rdpReg.h"
 #include "rdpCapture.h"
+#include "rdpRandR.h"
 
 #define LOG_LEVEL 1
 #define LLOGLN(_level, _args) \
