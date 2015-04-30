@@ -828,6 +828,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         rdpRRSetExtraOutputs(dev, 0);
         rdpRRSetExtraOutputs(dev, clientCon->client_info.monitorCount - 1);
         memcpy(dev->minfo, clientCon->client_info.minfo, sizeof(dev->minfo));
+        dev->monitorCount = clientCon->client_info.monitorCount;
         RRTellChanged(dev->pScreen);
     }
     else

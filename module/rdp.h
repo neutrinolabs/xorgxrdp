@@ -304,6 +304,7 @@ struct _rdpRec
     RROutputPtr output[16];
     struct monitor_info minfo[16]; /* client monitor data */
     int doMultimon;
+    int monitorCount;
 
 };
 typedef struct _rdpRec rdpRec;

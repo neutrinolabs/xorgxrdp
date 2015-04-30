@@ -233,10 +233,24 @@ get_minfo_index(rdpPtr dev, int aindex, int is_primary)
 {
     int index;
     int lindex;
+    int got_primary;
 
+    got_primary = 0;
+    for (index = 0; index < dev->monitorCount; index++)
+    {
+        if (dev->minfo[index].is_primary)
+        {
+            got_primary = 1;
+            break;
+        }
+    }
+    if (got_primary == 0)
+    {
+        return aindex;
+    }
     if (is_primary)
     {
-        for (index = 0; index < 16; index++)
+        for (index = 0; index < dev->monitorCount; index++)
         {
             if (dev->minfo[index].is_primary)
             {
@@ -247,7 +261,7 @@ get_minfo_index(rdpPtr dev, int aindex, int is_primary)
     else
     {
         lindex = 0;
-        for (index = 0; index < 16; index++)
+        for (index = 0; index < dev->monitorCount; index++)
         {
             if (dev->minfo[index].is_primary == 0)
             {
@@ -272,7 +286,7 @@ get_rect(rdpPtr dev, const char *name, BoxPtr rect)
 
     if (strcmp("default", name) == 0)
     {
-        /* should be primary */
+        /* get primary or first item if no primary */
         lindex = get_minfo_index(dev, 0, 1);
         if (lindex < 0)
         {
