@@ -610,9 +610,6 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
     mmwidth = PixelToMM(width);
     mmheight = PixelToMM(height);
 
-    pSize = RRRegisterSize(dev->pScreen, width, height, mmwidth, mmheight);
-    RRSetCurrentConfig(dev->pScreen, RR_Rotate_0, 0, pSize);
-
     if ((dev->width != width) || (dev->height != height))
     {
         ok = RRScreenSizeSet(dev->pScreen, width, height, mmwidth, mmheight);
@@ -822,19 +819,22 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     if (clientCon->client_info.monitorCount > 0)
     {
         LLOGLN(0, ("  client can do multimon"));
-        LLOGLN(0, ("  client monitor data, monitorCount= %d", clientCon->client_info.monitorCount));
+        LLOGLN(0, ("  client monitor data, monitorCount=%d", clientCon->client_info.monitorCount));
         clientCon->doMultimon = 1;
         dev->doMultimon = 1;
-        rdpRRSetExtraOutputs(dev, 0);
-        rdpRRSetExtraOutputs(dev, clientCon->client_info.monitorCount - 1);
         memcpy(dev->minfo, clientCon->client_info.minfo, sizeof(dev->minfo));
         dev->monitorCount = clientCon->client_info.monitorCount;
+        rdpRRSetRdpOutputs(dev);
         RRTellChanged(dev->pScreen);
     }
     else
     {
         LLOGLN(0, ("  client can not do multimon"));
         clientCon->doMultimon = 0;
+        dev->doMultimon = 0;
+        dev->monitorCount = 0;
+        rdpRRSetRdpOutputs(dev);
+        RRTellChanged(dev->pScreen);
     }
 
     //rdpLoadLayout(g_rdpScreen.client_info.keylayout);

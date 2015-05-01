@@ -295,9 +295,6 @@ rdpResizeSession(rdpPtr dev, int width, int height)
     mmwidth = PixelToMM(width);
     mmheight = PixelToMM(height);
 
-    pSize = RRRegisterSize(dev->pScreen, width, height, mmwidth, mmheight);
-    RRSetCurrentConfig(dev->pScreen, RR_Rotate_0, 0, pSize);
-
     ok = TRUE;
     if ((dev->width != width) || (dev->height != height))
     {
@@ -369,16 +366,8 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
     pRRScrPriv->rrGetPanning         = rdpRRGetPanning;
     pRRScrPriv->rrSetPanning         = rdpRRSetPanning;
 
-    rdpResizeSession(dev, 1024, 768);
 
-    if (pRRScrPriv->numOutputs > 0)
-    {
-        /* set the primary */
-        pRRScrPriv->primaryOutput = pRRScrPriv->outputs[0];
-        RROutputChanged(pRRScrPriv->outputs[0], 0);
-        pRRScrPriv->layoutChanged = TRUE;
-        RRTellChanged(pScreen);
-    }
+    rdpResizeSession(dev, 1024, 768);
 
     envvar = getenv("XRDP_START_WIDTH");
     if (envvar != 0)
@@ -397,6 +386,9 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
             }
         }
     }
+
+    RRScreenSetSizeRange(pScreen, 256, 256, 16 * 1024, 16 * 1024);
+    RRTellChanged(pScreen);
 
     return 0;
 }

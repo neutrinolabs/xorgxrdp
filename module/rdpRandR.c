@@ -44,6 +44,8 @@ RandR draw calls
 #include "rdpMisc.h"
 #include "rdpRandR.h"
 
+static int g_panning = 0;
+
 /******************************************************************************/
 #define LOG_LEVEL 1
 #define LLOGLN(_level, _args) \
@@ -79,16 +81,8 @@ rdpRRSetConfig(ScreenPtr pScreen, Rotation rotateKind, int rate,
 Bool
 rdpRRGetInfo(ScreenPtr pScreen, Rotation *pRotations)
 {
-    int width;
-    int height;
-    rdpPtr dev;
-
     LLOGLN(0, ("rdpRRGetInfo:"));
-    dev = rdpGetDevFromScreen(pScreen);
     *pRotations = RR_Rotate_0;
-    width = dev->width;
-    height = dev->height;
-    rdpRRRegisterSize(pScreen, width, height);
     return TRUE;
 }
 
@@ -229,94 +223,37 @@ rdpRROutputGetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property)
 
 /******************************************************************************/
 static int
-get_minfo_index(rdpPtr dev, int aindex, int is_primary)
-{
-    int index;
-    int lindex;
-    int got_primary;
-
-    got_primary = 0;
-    for (index = 0; index < dev->monitorCount; index++)
-    {
-        if (dev->minfo[index].is_primary)
-        {
-            got_primary = 1;
-            break;
-        }
-    }
-    if (got_primary == 0)
-    {
-        return aindex;
-    }
-    if (is_primary)
-    {
-        for (index = 0; index < dev->monitorCount; index++)
-        {
-            if (dev->minfo[index].is_primary)
-            {
-                return index;
-            }
-        }
-    }
-    else
-    {
-        lindex = 0;
-        for (index = 0; index < dev->monitorCount; index++)
-        {
-            if (dev->minfo[index].is_primary == 0)
-            {
-                lindex++;
-                if (lindex == aindex)
-                {
-                    return index;
-                }
-            }
-        }
-    }
-    return -1;
-}
-
-/******************************************************************************/
-static int
 get_rect(rdpPtr dev, const char *name, BoxPtr rect)
 {
-    int index;
-    int lindex;
-    char text[256];
-
-    if (strcmp("default", name) == 0)
+    if (strcmp(name, "rdp0") == 0)
     {
-        /* get primary or first item if no primary */
-        lindex = get_minfo_index(dev, 0, 1);
-        if (lindex < 0)
-        {
-            return 1;
-        }
-        rect->x1 = dev->minfo[lindex].left;
-        rect->y1 = dev->minfo[lindex].top;
-        rect->x2 = dev->minfo[lindex].right + 1;
-        rect->y2 = dev->minfo[lindex].bottom + 1;
-        return 0;
+        rect->x1 = dev->minfo[0].left; 
+        rect->y1 = dev->minfo[0].top;
+        rect->x2 = dev->minfo[0].right + 1;
+        rect->y2 = dev->minfo[0].bottom + 1;
     }
-    for (index = 1; index < 16; index++)
+    else if (strcmp(name, "rdp1") == 0)
     {
-        snprintf(text, 255, "default%d", index);
-        if (strcmp(text, name) == 0)
-        {
-            lindex = get_minfo_index(dev, index, 0);
-            if (lindex < 0)
-            {
-                return 1;
-            }
-            rect->x1 = dev->minfo[lindex].left;
-            rect->y1 = dev->minfo[lindex].top;
-            rect->x2 = dev->minfo[lindex].right + 1;
-            rect->y2 = dev->minfo[lindex].bottom + 1;
-            return 0;
-        }
+        rect->x1 = dev->minfo[1].left; 
+        rect->y1 = dev->minfo[1].top;
+        rect->x2 = dev->minfo[1].right + 1;
+        rect->y2 = dev->minfo[1].bottom + 1;
     }
-    /* not found */
-    return 1;
+    else if (strcmp(name, "rdp2") == 0)
+    {
+        rect->x1 = dev->minfo[2].left; 
+        rect->y1 = dev->minfo[2].top;
+        rect->x2 = dev->minfo[2].right + 1;
+        rect->y2 = dev->minfo[2].bottom + 1;
+    }
+    else if (strcmp(name, "rdp3") == 0)
+    {
+        rect->x1 = dev->minfo[3].left; 
+        rect->y1 = dev->minfo[3].top;
+        rect->x2 = dev->minfo[3].right + 1;
+        rect->y2 = dev->minfo[3].bottom + 1;
+    }
+    return 0;
 }
 
 /******************************************************************************/
@@ -329,6 +266,12 @@ rdpRRGetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
     BoxRec trackingAreaRect;
 
     LLOGLN(0, ("rdpRRGetPanning: %p", crtc));
+
+    if (!g_panning)
+    {
+        return FALSE; 
+    }
+
     dev = rdpGetDevFromScreen(pScreen);
 
     totalAreaRect.x1 = 0;
@@ -340,36 +283,6 @@ rdpRRGetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
     trackingAreaRect.y1 = 0;
     trackingAreaRect.x2 = dev->width;
     trackingAreaRect.y2 = dev->height;
-
-    if (dev->doMultimon)
-    {
-        if (crtc != 0)
-        {
-            if (crtc->numOutputs > 0)
-            {
-                if (crtc->outputs != 0)
-                {
-                    if (crtc->outputs[0] != 0)
-                    {
-                        if (crtc->outputs[0]->name != 0)
-                        {
-                            if (get_rect(dev, crtc->outputs[0]->name,
-                                         &totalAreaRect) == 0)
-                            {
-                                LLOGLN(0, ("rdpRRGetPanning: get_rect ok"));
-                                trackingAreaRect = totalAreaRect;
-                            }
-                            else
-                            {
-                                LLOGLN(0, ("rdpRRGetPanning: %s not found",
-                                       crtc->outputs[0]->name));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     if (totalArea != 0)
     {
@@ -401,8 +314,8 @@ rdpRRSetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
 }
 
 /******************************************************************************/
-static int
-rdpRRAddOutput(rdpPtr dev, const char *aname)
+static RROutputPtr
+rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int height)
 {
     RRModePtr mode;
     RRCrtcPtr crtc;
@@ -410,23 +323,24 @@ rdpRRAddOutput(rdpPtr dev, const char *aname)
     xRRModeInfo modeInfo;
     char name[64];
 
-    sprintf (name, "%dx%d", dev->width, dev->height);
+    sprintf (name, "%dx%d", width, height);
     memset (&modeInfo, 0, sizeof(modeInfo));
-    modeInfo.width = dev->width;
-    modeInfo.height = dev->height;
+    modeInfo.width = width;
+    modeInfo.height = height;
     modeInfo.nameLength = strlen(name);
     mode = RRModeGet(&modeInfo, name);
     if (mode == 0)
     {
         LLOGLN(0, ("rdpRRAddOutput: RRModeGet failed"));
-        return 1;
+        return 0;
     }
+
     crtc = RRCrtcCreate(dev->pScreen, NULL);
     if (crtc == 0)
     {
         LLOGLN(0, ("rdpRRAddOutput: RRCrtcCreate failed"));
         RRModeDestroy(mode);
-        return 1;
+        return 0;
     }
     output = RROutputCreate(dev->pScreen, aname, strlen(aname), NULL);
     if (output == 0)
@@ -434,7 +348,7 @@ rdpRRAddOutput(rdpPtr dev, const char *aname)
         LLOGLN(0, ("rdpRRAddOutput: RROutputCreate failed"));
         RRCrtcDestroy(crtc);
         RRModeDestroy(mode);
-        return 1;
+        return 0;
     }
     if (!RROutputSetClones(output, NULL, 0))
     {
@@ -452,44 +366,90 @@ rdpRRAddOutput(rdpPtr dev, const char *aname)
     {
         LLOGLN(0, ("rdpRRAddOutput: RROutputSetConnection failed"));
     }
-    RRCrtcNotify(crtc, mode, 0, 0, RR_Rotate_0, NULL, 1, &output);
+    RRCrtcNotify(crtc, mode, x, y, RR_Rotate_0, NULL, 1, &output);
 
     dev->output[dev->extra_outputs] = output;
     dev->crtc[dev->extra_outputs] = crtc;
     dev->extra_outputs++;
 
-    return 0;
+    return output;
+}
+
+/******************************************************************************/
+static void
+RRSetPrimaryOutput(rrScrPrivPtr pScrPriv, RROutputPtr output)
+{
+    if (pScrPriv->primaryOutput == output)
+    {
+        return;
+    }
+    /* clear the old primary */
+    if (pScrPriv->primaryOutput)
+    {
+        RROutputChanged(pScrPriv->primaryOutput, 0);
+        pScrPriv->primaryOutput = NULL;
+    }
+    /* set the new primary */
+    if (output)
+    {
+        pScrPriv->primaryOutput = output;
+        RROutputChanged(output, 0);
+    }
+    pScrPriv->layoutChanged = TRUE;
 }
 
 /******************************************************************************/
 int
-rdpRRSetExtraOutputs(rdpPtr dev, int extra_outputs)
+rdpRRSetRdpOutputs(rdpPtr dev)
 {
+    rrScrPrivPtr pRRScrPriv;
+    int index;
+    int width;
+    int height;
     char text[256];
-    RRCrtcPtr crtc;
     RROutputPtr output;
 
-    if (dev->extra_outputs == extra_outputs)
+    pRRScrPriv = rrGetScrPriv(dev->pScreen);
+
+    LLOGLN(0, ("rdpRRSetRdpOutputs: numCrtcs %d", pRRScrPriv->numCrtcs));
+    while (pRRScrPriv->numCrtcs > 0)
     {
-        return 0;
+        RRCrtcDestroy(pRRScrPriv->crtcs[0]);
     }
-    while (dev->extra_outputs < extra_outputs)
+    LLOGLN(0, ("rdpRRSetRdpOutputs: numOutputs %d", pRRScrPriv->numOutputs));
+    while (pRRScrPriv->numOutputs > 0)
     {
-        snprintf(text, 255, "default%d", dev->extra_outputs + 1);
-        if (rdpRRAddOutput(dev, text) != 0)
+        RROutputDestroy(pRRScrPriv->outputs[0]);
+    }
+
+    if (dev->monitorCount == 0)
+    {
+        rdpRRAddOutput(dev, "rdp0", 0, 0, dev->width, dev->height);
+    }
+    else
+    {
+        for (index = 0; index < dev->monitorCount; index++)
         {
-            LLOGLN(0, ("rdpRRSetNumOutputs: rdpRRAddOutput failed"));
-            return 1;
+            snprintf(text, 255, "rdp%d", index);
+            width = dev->minfo[index].right - dev->minfo[index].left + 1;
+            height = dev->minfo[index].bottom - dev->minfo[index].top + 1;
+            output = rdpRRAddOutput(dev, text,
+                                    dev->minfo[index].left,
+                                    dev->minfo[index].top,
+                                    width, height);
+            if ((output != 0) && (dev->minfo[index].is_primary))
+            {
+                RRSetPrimaryOutput(pRRScrPriv, output);
+            }
         }
     }
-    while ((dev->extra_outputs > 0) && (dev->extra_outputs > extra_outputs))
+
+    for (index = 0; index < pRRScrPriv->numOutputs; index++)
     {
-        dev->extra_outputs--;
-        crtc = dev->crtc[dev->extra_outputs];
-        RRCrtcDestroy(crtc);
-        output = dev->output[dev->extra_outputs];
-        RROutputDestroy(output);
+        RROutputSetCrtcs(pRRScrPriv->outputs[index], pRRScrPriv->crtcs,
+                         pRRScrPriv->numCrtcs);
     }
+
     return 0;
 }
 
