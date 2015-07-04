@@ -77,6 +77,8 @@ xrdp keyboard module
 #define N_PREDEFINED_KEYS \
     (sizeof(g_kbdMap) / (sizeof(KeySym) * GLYPHS_PER_KEY))
 
+static OsTimerPtr g_kbtimer = 0;
+
 static KeySym g_kbdMap[] =
 {
     NoSymbol,        NoSymbol,        /* 8 */
@@ -572,10 +574,59 @@ rdpkeybBell(int volume, DeviceIntPtr pDev, pointer ctrl, int cls)
 }
 
 /******************************************************************************/
+static CARD32
+rdpInDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
+{
+    DeviceIntPtr pDev;
+
+    LLOGLN(0, ("rdpInDeferredUpdateCallback:"));
+    pDev = (DeviceIntPtr) arg;
+    /* our keyboard device */
+    XkbSetRepeatKeys(pDev, -1, AutoRepeatModeOff);
+    /* the main one for the server */
+    XkbSetRepeatKeys(inputInfo.keyboard, -1, AutoRepeatModeOff);
+    return 0;
+}
+
+/******************************************************************************/
 static void
 rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
 {
+    XkbControlsPtr ctrls;
+
     LLOGLN(0, ("rdpkeybChangeKeyboardControl:"));
+    ctrls = 0;
+    if (pDev != 0)
+    {
+        if (pDev->key != 0)
+        {
+            if (pDev->key->xkbInfo != 0)
+            {
+                if (pDev->key->xkbInfo->desc != 0)
+                {
+                    if (pDev->key->xkbInfo->desc->ctrls != 0)
+                    {
+                        ctrls = pDev->key->xkbInfo->desc->ctrls;
+                    }
+                }
+            }
+        }
+    }
+    if (ctrls != 0)
+    {
+        if (ctrls->enabled_ctrls & XkbRepeatKeysMask)
+        {
+            LLOGLN(0, ("rdpkeybChangeKeyboardControl: autoRepeat on"));
+            /* schedual to turn off the autorepeat after 100 ms so any app
+             * polling it will be happy it's on */
+            g_kbtimer = TimerSet(g_kbtimer, 0, 100,
+                                 rdpInDeferredUpdateCallback, pDev);
+        }
+        else
+        {
+            LLOGLN(0, ("rdpkeybChangeKeyboardControl: autoRepeat off"));
+        }
+    }
 }
 
 /******************************************************************************/
