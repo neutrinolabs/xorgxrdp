@@ -313,8 +313,13 @@ typedef struct _rdpRec * rdpPtr;
 
 struct _rdpGCRec
 {
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 16, 99, 901, 0)
     GCFuncs *funcs;
     GCOps *ops;
+#else
+    const GCFuncs *funcs;
+    const GCOps *ops;
+#endif
 };
 typedef struct _rdpGCRec rdpGCRec;
 typedef struct _rdpGCRec * rdpGCPtr;

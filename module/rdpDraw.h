@@ -54,7 +54,11 @@ misc draw calls
 )
 
 /******************************************************************************/
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 16, 99, 901, 0)
 #define GC_OP_VARS rdpPtr dev; rdpGCPtr priv; GCFuncs *oldFuncs
+#else
+#define GC_OP_VARS rdpPtr dev; rdpGCPtr priv; const GCFuncs *oldFuncs
+#endif
 
 /******************************************************************************/
 #define GC_OP_PROLOGUE(_pGC) \
