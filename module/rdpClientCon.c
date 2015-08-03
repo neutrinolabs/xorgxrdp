@@ -688,6 +688,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     struct stream *s;
     int bytes;
     int i1;
+    int index;
+    BoxRec box;
 
     LLOGLN(0, ("rdpClientConProcessMsgClientInfo:"));
     s = clientCon->in_s;
@@ -824,6 +826,32 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         dev->doMultimon = 1;
         memcpy(dev->minfo, clientCon->client_info.minfo, sizeof(dev->minfo));
         dev->monitorCount = clientCon->client_info.monitorCount;
+
+        box.x1 = dev->minfo[0].left;
+        box.y1 = dev->minfo[0].top;
+        box.x2 = dev->minfo[0].right;
+        box.y2 = dev->minfo[0].bottom;
+        /* adjust monitor info so it's not negitive */
+        for (index = 1; index < dev->monitorCount; index++)
+        {
+            box.x1 = min(box.x1, dev->minfo[index].left);
+            box.y1 = min(box.y1, dev->minfo[index].top);
+            box.x2 = max(box.x2, dev->minfo[index].right);
+            box.y2 = max(box.y2, dev->minfo[index].bottom);
+        }
+        for (index = 0; index < dev->monitorCount; index++)
+        {
+            dev->minfo[index].left -= box.x1;
+            dev->minfo[index].top -= box.y1;
+            dev->minfo[index].right -= box.x1;
+            dev->minfo[index].bottom -= box.y1;
+            LLOGLN(0, ("    left %d top %d right %d bottom %d",
+                   dev->minfo[index].left,
+                   dev->minfo[index].top,
+                   dev->minfo[index].right,
+                   dev->minfo[index].bottom));
+        }
+
         rdpRRSetRdpOutputs(dev);
         RRTellChanged(dev->pScreen);
     }
