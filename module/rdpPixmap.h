@@ -22,7 +22,7 @@ pixmap calls
 */
 
 #ifndef __RDPPIXMAP_H
-#define __RDPPIXAMP_H
+#define __RDPPIXMAP_H
 
 #include <xorg-server.h>
 #include <xorgVersion.h>
