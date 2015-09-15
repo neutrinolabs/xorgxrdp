@@ -117,9 +117,9 @@ loop1:
     psrld xmm6, 16             ; red
     pand xmm6, [cd255]         ; red
 
-    packusdw xmm1, xmm4        ; xmm1 = 8 blues
-    packusdw xmm2, xmm5        ; xmm2 = 8 greens
-    packusdw xmm3, xmm6        ; xmm3 = 8 reds
+    packssdw xmm1, xmm4        ; xmm1 = 8 blues
+    packssdw xmm2, xmm5        ; xmm2 = 8 greens
+    packssdw xmm3, xmm6        ; xmm3 = 8 reds
     psllw xmm1, 4              ; blue
     psllw xmm2, 4              ; green
     psllw xmm3, 4              ; red
@@ -188,9 +188,9 @@ loop1:
     psrld xmm6, 16             ; red
     pand xmm6, [cd255]         ; red
 
-    packusdw xmm1, xmm4        ; xmm1 = 8 blues
-    packusdw xmm2, xmm5        ; xmm2 = 8 greens
-    packusdw xmm3, xmm6        ; xmm3 = 8 reds
+    packssdw xmm1, xmm4        ; xmm1 = 8 blues
+    packssdw xmm2, xmm5        ; xmm2 = 8 greens
+    packssdw xmm3, xmm6        ; xmm3 = 8 reds
     psllw xmm1, 4              ; blue
     psllw xmm2, 4              ; green
     psllw xmm3, 4              ; red
