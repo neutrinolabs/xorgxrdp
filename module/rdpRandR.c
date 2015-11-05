@@ -269,7 +269,7 @@ rdpRRGetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
 
     if (!g_panning)
     {
-        return FALSE; 
+        return FALSE;
     }
 
     dev = rdpGetDevFromScreen(pScreen);

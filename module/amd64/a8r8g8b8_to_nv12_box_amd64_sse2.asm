@@ -291,7 +291,7 @@ loop1:
     mov rax, LS8               ; s8
     add rax, LSRC_STRIDE       ; s8 += src_stride
     add rax, LSRC_STRIDE       ; s8 += src_stride
-    mov [rsp + 0], rax
+    mov LS8, rax
 
     ; update d8_y
     mov rax, LD8_Y             ; d8_y
