@@ -1,5 +1,5 @@
 /*
-Copyright 2014 Jay Sorg
+Copyright 2014-2015 Jay Sorg
 
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -38,6 +38,10 @@ int
 a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(char *s8, int src_stride,
                                     char *d8, int dst_stride,
                                     int width, int height);
+int
+a8r8g8b8_to_nv12_box_amd64_sse2(char *s8, int src_stride,
+                                char *d8, int dst_stride,
+                                int width, int height);
 
 #endif
 
