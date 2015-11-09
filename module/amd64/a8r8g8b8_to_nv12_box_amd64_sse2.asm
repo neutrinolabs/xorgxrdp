@@ -275,7 +275,7 @@ loop1:
     psrlw mm4, 8
     pand mm4, [rel cw255]
     paddw mm2, mm4             ; add
-    paddw mm1, [rel cw2]       ; add 2
+    paddw mm2, [rel cw2]       ; add 2
     psrlw mm2, 2               ; div 4
 
     packuswb mm1, mm1
