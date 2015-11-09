@@ -34,14 +34,15 @@ SECTION .data
     cw255  times 8 dw 255
     cw16   times 8 dw 16
     cw128  times 8 dw 128
-    cw1053 times 8 dw 1053
-    cw2064 times 8 dw 2064
-    cw401  times 8 dw 401
-    cw606  times 8 dw 606
-    cw1192 times 8 dw 1192
-    cw1798 times 8 dw 1798
-    cw1507 times 8 dw 1507
-    cw291  times 8 dw 291
+    cw66   times 8 dw 66
+    cw129  times 8 dw 129
+    cw25   times 8 dw 25
+    cw38   times 8 dw 38
+    cw74   times 8 dw 74
+    cw112  times 8 dw 112
+    cw94   times 8 dw 94
+    cw18   times 8 dw 18
+    cw2    times 8 dw 2
 
 SECTION .text
 
@@ -124,45 +125,48 @@ loop1:
     packssdw xmm1, xmm4        ; xmm1 = 8 blues
     packssdw xmm2, xmm5        ; xmm2 = 8 greens
     packssdw xmm3, xmm6        ; xmm3 = 8 reds
-    psllw xmm1, 4              ; blue
-    psllw xmm2, 4              ; green
-    psllw xmm3, 4              ; red
 
-;  _Y = ( ((1053 * ((_R) << 4)) >> 16) + ((2064 * ((_G) << 4)) >> 16) +  (( 401 * ((_B) << 4)) >> 16)) +  16;
+    ; _Y = (( 66 * _R + 129 * _G +  25 * _B + 128) >> 8) +  16;
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm6, xmm3          ; red
-    pmulhw xmm4, [rel cw401]
-    pmulhw xmm5, [rel cw2064]
-    pmulhw xmm6, [rel cw1053]
+    pmullw xmm4, [rel cw25]
+    pmullw xmm5, [rel cw129]
+    pmullw xmm6, [rel cw66]
     paddw xmm4, xmm5
     paddw xmm4, xmm6
+    paddw xmm4, [cw128]
+    psrlw xmm4, 8
     paddw xmm4, [rel cw16]
     packuswb xmm4, xmm7
     movq [rdi], xmm4           ; out 8 bytes yyyyyyyy
 
-;  _U = ( ((1798 * ((_B) << 4)) >> 16) - (( 606 * ((_R) << 4)) >> 16) -  ((1192 * ((_G) << 4)) >> 16)) + 128;
+    ; _U = ((-38 * _R -  74 * _G + 112 * _B + 128) >> 8) + 128;
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm6, xmm3          ; red
-    pmulhw xmm4, [rel cw1798]
-    pmulhw xmm5, [rel cw1192]
-    pmulhw xmm6, [rel cw606]
+    pmullw xmm4, [rel cw112]
+    pmullw xmm5, [rel cw74]
+    pmullw xmm6, [rel cw38]
     psubw xmm4, xmm5
     psubw xmm4, xmm6
+    paddw xmm4, [rel cw128]
+    psraw xmm4, 8
     paddw xmm4, [rel cw128]
     packuswb xmm4, xmm7
     movq LU1, xmm4             ; save for later
 
-;  _V = ( ((1798 * ((_R) << 4)) >> 16) - ((1507 * ((_G) << 4)) >> 16) -  (( 291 * ((_B) << 4)) >> 16)) + 128;
+    ; _V = ((112 * _R -  94 * _G -  18 * _B + 128) >> 8) + 128;
     movdqa xmm6, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm4, xmm3          ; red
-    pmulhw xmm4, [rel cw1798]
-    pmulhw xmm5, [rel cw1507]
-    pmulhw xmm6, [rel cw291]
+    pmullw xmm4, [rel cw112]
+    pmullw xmm5, [rel cw94]
+    pmullw xmm6, [rel cw18]
     psubw xmm4, xmm5
     psubw xmm4, xmm6
+    paddw xmm4, [rel cw128]
+    psraw xmm4, 8
     paddw xmm4, [rel cw128]
     packuswb xmm4, xmm7
     movq LV1, xmm4             ; save for later
@@ -195,45 +199,48 @@ loop1:
     packssdw xmm1, xmm4        ; xmm1 = 8 blues
     packssdw xmm2, xmm5        ; xmm2 = 8 greens
     packssdw xmm3, xmm6        ; xmm3 = 8 reds
-    psllw xmm1, 4              ; blue
-    psllw xmm2, 4              ; green
-    psllw xmm3, 4              ; red
 
-;  _Y = ( ((1053 * ((_R) << 4)) >> 16) + ((2064 * ((_G) << 4)) >> 16) +  (( 401 * ((_B) << 4)) >> 16)) +  16;
+    ; _Y = (( 66 * _R + 129 * _G +  25 * _B + 128) >> 8) +  16;
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm6, xmm3          ; red 
-    pmulhw xmm4, [rel cw401]
-    pmulhw xmm5, [rel cw2064]
-    pmulhw xmm6, [rel cw1053]
+    pmullw xmm4, [rel cw25]
+    pmullw xmm5, [rel cw129]
+    pmullw xmm6, [rel cw66]
     paddw xmm4, xmm5
     paddw xmm4, xmm6
+    paddw xmm4, [rel cw128]
+    psrlw xmm4, 8
     paddw xmm4, [rel cw16]
     packuswb xmm4, xmm7
     movq [rdi], xmm4           ; out 8 bytes yyyyyyyy
 
-;  _U = ( ((1798 * ((_B) << 4)) >> 16) - (( 606 * ((_R) << 4)) >> 16) -  ((1192 * ((_G) << 4)) >> 16)) + 128;
+    ; _U = ((-38 * _R -  74 * _G + 112 * _B + 128) >> 8) + 128;
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm6, xmm3          ; red
-    pmulhw xmm4, [rel cw1798]
-    pmulhw xmm5, [rel cw1192]
-    pmulhw xmm6, [rel cw606]
+    pmullw xmm4, [rel cw112]
+    pmullw xmm5, [rel cw74]
+    pmullw xmm6, [rel cw38]
     psubw xmm4, xmm5
     psubw xmm4, xmm6
+    paddw xmm4, [rel cw128]
+    psraw xmm4, 8
     paddw xmm4, [rel cw128]
     packuswb xmm4, xmm7
     movq LU2, xmm4             ; save for later
 
-;  _V = ( ((1798 * ((_R) << 4)) >> 16) - ((1507 * ((_G) << 4)) >> 16) -  (( 291 * ((_B) << 4)) >> 16)) + 128;
+    ; _V = ((112 * _R -  94 * _G -  18 * _B + 128) >> 8) + 128;
     movdqa xmm6, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm4, xmm3          ; red
-    pmulhw xmm4, [rel cw1798]
-    pmulhw xmm5, [rel cw1507]
-    pmulhw xmm6, [rel cw291]
+    pmullw xmm4, [rel cw112]
+    pmullw xmm5, [rel cw94]
+    pmullw xmm6, [rel cw18]
     psubw xmm4, xmm5
     psubw xmm4, xmm6
+    paddw xmm4, [rel cw128]
+    psraw xmm4, 8
     paddw xmm4, [rel cw128]
     packuswb xmm4, xmm7
     movq LV2, xmm4             ; save for later
@@ -252,6 +259,7 @@ loop1:
     psrlw mm3, 8
     pand mm3, [rel cw255]
     paddw mm1, mm3             ; add
+    paddw mm1, [rel cw2]       ; add 2
     psrlw mm1, 2               ; div 4
 
     movq mm2, LV1              ; v from first line
@@ -267,6 +275,7 @@ loop1:
     psrlw mm4, 8
     pand mm4, [rel cw255]
     paddw mm2, mm4             ; add
+    paddw mm1, [rel cw2]       ; add 2
     psrlw mm2, 2               ; div 4
 
     packuswb mm1, mm1
