@@ -1,5 +1,5 @@
 
-OBJS = yuv2rgb_speed.o
+OBJS = yuv2rgb_speed.o a8r8g8b8_to_nv12_box_x86_sse2.o
 
 CFLAGS = -Wall -O2
 
@@ -13,4 +13,5 @@ yuv2rgb_speed: $(OBJS)
 clean:
 	rm -f $(OBJS) yuv2rgb_speed
 
-
+a8r8g8b8_to_nv12_box_x86_sse2.o: ../../module/x86/a8r8g8b8_to_nv12_box_x86_sse2.asm
+	yasm -f elf32 ../../module/x86/a8r8g8b8_to_nv12_box_x86_sse2.asm

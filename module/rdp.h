@@ -297,6 +297,7 @@ struct _rdpRec
     OsTimerPtr xv_timer;
 
     copy_box_proc a8r8g8b8_to_a8b8g8r8_box;
+    copy_box_proc a8r8g8b8_to_nv12_box;
 
     /* multimon */
     int extra_outputs;

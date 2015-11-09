@@ -24,6 +24,11 @@ yuv to rgb speed testing
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
 
 /******************************************************************************/
 //Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16
@@ -63,6 +68,11 @@ yuv to rgb speed testing
   _U = ((-38 * _R -  74 * _G + 112 * _B + 128) >> 8) + 128; \
   _V = ((112 * _R -  94 * _G -  18 * _B + 128) >> 8) + 128;
 
+#define YUV2RGB4(_Y, _U, _V, _R, _G, _B) \
+  _Y = ( ((1053 * ((_R) << 4)) >> 16) + ((2064 * ((_G) << 4)) >> 16) +  (( 401 * ((_B) << 4)) >> 16)) +  16; \
+  _U = ( ((1798 * ((_B) << 4)) >> 16) - (( 606 * ((_R) << 4)) >> 16) -  ((1192 * ((_G) << 4)) >> 16)) + 128; \
+  _V = ( ((1798 * ((_R) << 4)) >> 16) - ((1507 * ((_G) << 4)) >> 16) -  (( 291 * ((_B) << 4)) >> 16)) + 128;
+  
 /******************************************************************************/
 static int
 a8r8g8b8_to_nv12_box(char *s8, int src_stride,
@@ -163,11 +173,143 @@ int output_params(void)
     return 0;
 }
 
+void hexdump(const void* p, int len)
+{
+    const unsigned char* line;
+    int i;
+    int thisline;
+    int offset;
+
+    line = (const unsigned char *)p;
+    offset = 0;
+
+    while (offset < len)
+    {
+        printf("%04x ", offset);
+        thisline = len - offset;
+
+        if (thisline > 16)
+        {
+            thisline = 16;
+        }
+
+        for (i = 0; i < thisline; i++)
+        {
+            printf("%02x ", line[i]);
+        }
+
+        for (; i < 16; i++)
+        {
+            printf("   ");
+        }
+
+        for (i = 0; i < thisline; i++)
+        {
+            printf("%c", (line[i] >= 0x20 && line[i] < 0x7f) ? line[i] : '.');
+        }
+
+        printf("\n");
+        offset += thisline;
+        line += thisline;
+    }
+}
+
+int lmemcmp(const void* data1, const void* data2, int bytes, int* offset)
+{
+    int index;
+    int diff;
+    const unsigned char* ldata1 = data1;
+    const unsigned char* ldata2 = data2;
+
+    for (index = 0; index < bytes; index++)
+    {
+        diff = ldata1[index] - ldata2[index];
+        if (abs(diff) > 0)
+        {
+            *offset = index;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int get_mstime(void)
+{
+    struct timeval tp;
+
+    gettimeofday(&tp, 0);
+    return (tp.tv_sec * 1000) + (tp.tv_usec / 1000);
+}
+
+int
+a8r8g8b8_to_nv12_box_x86_sse2(char *s8, int src_stride,
+                              char *d8, int dst_stride,
+                              int width, int height);
+
+#define AL(_ptr) ((char*)((((size_t)_ptr) + 15) & ~15))
+//#define AL(_ptr) ((char*)((((size_t)_ptr) + 1)))
+
 int main(int argc, char** argv)
 {
+    int index;
+    int offset;
+    int fd;
+    int data_bytes;
+    int stime;
+    int etime;
+    char* rgb_data;
+    char* yuv_data1;
+    char* yuv_data2;
+    char* al_rgb_data;
+    char* al_yuv_data1;
+    char* al_yuv_data2;
+
     if (argc == 1)
     {
         return output_params();
     }
+    fd = open("/dev/urandom", O_RDONLY);
+    data_bytes = 1920 * 1080 * 4;
+    rgb_data = (char*)malloc(data_bytes + 16);
+    al_rgb_data = AL(rgb_data);
+    if (read(fd, al_rgb_data, data_bytes) != data_bytes)
+    {
+        printf("error\n");
+    }
+    close(fd);
+    data_bytes = 1920 * 1080 * 2;
+    yuv_data1 = (char*)malloc(data_bytes + 16);
+    yuv_data2 = (char*)malloc(data_bytes + 16);
+    al_yuv_data1 = AL(yuv_data1);
+    al_yuv_data2 = AL(yuv_data2);
+    stime = get_mstime();
+    for (index = 0; index < 100; index++)
+    {
+        a8r8g8b8_to_nv12_box(al_rgb_data, 1920 * 4, al_yuv_data1, 1920, al_yuv_data1 + 1920 * 1080, 1920, 1920, 1080);
+    }
+    etime = get_mstime();
+    printf("a8r8g8b8_to_nv12_box took %d\n", etime - stime);
+    stime = get_mstime();
+    for (index = 0; index < 100; index++)
+    {
+        a8r8g8b8_to_nv12_box_x86_sse2(al_rgb_data, 1920 * 4, al_yuv_data2, 1920, 1920, 1080);
+    }
+    etime = get_mstime();
+    printf("a8r8g8b8_to_nv12_box_x86_sse2 took %d\n", etime - stime);
+    if (lmemcmp(al_yuv_data1, al_yuv_data2, 1920 * 1080 * 3 / 2, &offset) != 0)
+    {
+        printf("no match at offset %d\n", offset);
+        printf("first\n");
+        hexdump(al_yuv_data1 + offset, 16);
+        printf("second\n");
+        hexdump(al_yuv_data2 + offset, 16);
+    }
+    else
+    {
+        printf("match\n");
+    }
+    free(rgb_data);
+    free(yuv_data1);
+    free(yuv_data2);
     return 0; 
 }
