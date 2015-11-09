@@ -135,7 +135,7 @@ loop1:
     pmullw xmm6, [rel cw66]
     paddw xmm4, xmm5
     paddw xmm4, xmm6
-    paddw xmm4, [cw128]
+    paddw xmm4, [rel cw128]
     psrlw xmm4, 8
     paddw xmm4, [rel cw16]
     packuswb xmm4, xmm7
