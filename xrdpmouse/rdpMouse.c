@@ -1,5 +1,5 @@
 /*
-Copyright 2013-2014 Jay Sorg
+Copyright 2013-2015 Jay Sorg
 
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -267,7 +267,7 @@ rdpmouseControl(DeviceIntPtr device, int what)
     return Success;
 }
 
-#if XORG_VERSION_CURRENT < (((1) * 10000000) + ((9) * 100000) + ((0) * 1000) + 1)
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 9, 0, 1, 0)
 
 /* debian 6
    ubuntu 10.04 */
