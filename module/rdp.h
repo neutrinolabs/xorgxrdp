@@ -142,6 +142,8 @@ struct _rdpPointer
     int old_button_mask;
     int button_mask;
     DeviceIntPtr device;
+    int old_cursor_x;
+    int old_cursor_y;
 };
 typedef struct _rdpPointer rdpPointer;
 

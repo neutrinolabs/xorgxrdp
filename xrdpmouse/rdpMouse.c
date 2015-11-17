@@ -111,9 +111,15 @@ PtrAddEvent(rdpPointer *pointer)
     int type;
     int buttons;
 
-    rdpEnqueueMotion(pointer->device, pointer->cursor_x, pointer->cursor_y);
-
     LLOGLN(10, ("PtrAddEvent: x %d y %d", pointer->cursor_x, pointer->cursor_y));
+
+    if ((pointer->old_cursor_x != pointer->cursor_x) ||
+        (pointer->old_cursor_y != pointer->cursor_y))
+    {
+        rdpEnqueueMotion(pointer->device, pointer->cursor_x, pointer->cursor_y);
+        pointer->old_cursor_x = pointer->cursor_x;
+        pointer->old_cursor_y = pointer->cursor_y;
+    }
 
     for (i = 0; i < 5; i++)
     {
