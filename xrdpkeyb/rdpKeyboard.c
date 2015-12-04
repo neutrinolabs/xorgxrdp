@@ -434,6 +434,18 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
             rdpEnqueueKey(keyboard->device, type, 117);
             break;
 
+        case 89: /* left meta */
+            rdpEnqueueKey(keyboard->device, type, 156);
+            break;
+
+        case 90: /* right meta */
+            rdpEnqueueKey(keyboard->device, type, 156);
+            break;
+
+        case 115: /* "/ ?" on br keybaord */
+            sendDownUpKeyEvent(keyboard->device, type, 211);
+            break;
+
         default:
             x_scancode = rdp_scancode + MIN_KEY_CODE;
 
