@@ -216,6 +216,11 @@ typedef int (*yuv_to_rgb32_proc)(unsigned char *yuvs, int width, int height, int
 typedef int (*copy_box_proc)(char *s8, int src_stride,
                              char *d8, int dst_stride,
                              int width, int height);
+/* copy_box_proc but 2 dest */
+typedef int (*copy_box_dst2_proc)(char *s8, int src_stride,
+                                  char *d8_y, int dst_stride_y,
+                                  char *d8_uv, int dst_stride_uv,
+                                  int width, int height);
 
 /* move this to common header */
 struct _rdpRec
@@ -299,7 +304,7 @@ struct _rdpRec
     OsTimerPtr xv_timer;
 
     copy_box_proc a8r8g8b8_to_a8b8g8r8_box;
-    copy_box_proc a8r8g8b8_to_nv12_box;
+    copy_box_dst2_proc a8r8g8b8_to_nv12_box;
 
     /* multimon */
     int extra_outputs;

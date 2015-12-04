@@ -52,22 +52,24 @@ SECTION .text
     %1:
 %endmacro
 
-%define LV2         [esp +  0] ; second line V, 8 bytes
-%define LU2         [esp +  8] ; second line U, 8 bytes
-%define LV1         [esp + 16] ; first line V, 8 bytes
-%define LU1         [esp + 24] ; first line U, 8 bytes
-%define LD8_UV      [esp + 32] ; d8_uv
+%define LV2            [esp +  0] ; second line V, 8 bytes
+%define LU2            [esp +  8] ; second line U, 8 bytes
+%define LV1            [esp + 16] ; first line V, 8 bytes
+%define LU1            [esp + 24] ; first line U, 8 bytes
 
-%define LS8         [esp + 56] ; s8
-%define LSRC_STRIDE [esp + 60] ; src_stride
-%define LD8_Y       [esp + 64] ; d8_y
-%define LDST_STRIDE [esp + 68] ; dst_stride
-%define LWIDTH      [esp + 72] ; width
-%define LHEIGHT     [esp + 76] ; height
+%define LS8            [esp + 52] ; s8
+%define LSRC_STRIDE    [esp + 56] ; src_stride
+%define LD8_Y          [esp + 60] ; d8_y
+%define LDST_Y_STRIDE  [esp + 64] ; dst_stride
+%define LD8_UV         [esp + 68] ; d8_y
+%define LDST_UV_STRIDE [esp + 72] ; dst_stride
+%define LWIDTH         [esp + 76] ; width
+%define LHEIGHT        [esp + 80] ; height
 
 ;int
 ;a8r8g8b8_to_nv12_box_x86_sse2(char *s8, int src_stride,
-;                              char *d8, int dst_stride,
+;                              char *d8_y, int dst_stride_y,
+;                              char *d8_uv, int dst_stride_uv,
 ;                              int width, int height);
 PROC a8r8g8b8_to_nv12_box_x86_sse2
     push ebx
@@ -75,13 +77,7 @@ PROC a8r8g8b8_to_nv12_box_x86_sse2
     push edi
     push ebp
 
-    sub esp, 36                ; local vars, 36 bytes
-
-    mov eax, LWIDTH
-    imul eax, LHEIGHT
-    mov ebx, LD8_Y
-    add ebx, eax
-    mov LD8_UV, ebx
+    sub esp, 32                ; local vars, 32 bytes
 
     pxor xmm7, xmm7
 
@@ -169,7 +165,7 @@ loop1:
 
     ; go down to second line
     add esi, LSRC_STRIDE
-    add edi, LDST_STRIDE
+    add edi, LDST_Y_STRIDE
 
     ; second line
     movdqu xmm0, [esi]         ; 4 pixels, 16 bytes
@@ -282,7 +278,7 @@ loop1:
 
     ; go up to first line
     sub esi, LSRC_STRIDE
-    sub edi, LDST_STRIDE
+    sub edi, LDST_Y_STRIDE
 
     ; move right
     lea esi, [esi + 32]
@@ -300,13 +296,13 @@ loop1:
 
     ; update d8_y
     mov eax, LD8_Y             ; d8_y
-    add eax, LDST_STRIDE       ; d8_y += dst_stride
-    add eax, LDST_STRIDE       ; d8_y += dst_stride
+    add eax, LDST_Y_STRIDE       ; d8_y += dst_stride_y
+    add eax, LDST_Y_STRIDE       ; d8_y += dst_stride_y
     mov LD8_Y, eax
 
     ; update d8_uv
     mov eax, LD8_UV            ; d8_uv
-    add eax, LDST_STRIDE       ; d8_uv += dst_stride
+    add eax, LDST_UV_STRIDE    ; d8_uv += dst_stride_uv
     mov LD8_UV, eax
 
     dec ebx

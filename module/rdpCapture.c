@@ -535,9 +535,9 @@ a8r8g8b8_to_nv12_box(char *s8, int src_stride,
             U_sum += RDPCLAMP(U, 0, 255);
             V_sum += RDPCLAMP(V, 0, 255);
 
-            d8uv[0] = U_sum / 4;
+            d8uv[0] = (U_sum + 2) / 4;
             d8uv++;
-            d8uv[0] = V_sum / 4;
+            d8uv[0] = (V_sum + 2) / 4;
             d8uv++;
         }
     }
@@ -573,8 +573,10 @@ rdpCopyBox_a8r8g8b8_to_nv12(rdpClientCon *clientCon,
         d8_uv += (box->x1 - dstx) * 1;
         width = box->x2 - box->x1;
         height = box->y2 - box->y1;
-        a8r8g8b8_to_nv12_box(s8, src_stride, d8_y, dst_stride_y,
-                             d8_uv, dst_stride_uv, width, height);
+        clientCon->dev->a8r8g8b8_to_nv12_box(s8, src_stride,
+                                             d8_y, dst_stride_y,
+                                             d8_uv, dst_stride_uv,
+                                             width, height);
     }
     return 0;
 }
