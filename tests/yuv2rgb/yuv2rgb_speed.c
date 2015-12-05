@@ -218,8 +218,11 @@ int lmemcmp(const void* data1, const void* data2, int bytes, int* offset)
 {
     int index;
     int diff;
-    const unsigned char* ldata1 = data1;
-    const unsigned char* ldata2 = data2;
+    const unsigned char* ldata1;
+    const unsigned char* ldata2;
+
+    ldata1 = (const unsigned char*)data1;
+    ldata2 = (const unsigned char*)data2;
 
     for (index = 0; index < bytes; index++)
     {
@@ -243,15 +246,16 @@ int get_mstime(void)
 
 int
 a8r8g8b8_to_nv12_box_x86_sse2(char *s8, int src_stride,
-                              char *d8, int dst_stride,
+                              char *d8_y, int dst_stride_y,
+                              char *d8_uv, int dst_stride_uv,
                               int width, int height);
 int
 a8r8g8b8_to_nv12_box_amd64_sse2(char *s8, int src_stride,
-                                char *d8, int dst_stride,
+                                char *d8_y, int dst_stride_y,
+                                char *d8_uv, int dst_stride_uv,
                                 int width, int height);
 
 #define AL(_ptr) ((char*)((((size_t)_ptr) + 15) & ~15))
-//#define AL(_ptr) ((char*)((((size_t)_ptr) + 1)))
 
 int main(int argc, char** argv)
 {
@@ -289,15 +293,22 @@ int main(int argc, char** argv)
     stime = get_mstime();
     for (index = 0; index < 100; index++)
     {
-        a8r8g8b8_to_nv12_box(al_rgb_data, 1920 * 4, al_yuv_data1, 1920, al_yuv_data1 + 1920 * 1080, 1920, 1920, 1080);
+        a8r8g8b8_to_nv12_box(al_rgb_data, 1920 * 4,
+                             al_yuv_data1, 1920,
+                             al_yuv_data1 + 1920 * 1080,
+                             1920, 1920, 1080);
     }
     etime = get_mstime();
     printf("a8r8g8b8_to_nv12_box took %d\n", etime - stime);
     stime = get_mstime();
     for (index = 0; index < 100; index++)
     {
-        //a8r8g8b8_to_nv12_box_x86_sse2(al_rgb_data, 1920 * 4, al_yuv_data2, 1920, 1920, 1080);
-        a8r8g8b8_to_nv12_box_amd64_sse2(al_rgb_data, 1920 * 4, al_yuv_data2, 1920, 1920, 1080);
+        //a8r8g8b8_to_nv12_box_x86_sse2
+        //a8r8g8b8_to_nv12_box_amd64_sse2
+        a8r8g8b8_to_nv12_box_amd64_sse2(al_rgb_data, 1920 * 4,
+                                        al_yuv_data2, 1920,
+                                        al_yuv_data2 + 1920 * 1080, 1920,
+                                        1920, 1080);
     }
     etime = get_mstime();
     printf("a8r8g8b8_to_nv12_box_x86_sse2 took %d\n", etime - stime);

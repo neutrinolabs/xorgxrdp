@@ -52,40 +52,44 @@ SECTION .text
     %1:
 %endmacro
 
-%define LS8         [rsp +  0] ; s8
-%define LD8_Y       [rsp +  8] ; d8_y
-%define LD8_UV      [rsp + 16] ; d8_uv
-%define LSRC_STRIDE [rsp + 24] ; src_stride
-%define LDST_STRIDE [rsp + 32] ; dst_stride
-%define LWIDTH      [rsp + 40] ; width
-%define LHEIGHT     [rsp + 48] ; height
-%define LU1         [rsp + 56] ; first line U, 8 bytes
-%define LV1         [rsp + 64] ; first line V, 8 bytes
-%define LU2         [rsp + 72] ; second line U, 8 bytes
-%define LV2         [rsp + 80] ; second line V, 8 bytes
+%define LS8            [rsp +   0] ; s8
+%define LSRC_STRIDE    [rsp +   8] ; src_stride
+%define LD8_Y          [rsp +  16] ; d8_y
+%define LDST_Y_STRIDE  [rsp +  24] ; dst_stride_y
+%define LD8_UV         [rsp +  32] ; d8_uv
+%define LDST_UV_STRIDE [rsp +  40] ; dst_stride_uv
+%define LU1            [rsp +  48] ; first line U, 8 bytes
+%define LV1            [rsp +  56] ; first line V, 8 bytes
+%define LU2            [rsp +  64] ; second line U, 8 bytes
+%define LV2            [rsp +  72] ; second line V, 8 bytes
+
+%define LWIDTH         [rsp + 104] ; width
+%define LHEIGHT        [rsp + 112] ; height
 
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
 
 ;int
 ;a8r8g8b8_to_nv12_box_amd64_sse2(char *s8, int src_stride,
-;                                char *d8, int dst_stride,
+;                                char *d8_y, int dst_stride_y,
+;                                char *d8_uv, int dst_stride_uv,
 ;                                int width, int height);
 PROC a8r8g8b8_to_nv12_box_amd64_sse2
     push rbx
     push rbp
-    sub rsp, 88                ; local vars, 88 bytes
+    sub rsp, 80                ; local vars, 80 bytes
 
     mov LS8, rdi               ; s8
-    mov LD8_Y, rdx             ; d8_y
-    mov rax, r8
-    imul rax, r9
-    add rax, rdx
-    mov LD8_UV, rax            ; d8_uv
     mov LSRC_STRIDE, rsi       ; src_stride
-    mov LDST_STRIDE, rcx       ; dst_stride
-    mov LWIDTH, r8             ; width
-    mov LHEIGHT, r9            ; height
+    mov LD8_Y, rdx             ; d8_y
+    mov LDST_Y_STRIDE, rcx     ; dst_stride_y
+    mov LD8_UV, r8             ; d8_uv
+    mov LDST_UV_STRIDE, r9     ; dst_stride_uv
+
+    ; clear the high 32 bits of stack passed items that are ints
+    xor eax, eax
+    mov [rsp + 108], eax
+    mov [rsp + 116], eax
 
     pxor xmm7, xmm7
 
@@ -173,7 +177,7 @@ loop1:
 
     ; go down to second line
     add rsi, LSRC_STRIDE
-    add rdi, LDST_STRIDE
+    add rdi, LDST_Y_STRIDE
 
     ; second line
     movdqu xmm0, [rsi]         ; 4 pixels, 16 bytes
@@ -286,7 +290,7 @@ loop1:
 
     ; go up to first line
     sub rsi, LSRC_STRIDE
-    sub rdi, LDST_STRIDE
+    sub rdi, LDST_Y_STRIDE
 
     ; move right
     lea rsi, [rsi + 32]
@@ -304,20 +308,20 @@ loop1:
 
     ; update d8_y
     mov rax, LD8_Y             ; d8_y
-    add rax, LDST_STRIDE       ; d8_y += dst_stride
-    add rax, LDST_STRIDE       ; d8_y += dst_stride
+    add rax, LDST_Y_STRIDE     ; d8_y += dst_stride_y
+    add rax, LDST_Y_STRIDE     ; d8_y += dst_stride_y
     mov LD8_Y, rax
 
     ; update d8_uv
-    mov rax, LD8_UV           ; d8_uv
-    add rax, LDST_STRIDE      ; d8_uv += dst_stride
+    mov rax, LD8_UV            ; d8_uv
+    add rax, LDST_UV_STRIDE    ; d8_uv += dst_stride_uv
     mov LD8_UV, rax
 
     dec rbx
     jnz row_loop1
 
     mov rax, 0                 ; return value
-    add rsp, 88                ; local vars, 88 bytes
+    add rsp, 80                ; local vars, 80 bytes
     pop rbp
     pop rbx
     ret

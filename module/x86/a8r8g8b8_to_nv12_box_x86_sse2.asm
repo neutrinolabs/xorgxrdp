@@ -52,17 +52,17 @@ SECTION .text
     %1:
 %endmacro
 
-%define LV2            [esp +  0] ; second line V, 8 bytes
-%define LU2            [esp +  8] ; second line U, 8 bytes
-%define LV1            [esp + 16] ; first line V, 8 bytes
-%define LU1            [esp + 24] ; first line U, 8 bytes
+%define LU1            [esp +  0] ; first line U, 8 bytes
+%define LV1            [esp +  8] ; first line V, 8 bytes
+%define LU2            [esp + 16] ; second line U, 8 bytes
+%define LV2            [esp + 24] ; second line V, 8 bytes
 
 %define LS8            [esp + 52] ; s8
 %define LSRC_STRIDE    [esp + 56] ; src_stride
 %define LD8_Y          [esp + 60] ; d8_y
-%define LDST_Y_STRIDE  [esp + 64] ; dst_stride
-%define LD8_UV         [esp + 68] ; d8_y
-%define LDST_UV_STRIDE [esp + 72] ; dst_stride
+%define LDST_Y_STRIDE  [esp + 64] ; dst_stride_y
+%define LD8_UV         [esp + 68] ; d8_uv
+%define LDST_UV_STRIDE [esp + 72] ; dst_stride_uv
 %define LWIDTH         [esp + 76] ; width
 %define LHEIGHT        [esp + 80] ; height
 
@@ -76,7 +76,6 @@ PROC a8r8g8b8_to_nv12_box_x86_sse2
     push esi
     push edi
     push ebp
-
     sub esp, 32                ; local vars, 32 bytes
 
     pxor xmm7, xmm7
@@ -296,8 +295,8 @@ loop1:
 
     ; update d8_y
     mov eax, LD8_Y             ; d8_y
-    add eax, LDST_Y_STRIDE       ; d8_y += dst_stride_y
-    add eax, LDST_Y_STRIDE       ; d8_y += dst_stride_y
+    add eax, LDST_Y_STRIDE     ; d8_y += dst_stride_y
+    add eax, LDST_Y_STRIDE     ; d8_y += dst_stride_y
     mov LD8_Y, eax
 
     ; update d8_uv
@@ -309,7 +308,7 @@ loop1:
     jnz row_loop1
 
     mov eax, 0                 ; return value
-    add esp, 36                ; local vars, 36 bytes
+    add esp, 32                ; local vars, 32 bytes
     pop ebp
     pop edi
     pop esi
