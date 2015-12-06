@@ -86,23 +86,18 @@ PROC a8r8g8b8_to_nv12_box_amd64_sse2
     mov LD8_UV, r8             ; d8_uv
     mov LDST_UV_STRIDE, r9     ; dst_stride_uv
 
-    ; clear the high 32 bits of stack passed items that are ints
-    xor eax, eax
-    mov [rsp + 108], eax
-    mov [rsp + 116], eax
-
     pxor xmm7, xmm7
 
-    mov rbx, LHEIGHT           ; rbx = height
-    shr rbx, 1                 ; doing 2 lines at a time
+    mov ebx, LHEIGHT           ; ebx = height
+    shr ebx, 1                 ; doing 2 lines at a time
 
 row_loop1:
     mov rsi, LS8               ; s8
     mov rdi, LD8_Y             ; d8_y
     mov rdx, LD8_UV            ; d8_uv
 
-    mov rcx, LWIDTH            ; rcx = width
-    shr rcx, 3                 ; doing 8 pixels at a time
+    mov ecx, LWIDTH            ; ecx = width
+    shr ecx, 3                 ; doing 8 pixels at a time
 
 loop1:
     ; first line
@@ -297,7 +292,7 @@ loop1:
     lea rdi, [rdi + 8]
     lea rdx, [rdx + 8]
 
-    dec rcx
+    dec ecx
     jnz loop1
 
     ; update s8
@@ -317,7 +312,7 @@ loop1:
     add rax, LDST_UV_STRIDE    ; d8_uv += dst_stride_uv
     mov LD8_UV, rax
 
-    dec rbx
+    dec ebx
     jnz row_loop1
 
     mov rax, 0                 ; return value
