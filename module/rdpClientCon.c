@@ -134,9 +134,10 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
         AddEnabledDevice(clientCon->sck);
     }
 
-#if 0
+#if 1
     if (dev->clientConTail != NULL)
     {
+        LLOGLN(0, ("rdpClientConGotConnection: disconnecting only clientCon"));
         rdpClientConDisconnect(dev, dev->clientConTail);
         dev->clientConHead = NULL;
         dev->clientConTail = NULL;
