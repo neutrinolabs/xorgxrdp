@@ -197,6 +197,9 @@ static KeySym g_kbdMap[] =
     NoSymbol,        NoSymbol
 };
 
+static int
+rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info);
+
 /******************************************************************************/
 static void
 rdpEnqueueKey(DeviceIntPtr device, int type, int scancode)
@@ -446,6 +449,10 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
             sendDownUpKeyEvent(keyboard->device, type, 211);
             break;
 
+        case 126: /* . on br keypad */
+            sendDownUpKeyEvent(keyboard->device, type, 134);
+            break;
+
         default:
             x_scancode = rdp_scancode + MIN_KEY_CODE;
 
@@ -509,6 +516,10 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
         case 17: /* from RDP_INPUT_SYNCHRONIZE */
             KbdSync(keyboard, param1);
             break;
+        case 18:
+            rdpLoadLayout(keyboard, (struct xrdp_client_info *) param1);
+            break;
+
     }
     return 0;
 }
@@ -767,6 +778,101 @@ static void
 rdpkeybUnplug(pointer p)
 {
     LLOGLN(0, ("rdpkeybUnplug:"));
+}
+
+/******************************************************************************/
+static int
+reload_xkb(DeviceIntPtr keyboard, XkbRMLVOSet *set)
+{
+    XkbSrvInfoPtr xkbi;
+    XkbDescPtr xkb;
+    KeySymsPtr keySyms;
+    KeyCode first_key;
+    CARD8 num_keys;
+    DeviceIntPtr pDev;
+
+    /* free some stuff so we can call InitKeyboardDeviceStruct again */
+    xkbi = keyboard->key->xkbInfo;
+    xkb = xkbi->desc;
+    XkbFreeKeyboard(xkb, 0, TRUE);
+    free(xkbi);
+    keyboard->key->xkbInfo = NULL;
+    free(keyboard->kbdfeed);
+    keyboard->kbdfeed = NULL;
+    free(keyboard->key);
+    keyboard->key = NULL;
+
+    /* init keyboard and reload the map */
+    if (!InitKeyboardDeviceStruct(keyboard, set, rdpkeybBell,
+                                  rdpkeybChangeKeyboardControl))
+    {
+        LLOGLN(0, ("rdpLoadLayout: InitKeyboardDeviceStruct failed"));
+        return 1;
+    }
+
+    /* notify the X11 clients eg. X_ChangeKeyboardMapping */
+    keySyms = XkbGetCoreMap(keyboard);
+    if (keySyms)
+    {
+        first_key = keySyms->minKeyCode;
+        num_keys = (keySyms->maxKeyCode - keySyms->minKeyCode) + 1;
+        XkbApplyMappingChange(keyboard, keySyms, first_key, num_keys,
+                              NULL, serverClient);
+        for (pDev = inputInfo.devices; pDev; pDev = pDev->next)
+        {
+            if ((pDev->coreEvents || pDev == keyboard) && pDev->key)
+            {
+                XkbApplyMappingChange(pDev, keySyms, first_key, num_keys,
+                                      NULL, serverClient);
+            }
+        }
+    }
+    else
+    {
+        return 1;
+    }
+    return 0;
+}
+
+/******************************************************************************/
+static int
+rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info)
+{
+    XkbRMLVOSet set;
+
+    int keylayout = client_info->keylayout;
+
+    LLOGLN(0, ("rdpLoadLayout: keylayout 0x%8.8x variant %s display %s",
+               keylayout, client_info->variant, display));
+    memset(&set, 0, sizeof(set));
+    set.rules = "base";
+
+    set.model = "pc104";
+    set.layout = "us";
+    set.variant = "";
+    set.options = "";
+
+    if (strlen(client_info->model) > 0)
+    {
+        set.model = client_info->model;
+    }
+    if (strlen(client_info->variant) > 0)
+    {
+        set.variant = client_info->variant;
+    }
+    if (strlen(client_info->layout) > 0)
+    {
+        set.layout = client_info->layout;
+    }
+    if (strlen(client_info->options) > 0)
+    {
+        set.options = client_info->options;
+    }
+
+    reload_xkb(keyboard->device, &set);
+    reload_xkb(inputInfo.keyboard, &set);
+
+    return 0;
 }
 
 /******************************************************************************/

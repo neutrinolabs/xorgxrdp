@@ -865,7 +865,9 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         RRTellChanged(dev->pScreen);
     }
 
-    //rdpLoadLayout(g_rdpScreen.client_info.keylayout);
+    /* rdpLoadLayout */
+    rdpInputKeyboardEvent(dev, 18, (long)(&(clientCon->client_info)),
+                          0, 0, 0);
 
     return 0;
 }
