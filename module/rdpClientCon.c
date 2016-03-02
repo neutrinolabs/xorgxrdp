@@ -1,5 +1,5 @@
 /*
-Copyright 2005-2015 Jay Sorg
+Copyright 2005-2016 Jay Sorg
 
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -134,9 +134,10 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
         AddEnabledDevice(clientCon->sck);
     }
 
-#if 0
+#if 1
     if (dev->clientConTail != NULL)
     {
+        LLOGLN(0, ("rdpClientConGotConnection: disconnecting only clientCon"));
         rdpClientConDisconnect(dev, dev->clientConTail);
         dev->clientConHead = NULL;
         dev->clientConTail = NULL;
@@ -865,7 +866,9 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         RRTellChanged(dev->pScreen);
     }
 
-    //rdpLoadLayout(g_rdpScreen.client_info.keylayout);
+    /* rdpLoadLayout */
+    rdpInputKeyboardEvent(dev, 18, (long)(&(clientCon->client_info)),
+                          0, 0, 0);
 
     return 0;
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2013-2014 Jay Sorg
+Copyright 2013-2016 Jay Sorg
 
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -138,7 +138,11 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     rgb zeros1;
     Gamma zeros2;
     int got_res_match;
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 16, 0, 0, 0)
     char **modename;
+#else
+    const char **modename;
+#endif
     DisplayModePtr mode;
     rdpPtr dev;
 
