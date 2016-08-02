@@ -443,13 +443,13 @@ rdpRRSetRdpOutputs(rdpPtr dev)
             }
         }
     }
-
+#if 0
     for (index = 0; index < pRRScrPriv->numOutputs; index++)
     {
         RROutputSetCrtcs(pRRScrPriv->outputs[index], pRRScrPriv->crtcs,
                          pRRScrPriv->numCrtcs);
     }
-
+#endif
     return 0;
 }
 
