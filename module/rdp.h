@@ -322,7 +322,7 @@ typedef struct _rdpRec * rdpPtr;
 struct _rdpGCRec
 {
 /* changed to const in d89b42b */
-#if XORG_VERSION_CURRENT <= XORG_VERSION_NUMERIC(1, 15, 0, 0, 0)
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 15, 99, 901, 0)
     GCFuncs *funcs;
     GCOps *ops;
 #else
