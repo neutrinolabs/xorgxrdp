@@ -27,7 +27,8 @@ endif
 
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
-  -I../../common \
+  -I$(top_srcdir)/../common \
+  -I$(top_srcdir)/module \
   $(EXTRA_FLAGS)
 
 libxorgxrdp_la_LTLIBRARIES = libxorgxrdp.la
