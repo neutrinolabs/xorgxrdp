@@ -17,6 +17,6 @@ xrdpdev_drv_la_LIBADD =
 
 xrdpdevsysconfdir=$(sysconfdir)/X11/xrdp
 
-xrdpdevsysconf_DATA = \
+dist_xrdpdevsysconf_DATA = \
   xorg.conf
 
