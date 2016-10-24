@@ -9,8 +9,6 @@ AC_PROG_CC
 AC_C_CONST
 AC_PROG_LIBTOOL
 
-AM_CONDITIONAL(GOT_PREFIX, test "x${prefix}" != "xNONE"])
-
 AC_CHECK_HEADER([xorg/xorg-server.h], [],
   [AC_MSG_ERROR([please install xserver-xorg-dev or xorg-x11-server-sdk])])
 
