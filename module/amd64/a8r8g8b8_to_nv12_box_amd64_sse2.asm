@@ -25,6 +25,10 @@
 ;   width should be multile of 8 and > 0
 ;   height should be even and > 0
 
+%ifidn __OUTPUT_FORMAT__,elf64
+SECTION .note.GNU-stack noalloc noexec nowrite progbits
+%endif
+
 SECTION .data
 
     align 16

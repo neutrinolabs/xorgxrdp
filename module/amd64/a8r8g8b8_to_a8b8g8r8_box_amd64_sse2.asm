@@ -21,6 +21,10 @@
 ;amd64 SSE2
 ;
 
+%ifidn __OUTPUT_FORMAT__,elf64
+SECTION .note.GNU-stack noalloc noexec nowrite progbits
+%endif
+
 SECTION .data
 align 16
 c1 times 4 dd 0xFF00FF00
