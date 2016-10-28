@@ -1127,7 +1127,7 @@ rdpClientConInit(rdpPtr dev)
                 return 0;
             }
         }
-        g_chmod_hex("/tmp/.xrdp", 0x1777);
+        g_chmod_hex("/tmp/.xrdp", 0x3777);
     }
     i = atoi(display);
     if (i < 1)
@@ -1145,7 +1145,13 @@ rdpClientConInit(rdpPtr dev)
             LLOGLN(0, ("rdpClientConInit: g_tcp_local_bind failed"));
             return 1;
         }
-        g_sck_listen(dev->listen_sck);
+        if (g_sck_listen(dev->listen_sck) != 0)
+        {
+            LLOGLN(0, ("rdpClientConInit: g_sck_listen failed"));
+            unlink(dev->uds_data);
+            return 1;
+        }
+        g_chmod_hex(dev->uds_data, 0x0660);
         AddEnabledDevice(dev->listen_sck);
     }
     return 0;
