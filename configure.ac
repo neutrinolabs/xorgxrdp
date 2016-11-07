@@ -56,6 +56,14 @@ fi
 AM_CONDITIONAL(WITH_SIMD_AMD64, [test x$simd_arch = xx86_64])
 AM_CONDITIONAL(WITH_SIMD_X86, [test x$simd_arch = xi386])
 
+save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $XORG_SERVER_CFLAGS"
+AC_CHECK_TYPES([ServerBlockHandlerProcPtr], , , [
+#include <xorg-server.h>
+#include <xf86.h>
+])
+CFLAGS="$save_CFLAGS"
+
 AC_CONFIG_FILES([Makefile
                  module/Makefile
                  xrdpdev/Makefile
