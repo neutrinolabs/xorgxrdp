@@ -33,6 +33,10 @@
 ;   4096    -1616    -2378
 ;   4096     9324     0
 
+%ifidn __OUTPUT_FORMAT__,elf
+SECTION .note.GNU-stack noalloc noexec nowrite progbits
+%endif
+
 SECTION .data
 align 16
 c128 times 8 dw 128
