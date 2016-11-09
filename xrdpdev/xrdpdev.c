@@ -399,13 +399,21 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
 
 /******************************************************************************/
 static void
+#if defined(HAVE_SERVERBLOCKHANDLERPROCPTR)
 rdpBlockHandler1(pointer blockData, OSTimePtr pTimeout, pointer pReadmask)
+#else
+rdpBlockHandler1(void *blockData, void *pTimeout)
+#endif
 {
 }
 
 /******************************************************************************/
 static void
+#if defined(HAVE_SERVERBLOCKHANDLERPROCPTR)
 rdpWakeupHandler1(pointer blockData, int result, pointer pReadmask)
+#else
+rdpWakeupHandler1(void *blockData, int result)
+#endif
 {
     rdpClientConCheck((ScreenPtr)blockData);
 }
