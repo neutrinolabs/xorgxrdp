@@ -151,7 +151,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     {
         return FALSE;
     }
-    if (pScrn->numEntities != 1)
+    if (pScrn->numEntities == 0)
     {
         return FALSE;
     }
