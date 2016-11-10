@@ -1192,7 +1192,7 @@ rdpClientConInit(rdpPtr dev)
             return 1;
         }
         g_sck_listen(dev->listen_sck);
-        rdpClientConAddEnabledDevice(pScreen, dev->listen_sck);
+        rdpClientConAddEnabledDevice(dev->pScreen, dev->listen_sck);
     }
     return 0;
 }
