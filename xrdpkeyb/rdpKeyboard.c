@@ -525,7 +525,7 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
 }
 
 /******************************************************************************/
-void
+int
 rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
 {
     int i;
@@ -557,7 +557,7 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
     if (pKeySyms->map == 0)
     {
         LLOGLN(0, ("rdpkeybDeviceInit: malloc failed"));
-        exit(1);
+        return 1;
     }
     else
     {
@@ -573,6 +573,8 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
     {
         pKeySyms->map[i] = g_kbdMap[i];
     }
+
+    return 0;
 }
 
 /******************************************************************************/
@@ -668,7 +670,8 @@ rdpkeybControl(DeviceIntPtr device, int what)
     switch (what)
     {
         case DEVICE_INIT:
-            rdpkeybDeviceInit(device, &keySyms, modMap);
+            if (rdpkeybDeviceInit(device, &keySyms, modMap))
+                return BadAlloc;
             memset(&set, 0, sizeof(set));
             set.rules = "base";
             set.model = "pc104";
