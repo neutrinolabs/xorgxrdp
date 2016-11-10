@@ -399,13 +399,21 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
 
 /******************************************************************************/
 static void
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
 rdpBlockHandler1(pointer blockData, OSTimePtr pTimeout, pointer pReadmask)
+#else
+rdpBlockHandler1(void *blockData, void *pTimeout)
+#endif
 {
 }
 
 /******************************************************************************/
 static void
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
 rdpWakeupHandler1(pointer blockData, int result, pointer pReadmask)
+#else
+rdpWakeupHandler1(void *blockData, int result)
+#endif
 {
     rdpClientConCheck((ScreenPtr)blockData);
 }
