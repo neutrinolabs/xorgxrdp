@@ -125,7 +125,7 @@ do8:
 
 %ifidn __OUTPUT_FORMAT__,elf
 PROC yv12_to_rgb32_x86_sse2
-#else
+%else
 PROC _yv12_to_rgb32_x86_sse2
 %endif
     push ebx
