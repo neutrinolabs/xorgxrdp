@@ -2,8 +2,8 @@ EXTRA_DIST =
 
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
-  -I../module \
-  -I../../common
+  -I$(top_srcdir)/module \
+  -I$(top_srcdir)/../common
 
 xrdpdev_drv_la_LTLIBRARIES = xrdpdev_drv.la
 
@@ -17,6 +17,6 @@ xrdpdev_drv_la_LIBADD =
 
 xrdpdevsysconfdir=$(sysconfdir)/X11/xrdp
 
-xrdpdevsysconf_DATA = \
+dist_xrdpdevsysconf_DATA = \
   xorg.conf
 
