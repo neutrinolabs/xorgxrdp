@@ -1205,7 +1205,7 @@ rdpClientConDeinit(rdpPtr dev)
     if (dev->listen_sck != 0)
     {
         rdpClientConRemoveEnabledDevice(dev->listen_sck);
-        close(dev->listen_sck);
+        g_sck_close(dev->listen_sck);
         unlink(dev->uds_data);
     }
     return 0;
