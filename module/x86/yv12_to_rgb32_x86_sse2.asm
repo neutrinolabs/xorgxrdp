@@ -123,7 +123,11 @@ do8:
 ;int
 ;yv12_to_rgb32_x86_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
+%ifidn __OUTPUT_FORMAT__,elf
 PROC yv12_to_rgb32_x86_sse2
+#else
+PROC _yv12_to_rgb32_x86_sse2
+%endif
     push ebx
     push esi
     push edi

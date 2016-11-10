@@ -56,7 +56,11 @@ SECTION .text
 ;int
 ;yuy2_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
+%ifidn __OUTPUT_FORMAT__,elf
 PROC yuy2_to_rgb32_x86_sse2
+%else
+PROC _yuy2_to_rgb32_x86_sse2
+%endif
     push ebx
     push esi
     push edi

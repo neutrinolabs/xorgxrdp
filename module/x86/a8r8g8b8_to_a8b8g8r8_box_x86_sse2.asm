@@ -43,7 +43,11 @@ SECTION .text
 ;a8r8g8b8_to_a8b8g8r8_box_x86_sse2(char *s8, int src_stride,
 ;                                  char *d8, int dst_stride,
 ;                                  int width, int height);
+%ifidn __OUTPUT_FORMAT__,elf
 PROC a8r8g8b8_to_a8b8g8r8_box_x86_sse2
+%else
+PROC _a8r8g8b8_to_a8b8g8r8_box_x86_sse2
+%endif
     push ebx
     push esi
     push edi

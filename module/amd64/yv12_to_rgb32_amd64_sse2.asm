@@ -126,7 +126,11 @@ do8:
 ;int
 ;yv12_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
+%ifidn __OUTPUT_FORMAT__,elf64
 PROC yv12_to_rgb32_amd64_sse2
+%else
+PROC _yv12_to_rgb32_amd64_sse2
+#endif
     push rbx
     push rsi
     push rdi

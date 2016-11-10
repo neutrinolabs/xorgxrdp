@@ -126,7 +126,11 @@ do8:
 ;int
 ;i420_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
+%ifidn __OUTPUT_FORMAT__,elf64
 PROC i420_to_rgb32_amd64_sse2
+%else
+PROC _i420_to_rgb32_amd64_sse2
+%endif
     push rbx
     push rbp
 

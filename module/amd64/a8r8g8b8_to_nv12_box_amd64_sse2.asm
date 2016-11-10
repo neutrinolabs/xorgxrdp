@@ -78,7 +78,11 @@ SECTION .text
 ;                                char *d8_y, int dst_stride_y,
 ;                                char *d8_uv, int dst_stride_uv,
 ;                                int width, int height);
+%ifidn __OUTPUT_FORMAT__,elf64
 PROC a8r8g8b8_to_nv12_box_amd64_sse2
+%else
+PROC _a8r8g8b8_to_nv12_box_amd64_sse2
+%endif
     push rbx
     push rbp
     sub rsp, 80                ; local vars, 80 bytes
