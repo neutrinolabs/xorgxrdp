@@ -177,7 +177,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
         clientCon->begin = FALSE;
         dev->conNumber++;
         clientCon->conNumber = dev->conNumber;
-        rdpCLientConAddEnabledDevice(pScreen, clientCon->sck);
+        rdpClientConAddEnabledDevice(pScreen, clientCon->sck);
     }
 
 #if 1
