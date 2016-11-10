@@ -1,4 +1,4 @@
-EXTRA_DIST =
+EXTRA_DIST = nasm_lt.sh
 
 EXTRA_SOURCES =
 EXTRA_FLAGS =
@@ -27,8 +27,51 @@ endif
 
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
-  -I../../common \
+  -I$(top_srcdir)/../common \
+  -I$(top_srcdir)/module \
   $(EXTRA_FLAGS)
+
+noinst_HEADERS = \
+  rdpCapture.h \
+  rdpClientCon.h \
+  rdpComposite.h \
+  rdpCopyArea.h \
+  rdpCopyPlane.h \
+  rdpCursor.h \
+  rdpDraw.h \
+  rdpFillPolygon.h \
+  rdpFillSpans.h \
+  rdpGC.h \
+  rdpGlyphs.h \
+  rdp.h \
+  rdpImageGlyphBlt.h \
+  rdpImageText16.h \
+  rdpImageText8.h \
+  rdpInput.h \
+  rdpMain.h \
+  rdpMisc.h \
+  rdpPixmap.h \
+  rdpPolyArc.h \
+  rdpPolyFillArc.h \
+  rdpPolyFillRect.h \
+  rdpPolyGlyphBlt.h \
+  rdpPolylines.h \
+  rdpPolyPoint.h \
+  rdpPolyRectangle.h \
+  rdpPolySegment.h \
+  rdpPolyText16.h \
+  rdpPolyText8.h \
+  rdpPri.h \
+  rdpPushPixels.h \
+  rdpPutImage.h \
+  rdpRandR.h \
+  rdpReg.h \
+  rdpSetSpans.h \
+  rdpSimd.h \
+  rdpTrapezoids.h \
+  rdpXv.h \
+  amd64/funcs_amd64.h \
+  x86/funcs_x86.h
 
 libxorgxrdp_la_LTLIBRARIES = libxorgxrdp.la
 

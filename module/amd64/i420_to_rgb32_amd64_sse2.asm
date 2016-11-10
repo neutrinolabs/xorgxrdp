@@ -33,6 +33,10 @@
 ;   4096    -1616    -2378
 ;   4096     9324     0
 
+%ifidn __OUTPUT_FORMAT__,elf64
+SECTION .note.GNU-stack noalloc noexec nowrite progbits
+%endif
+
 SECTION .data
 align 16
 c128 times 8 dw 128
@@ -122,7 +126,11 @@ do8:
 ;int
 ;i420_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
+%ifidn __OUTPUT_FORMAT__,elf64
 PROC i420_to_rgb32_amd64_sse2
+%else
+PROC _i420_to_rgb32_amd64_sse2
+%endif
     push rbx
     push rbp
 

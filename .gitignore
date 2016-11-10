@@ -3,6 +3,7 @@ aclocal.m4
 AUTHORS
 autom4te.cache/
 ChangeLog
+compile
 config_ac.h
 config_ac-h.in
 config.c
@@ -13,6 +14,7 @@ config.sub
 configure
 depcomp
 .deps/
+.dirstamp
 install-sh
 *.la
 .libs

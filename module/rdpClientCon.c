@@ -97,6 +97,52 @@ static int g_rdp_opcodes[16] =
 static int
 rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon);
 
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
+
+/******************************************************************************/
+static int
+rdpClientConAddEnabledDevice(ScreenPtr pScreen, int fd)
+{
+    AddEnabledDevice(fd);
+    return 0;
+}
+
+/******************************************************************************/
+static int
+rdpClientConRemoveEnabledDevice(int fd)
+{
+    RemoveEnabledDevice(fd);
+    return 0;
+}
+
+#else
+
+/******************************************************************************/
+static void
+rdpClientConNotifyFdProcPtr(int fd, int ready, void *data)
+{
+    ScreenPtr pScreen = (ScreenPtr) data;
+    rdpClientConCheck(pScreen);
+}
+
+/******************************************************************************/
+static int
+rdpClientConAddEnabledDevice(ScreenPtr pScreen, int fd)
+{
+    SetNotifyFd(fd, rdpClientConNotifyFdProcPtr, X_NOTIFY_READ, pScreen);
+    return 0;
+}
+
+/******************************************************************************/
+static int
+rdpClientConRemoveEnabledDevice(int fd)
+{
+    RemoveNotifyFd(fd);
+    return 0;
+}
+
+#endif
+
 /******************************************************************************/
 static int
 rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
@@ -131,7 +177,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
         clientCon->begin = FALSE;
         dev->conNumber++;
         clientCon->conNumber = dev->conNumber;
-        AddEnabledDevice(clientCon->sck);
+        rdpClientConAddEnabledDevice(pScreen, clientCon->sck);
     }
 
 #if 1
@@ -223,7 +269,7 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
         dev->disconnect_time_ms = GetTimeInMillis();
     }
 
-    RemoveEnabledDevice(clientCon->sck);
+    rdpClientConRemoveEnabledDevice(clientCon->sck);
     g_sck_close(clientCon->sck);
     if (clientCon->maxOsBitmaps > 0)
     {
@@ -1146,7 +1192,7 @@ rdpClientConInit(rdpPtr dev)
             return 1;
         }
         g_sck_listen(dev->listen_sck);
-        AddEnabledDevice(dev->listen_sck);
+        rdpClientConAddEnabledDevice(dev->pScreen, dev->listen_sck);
     }
     return 0;
 }
