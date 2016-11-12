@@ -325,6 +325,8 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
         TimerCancel(clientCon->updateTimer);
         TimerFree(clientCon->updateTimer);
     }
+    free_stream(clientCon->out_s);
+    free_stream(clientCon->in_s);
     g_free(clientCon);
     return 0;
 }
