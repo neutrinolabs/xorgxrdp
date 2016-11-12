@@ -58,10 +58,12 @@ rdpRRRegisterSize(ScreenPtr pScreen, int width, int height)
     int mmwidth;
     int mmheight;
     RRScreenSizePtr pSize;
+    ScrnInfoPtr pScrn;
 
     LLOGLN(0, ("rdpRRRegisterSize: width %d height %d", width, height));
-    mmwidth = PixelToMM(width);
-    mmheight = PixelToMM(height);
+    pScrn = xf86Screens[pScreen->myNum];
+    mmwidth = PixelToMM(width, pScrn->xDpi);
+    mmheight = PixelToMM(height, pScrn->yDpi);
     pSize = RRRegisterSize(pScreen, width, height, mmwidth, mmheight);
     /* Tell RandR what the current config is */
     RRSetCurrentConfig(pScreen, RR_Rotate_0, 0, pSize);

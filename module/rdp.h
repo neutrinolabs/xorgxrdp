@@ -85,7 +85,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XRDP_i420 \
 ((12 << 24) | (65 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
 
-#define PixelToMM(_size) (((_size) * 254 + (monitorResolution) * 5) / ((monitorResolution) * 10))
+#define PixelToMM(_size, _dpi) (((_size) * 254 + (_dpi) * 5) / ((_dpi) * 10))
 
 #define RDPMIN(_val1, _val2) ((_val1) < (_val2) ? (_val1) : (_val2))
 #define RDPMAX(_val1, _val2) ((_val1) < (_val2) ? (_val2) : (_val1))
