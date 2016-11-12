@@ -293,11 +293,13 @@ rdpResizeSession(rdpPtr dev, int width, int height)
     int mmwidth;
     int mmheight;
     RRScreenSizePtr pSize;
+    ScrnInfoPtr pScrn;
     Bool ok;
 
     LLOGLN(0, ("rdpResizeSession: width %d height %d", width, height));
-    mmwidth = PixelToMM(width);
-    mmheight = PixelToMM(height);
+    pScrn = xf86Screens[dev->pScreen->myNum];
+    mmwidth = PixelToMM(width, pScrn->xDpi);
+    mmheight = PixelToMM(height, pScrn->yDpi);
 
     ok = TRUE;
     if ((dev->width != width) || (dev->height != height))

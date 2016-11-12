@@ -595,6 +595,7 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
                                  int width, int height, int bpp)
 {
     RRScreenSizePtr pSize;
+    ScrnInfoPtr pScrn;
     int mmwidth;
     int mmheight;
     int bytes;
@@ -654,8 +655,9 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
     }
     clientCon->shmRegion = rdpRegionCreate(NullBox, 0);
 
-    mmwidth = PixelToMM(width);
-    mmheight = PixelToMM(height);
+    pScrn = xf86Screens[dev->pScreen->myNum];
+    mmwidth = PixelToMM(width, pScrn->xDpi);
+    mmheight = PixelToMM(height, pScrn->yDpi);
 
     if ((dev->width != width) || (dev->height != height))
     {
