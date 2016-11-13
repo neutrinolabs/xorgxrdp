@@ -445,7 +445,7 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
             rdpEnqueueKey(keyboard->device, type, 156);
             break;
 
-        case 115: /* "/ ?" on br keybaord */
+        case 115: /* "/ ?" on br keyboard */
             sendDownUpKeyEvent(keyboard->device, type, 211);
             break;
 
@@ -640,7 +640,7 @@ rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
         if (ctrls->enabled_ctrls & XkbRepeatKeysMask)
         {
             LLOGLN(0, ("rdpkeybChangeKeyboardControl: autoRepeat on"));
-            /* schedual to turn off the autorepeat after 100 ms so any app
+            /* schedule to turn off the autorepeat after 100 ms so any app
              * polling it will be happy it's on */
             g_kbtimer = TimerSet(g_kbtimer, 0, 100,
                                  rdpInDeferredUpdateCallback, pDev);

@@ -22,7 +22,7 @@
 ;
 ; notes
 ;   address s8 should be aligned on 16 bytes, will be slower if not
-;   width should be multile of 8 and > 0
+;   width should be multiple of 8 and > 0
 ;   height should be even and > 0
 
 %ifidn __OUTPUT_FORMAT__,elf64

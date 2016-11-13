@@ -415,7 +415,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
                 *dst32 = pix;
                 while (ih > (1 << 16) - 1)
                 {
-                    /* goes in here alot when downsizing */
+                    /* goes in here a lot when downsizing */
                     ih -= 1 << 16;
                     src32++;
                 }
@@ -427,7 +427,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
         last_lndex = lndex;
         while (iv > (1 << 16) - 1)
         {
-            /* goes in here alot when downsizing */
+            /* goes in here a lot when downsizing */
             iv -= 1 << 16;
             lndex++;
         }
@@ -447,7 +447,7 @@ rdpDeferredXvCleanup(OsTimerPtr timer, CARD32 now, pointer arg)
 
     LLOGLN(0, ("rdpDeferredXvCleanup:"));
     dev = (rdpPtr) arg;
-    dev->xv_timer_schedualed = 0;
+    dev->xv_timer_scheduled = 0;
     dev->xv_data_bytes = 0;
     g_free(dev->xv_data);
     dev->xv_data = 0;
@@ -476,7 +476,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     LLOGLN(10, ("xrdpVidPutImage: src_x %d srcy_y %d", src_x, src_y));
     dev = XRDPPTR(pScrn);
 
-    if (dev->xv_timer_schedualed)
+    if (dev->xv_timer_scheduled)
     {
         TimerCancel(dev->xv_timer);
         dev->xv_timer = TimerSet(dev->xv_timer, 0, 2000,
@@ -484,7 +484,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     }
     else
     {
-        dev->xv_timer_schedualed = 1;
+        dev->xv_timer_scheduled = 1;
         dev->xv_timer = TimerSet(dev->xv_timer, 0, 2000,
                                  rdpDeferredXvCleanup, dev);
     }
@@ -535,7 +535,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     }
     if ((width == drw_w) && (height == drw_h))
     {
-        LLOGLN(10, ("xrdpVidPutImage: strech skip"));
+        LLOGLN(10, ("xrdpVidPutImage: stretch skip"));
         rgbend32 = rgborg32;
     }
     else

@@ -108,7 +108,7 @@ struct _rdpClientCon
     int rect_id_ack;
 
     OsTimerPtr updateTimer;
-    int updateSchedualed; /* boolean */
+    int updateScheduled; /* boolean */
 
     RegionPtr dirtyRegion;
 

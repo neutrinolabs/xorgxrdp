@@ -665,7 +665,7 @@ rdpCapture0(rdpClientCon *clientCon,
     }
     else
     {
-        LLOGLN(0, ("rdpCapture0: unimp color conversion"));
+        LLOGLN(0, ("rdpCapture0: unimplemented color conversion"));
     }
     rdpRegionUninit(&reg);
     return rv;
@@ -845,7 +845,7 @@ rdpCapture1(rdpClientCon *clientCon,
     }
     else
     {
-        LLOGLN(0, ("rdpCapture1: unimp color conversion"));
+        LLOGLN(0, ("rdpCapture1: unimplemented color conversion"));
     }
     rdpRegionUninit(&reg);
     return rv;
@@ -891,7 +891,7 @@ rdpCapture2(rdpClientCon *clientCon,
     rdpRegionInit(&temp_reg, &rect, 0);
     rdpRegionIntersect(&temp_reg, in_reg, &temp_reg);
 
-    /* limit the numer of rects */
+    /* limit the number of rects */
     num_rects = REGION_NUM_RECTS(&temp_reg);
     if (num_rects > max_rects)
     {
@@ -1057,7 +1057,7 @@ rdpCapture3(rdpClientCon *clientCon,
     }
     else
     {
-        LLOGLN(0, ("rdpCapture3: unimp color conversion"));
+        LLOGLN(0, ("rdpCapture3: unimplemented color conversion"));
     }
 
     rdpRegionUninit(&reg);
@@ -1093,7 +1093,7 @@ rdpCapture(rdpClientCon *clientCon,
                                dst, dst_width, dst_height,
                                dst_stride, dst_format, 15);
         case 2:
-            /* used for remotefx caputure */
+            /* used for remotefx capture */
             return rdpCapture2(clientCon, in_reg, out_rects, num_out_rects,
                                src, src_left, src_top, src_width, src_height,
                                src_stride, src_format,
@@ -1107,7 +1107,7 @@ rdpCapture(rdpClientCon *clientCon,
                                dst, dst_width, dst_height,
                                dst_stride, dst_format, 15);
         default:
-            LLOGLN(0, ("rdpCapture: unimp mode"));
+            LLOGLN(0, ("rdpCapture: mode %d not implemented", mode));
             break;
     }
     return FALSE;
