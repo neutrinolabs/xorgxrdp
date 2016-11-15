@@ -299,7 +299,7 @@ struct _rdpRec
     yuv_to_rgb32_proc uyvy_to_rgb32;
     char *xv_data;
     int xv_data_bytes;
-    int xv_timer_schedualed;
+    int xv_timer_scheduled;
     OsTimerPtr xv_timer;
 
     copy_box_proc a8r8g8b8_to_a8b8g8r8_box;

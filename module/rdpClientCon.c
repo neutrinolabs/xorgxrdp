@@ -882,7 +882,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         box.y1 = dev->minfo[0].top;
         box.x2 = dev->minfo[0].right;
         box.y2 = dev->minfo[0].bottom;
-        /* adjust monitor info so it's not negitive */
+        /* adjust monitor info so it's not negative */
         for (index = 1; index < dev->monitorCount; index++)
         {
             box.x1 = min(box.x1, dev->minfo[index].left);
@@ -2130,7 +2130,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         /* do not allow captures until we have the client_info */
         clientCon->client_info.size == 0)
     {
-        LLOGLN(0, ("rdpDeferredUpdateCallback: reschedual rect_id %d "
+        LLOGLN(0, ("rdpDeferredUpdateCallback: reschedule rect_id %d "
                "rect_id_ack %d",
                clientCon->rect_id, clientCon->rect_id_ack));
         clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, 40,
@@ -2147,7 +2147,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
            "rdp_Bpp %d screen width %d screen height %d",
            clientCon->rdp_width, clientCon->rdp_height, clientCon->rdp_Bpp,
            id.width, id.height));
-    clientCon->updateSchedualed = FALSE;
+    clientCon->updateScheduled = FALSE;
     rects = 0;
     num_rects = 0;
     LLOGLN(10, ("rdpDeferredUpdateCallback: capture_code %d",
@@ -2183,11 +2183,11 @@ rdpClientConAddDirtyScreenReg(rdpPtr dev, rdpClientCon *clientCon,
     LLOGLN(10, ("rdpClientConAddDirtyScreenReg:"));
 
     rdpRegionUnion(clientCon->dirtyRegion, clientCon->dirtyRegion, reg);
-    if (clientCon->updateSchedualed == FALSE)
+    if (clientCon->updateScheduled == FALSE)
     {
         clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, 40,
                                           rdpDeferredUpdateCallback, clientCon);
-        clientCon->updateSchedualed = TRUE;
+        clientCon->updateScheduled = TRUE;
     }
     return 0;
 }
