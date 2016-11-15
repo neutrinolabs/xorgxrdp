@@ -826,6 +826,8 @@ reload_xkb(DeviceIntPtr keyboard, XkbRMLVOSet *set)
                                       NULL, serverClient);
             }
         }
+        free(keySyms->map);
+        free(keySyms);
     }
     else
     {
