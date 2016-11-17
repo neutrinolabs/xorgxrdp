@@ -9,10 +9,9 @@ AC_PROG_CC
 AC_C_CONST
 AC_PROG_LIBTOOL
 
-AC_CHECK_HEADER([xorg/xorg-server.h], [],
-  [AC_MSG_ERROR([please install xserver-xorg-dev or xorg-x11-server-sdk])])
+PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
+  [AC_MSG_ERROR([please install xserver-xorg-dev, xorg-x11-server-sdk or xorg-x11-server-devel])])
 
-PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0])
 AC_SUBST([XORG_SERVER_CFLAGS])
 AC_SUBST([XORG_SERVER_LIBS])
 
