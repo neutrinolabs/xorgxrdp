@@ -89,7 +89,12 @@ rdpMisc.c rdpReg.c rdpComposite.c rdpGlyphs.c rdpPixmap.c rdpInput.c \
 rdpClientCon.c rdpCapture.c rdpTrapezoids.c rdpXv.c rdpSimd.c \
 $(EXTRA_SOURCES)
 
+nasm_verbose = $(nasm_verbose_@AM_V@)
+nasm_verbose_ = $(nasm_verbose_@AM_DEFAULT_V@)
+nasm_verbose_0 = @
+
 .asm.lo:
-	$(LIBTOOL) --mode=compile --tag NASM $(srcdir)/nasm_lt.sh $(NASM) $(NAFLAGS) -I$(srcdir) -I. $< -o $@
+	$(nasm_verbose)$(LIBTOOL) $(AM_V_lt) --mode=compile --tag NASM \
+	  $(srcdir)/nasm_lt.sh $(NASM) $(NAFLAGS) -I$(srcdir) -I. $< -o $@
 
 libxorgxrdp_la_LIBADD =
