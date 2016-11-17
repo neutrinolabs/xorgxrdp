@@ -621,7 +621,7 @@ rdpCapture0(rdpClientCon *clientCon,
 
     *num_out_rects = num_rects;
 
-    *out_rects = (BoxPtr) g_malloc(sizeof(BoxRec) * num_rects, 0);
+    *out_rects = g_new(BoxRec, num_rects);
     for (i = 0; i < num_rects; i++)
     {
         rect = psrc_rects[i];
@@ -741,7 +741,7 @@ rdpCapture1(rdpClientCon *clientCon,
 
     *num_out_rects = num_regions;
 
-    *out_rects = (BoxPtr) g_malloc(sizeof(BoxRec) * num_regions * 4, 0);
+    *out_rects = g_new(BoxRec, num_regions * 4);
     index = 0;
     while (index < num_regions)
     {
@@ -876,7 +876,7 @@ rdpCapture2(rdpClientCon *clientCon,
 
     LLOGLN(10, ("rdpCapture2:"));
 
-    *out_rects = (BoxPtr) g_malloc(sizeof(BoxRec) * RDP_MAX_TILES, 0);
+    *out_rects = g_new(BoxRec, RDP_MAX_TILES);
     if (*out_rects == NULL)
     {
         return FALSE;
@@ -1020,7 +1020,7 @@ rdpCapture3(rdpClientCon *clientCon,
 
     *num_out_rects = num_rects;
 
-    *out_rects = (BoxPtr) g_malloc(sizeof(BoxRec) * num_rects * 4, 0);
+    *out_rects = g_new(BoxRec, num_rects * 4);
     index = 0;
     while (index < num_rects)
     {

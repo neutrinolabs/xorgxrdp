@@ -151,7 +151,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     int new_sck;
 
     LLOGLN(0, ("rdpClientConGotConnection:"));
-    clientCon = (rdpClientCon *) g_malloc(sizeof(rdpClientCon), 1);
+    clientCon = g_new0(rdpClientCon, 1);
     clientCon->dev = dev;
     dev->do_dirty_ons = 1;
 
@@ -829,7 +829,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
             clientCon->maxOsBitmaps = clientCon->client_info.offscreen_cache_entries;
             g_free(clientCon->osBitmaps);
             clientCon->osBitmaps = (struct rdpup_os_bitmap *)
-                        g_malloc(sizeof(struct rdpup_os_bitmap) * clientCon->maxOsBitmaps, 1);
+                        g_new0(struct rdpup_os_bitmap, clientCon->maxOsBitmaps);
         }
     }
 

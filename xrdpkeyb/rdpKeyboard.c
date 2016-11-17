@@ -47,6 +47,7 @@ xrdp keyboard module
 #include "rdp.h"
 #include "rdpInput.h"
 #include "rdpDraw.h"
+#include "rdpMisc.h"
 
 /******************************************************************************/
 #define LOG_LEVEL 1
@@ -552,11 +553,10 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
     pKeySyms->minKeyCode = MIN_KEY_CODE;
     pKeySyms->maxKeyCode = MAX_KEY_CODE;
     pKeySyms->mapWidth = GLYPHS_PER_KEY;
-    i = sizeof(KeySym) * MAP_LENGTH * GLYPHS_PER_KEY;
-    pKeySyms->map = (KeySym *)malloc(i);
+    pKeySyms->map = g_new(KeySym, MAP_LENGTH * GLYPHS_PER_KEY);
     if (pKeySyms->map == 0)
     {
-        LLOGLN(0, ("rdpkeybDeviceInit: malloc failed"));
+        LLOGLN(0, ("rdpkeybDeviceInit: out of memory"));
         exit(1);
     }
     else

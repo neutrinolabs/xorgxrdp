@@ -493,7 +493,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     if (index > dev->xv_data_bytes)
     {
         g_free(dev->xv_data);
-        dev->xv_data = g_malloc(index, 0);
+        dev->xv_data = g_new(char, index);
         if (dev->xv_data == NULL)
         {
             LLOGLN(0, ("xrdpVidPutImage: memory alloc error"));
@@ -645,7 +645,6 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
 {
     XF86VideoAdaptorPtr adaptor;
     DevUnion* pDevUnion;
-    int bytes;
 
     adaptor = xf86XVAllocateVideoAdaptorRec(pScrn);
     if (adaptor == 0)
@@ -669,8 +668,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
     adaptor->nAttributes = 0;
     adaptor->pAttributes = 0;
     adaptor->nPorts = T_MAX_PORTS;
-    bytes = sizeof(DevUnion) * T_MAX_PORTS;
-    pDevUnion = (DevUnion*) g_malloc(bytes, 1);
+    pDevUnion = g_new0(DevUnion, T_MAX_PORTS);
     adaptor->pPortPrivates = pDevUnion;
     adaptor->PutVideo = xrdpVidPutVideo;
     adaptor->PutStill = xrdpVidPutStill;

@@ -83,6 +83,14 @@ g_chmod_hex(const char *filename, int flags);
 extern _X_EXPORT void
 g_hexdump(void *p, long len);
 
+
+/* glib-style memory allocation macros */
+#define g_new(struct_type, n_structs) \
+    (struct_type *) malloc(sizeof(struct_type) * (n_structs))
+#define g_new0(struct_type, n_structs) \
+    (struct_type *) calloc((n_structs), sizeof(struct_type))
+
+
 #if defined(X_BYTE_ORDER)
 #  if X_BYTE_ORDER == X_LITTLE_ENDIAN
 #    define L_ENDIAN
@@ -151,7 +159,7 @@ do {                                         \
     if ((v) > (s)->size)                     \
     {                                        \
         g_free((s)->data);                   \
-        (s)->data = (char*)g_malloc((v), 0); \
+        (s)->data = g_new(char, (v));        \
         (s)->size = (v);                     \
     }                                        \
     (s)->p = (s)->data;                      \
@@ -249,7 +257,7 @@ do {                    \
 /******************************************************************************/
 #define make_stream(s)                                        \
 do {                                                          \
-    (s) = (struct stream*)g_malloc(sizeof(struct stream), 1); \
+    (s) = g_new0(struct stream, 1);                           \
 } while (0)
 
 /******************************************************************************/
