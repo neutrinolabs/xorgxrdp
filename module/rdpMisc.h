@@ -49,7 +49,7 @@ g_malloc(int size, int zero);
 extern _X_EXPORT void
 g_free(void *ptr);
 extern _X_EXPORT void
-g_sprintf(char *dest, char *format, ...);
+g_sprintf(char *dest, const char *format, ...);
 extern _X_EXPORT int
 g_sck_tcp_socket(void);
 extern _X_EXPORT int

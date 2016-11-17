@@ -596,7 +596,6 @@ static int
 rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
                                  int width, int height, int bpp)
 {
-    RRScreenSizePtr pSize;
     ScrnInfoPtr pScrn;
     int mmwidth;
     int mmheight;

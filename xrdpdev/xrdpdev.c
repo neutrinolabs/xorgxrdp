@@ -292,7 +292,6 @@ rdpResizeSession(rdpPtr dev, int width, int height)
 {
     int mmwidth;
     int mmheight;
-    RRScreenSizePtr pSize;
     ScrnInfoPtr pScrn;
     Bool ok;
 

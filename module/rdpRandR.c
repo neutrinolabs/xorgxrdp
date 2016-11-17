@@ -224,6 +224,7 @@ rdpRROutputGetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property)
 }
 
 /******************************************************************************/
+#if 0
 static int
 get_rect(rdpPtr dev, const char *name, BoxPtr rect)
 {
@@ -257,6 +258,7 @@ get_rect(rdpPtr dev, const char *name, BoxPtr rect)
     }
     return 0;
 }
+#endif
 
 /******************************************************************************/
 Bool
