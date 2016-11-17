@@ -28,7 +28,6 @@ endif
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
   $(XRDP_CFLAGS) \
-  -I$(top_srcdir)/../common \
   -I$(top_srcdir)/module \
   $(EXTRA_FLAGS)
 
