@@ -15,6 +15,12 @@ PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
 AC_SUBST([XORG_SERVER_CFLAGS])
 AC_SUBST([XORG_SERVER_LIBS])
 
+PKG_CHECK_MODULES([XRDP], [xrdp >= 0], [],
+  [AC_MSG_ERROR([please install xrdp >= 0])])
+
+AC_SUBST([XRDP_CFLAGS])
+AC_SUBST([XRDP_LIBS])
+
 moduledir=`pkg-config xorg-server --variable=moduledir`
 AC_SUBST([moduledir])
 
