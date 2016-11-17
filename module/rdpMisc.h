@@ -30,6 +30,15 @@ the rest
 
 #include <X11/Xos.h>
 
+#include <config_ac.h>
+
+#if defined(HAVE_FUNC_ATTRIBUTE_FORMAT)
+#define printflike(arg_format, arg_first_check) \
+ __attribute__((__format__(__printf__, arg_format, arg_first_check)))
+#else
+#define printflike(arg_format, arg_first_check)
+#endif
+
 extern _X_EXPORT int
 rdpBitsPerPixel(int depth);
 extern _X_EXPORT int
