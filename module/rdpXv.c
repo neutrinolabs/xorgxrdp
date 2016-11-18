@@ -45,13 +45,15 @@ XVideo
 #include "rdpClientCon.h"
 #include "rdpXv.h"
 
+static char g_xv_image[] = "XV_IMAGE";
+
 #define LOG_LEVEL 1
 #define LLOGLN(_level, _args) \
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 #define T_NUM_ENCODINGS 1
 static XF86VideoEncodingRec g_xrdpVidEncodings[T_NUM_ENCODINGS] =
-{ { 0, "XV_IMAGE", 2046, 2046, { 1, 1 } } };
+{ { 0, g_xv_image, 2046, 2046, { 1, 1 } } };
 
 #define T_NUM_FORMATS 1
 static XF86VideoFormatRec g_xrdpVidFormats[T_NUM_FORMATS] =
@@ -645,6 +647,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
 {
     XF86VideoAdaptorPtr adaptor;
     DevUnion* pDevUnion;
+    char name[256];
 
     adaptor = xf86XVAllocateVideoAdaptorRec(pScrn);
     if (adaptor == 0)
@@ -656,7 +659,9 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
     //adaptor->flags = VIDEO_NO_CLIPPING;
     //adaptor->flags = VIDEO_CLIP_TO_VIEWPORT;
     adaptor->flags = 0;
-    adaptor->name = XRDP_MODULE_NAME " XVideo Adaptor";
+    snprintf(name, 255, "%s XVideo Adaptor", XRDP_MODULE_NAME);
+    name[255] = 0;
+    adaptor->name = name;
     adaptor->nEncodings = T_NUM_ENCODINGS;
     adaptor->pEncodings = &(g_xrdpVidEncodings[0]);
     adaptor->nFormats = T_NUM_FORMATS;

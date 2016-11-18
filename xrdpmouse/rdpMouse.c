@@ -51,6 +51,9 @@ xrdp mouse module
 #define LLOGLN(_level, _args) \
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
+static char g_Mouse_str[] = "Mouse";
+static char g_xrdp_mouse_name[] = XRDP_MOUSE_NAME;
+
 /******************************************************************************/
 static void
 rdpmouseDeviceInit(void)
@@ -304,7 +307,7 @@ rdpmousePreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
     LLOGLN(0, ("rdpmousePreInit: drv %p info %p, flags 0x%x",
            drv, info, flags));
     info->device_control = rdpmouseControl;
-    info->type_name = "Mouse";
+    info->type_name = g_Mouse_str;
     return 0;
 }
 
@@ -323,7 +326,7 @@ rdpmouseUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 static InputDriverRec rdpmouse =
 {
     PACKAGE_VERSION_MAJOR,    /* version   */
-    XRDP_MOUSE_NAME,          /* name      */
+    g_xrdp_mouse_name,        /* name      */
     NULL,                     /* identify  */
     rdpmousePreInit,          /* preinit   */
     rdpmouseUnInit,           /* uninit    */

@@ -81,6 +81,8 @@ int g_blueBits = 8;
 static int g_setup_done = 0;
 static OsTimerPtr g_timer = 0;
 
+static char g_xrdp_driver_name[] = XRDP_DRIVER_NAME;
+
 /* Supported "chipsets" */
 static SymTabRec g_Chipsets[] =
 {
@@ -170,7 +172,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     pScrn->progClock = 1;
     pScrn->rgbBits = g_rgb_bits;
     pScrn->depth = g_depth;
-    pScrn->chipset = XRDP_DRIVER_NAME;
+    pScrn->chipset = g_xrdp_driver_name;
     pScrn->currentMode = pScrn->modes;
     pScrn->offset.blue = g_blueOffset;
     pScrn->offset.green = g_greenOffset;
@@ -687,8 +689,8 @@ rdpProbe(DriverPtr drv, int flags)
             LLOGLN(10, ("rdpProbe: found screen"));
             found_screen = 1;
             pscrn->driverVersion = XRDP_VERSION;
-            pscrn->driverName    = XRDP_DRIVER_NAME;
-            pscrn->name          = XRDP_DRIVER_NAME;
+            pscrn->driverName    = g_xrdp_driver_name;
+            pscrn->name          = g_xrdp_driver_name;
             pscrn->Probe         = rdpProbe;
             pscrn->PreInit       = rdpPreInit;
             pscrn->ScreenInit    = rdpScreenInit;
@@ -747,7 +749,7 @@ rdpIdentify(int flags)
 _X_EXPORT DriverRec g_DriverRec =
 {
     XRDP_VERSION,
-    XRDP_DRIVER_NAME,
+    g_xrdp_driver_name,
     rdpIdentify,
     rdpProbe,
     rdpAvailableOptions,

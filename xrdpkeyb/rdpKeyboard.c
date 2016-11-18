@@ -78,6 +78,14 @@ xrdp keyboard module
 #define N_PREDEFINED_KEYS \
     (sizeof(g_kbdMap) / (sizeof(KeySym) * GLYPHS_PER_KEY))
 
+static char g_base_str[] = "base";
+static char g_pc104_str[] = "pc104";
+static char g_us_str[] = "us";
+static char g_empty_str[] = "";
+static char g_Keyboard_str[] = "Keyboard";
+
+static char g_xrdp_keyb_name[] = XRDP_KEYB_NAME;
+
 static OsTimerPtr g_kbtimer = 0;
 
 static KeySym g_kbdMap[] =
@@ -670,11 +678,11 @@ rdpkeybControl(DeviceIntPtr device, int what)
         case DEVICE_INIT:
             rdpkeybDeviceInit(device, &keySyms, modMap);
             memset(&set, 0, sizeof(set));
-            set.rules = "base";
-            set.model = "pc104";
-            set.layout = "us";
-            set.variant = "";
-            set.options = "";
+            set.rules = g_base_str;
+            set.model = g_pc104_str;
+            set.layout = g_us_str;
+            set.variant = g_empty_str;
+            set.options = g_empty_str;
             InitKeyboardDeviceStruct(device, &set, rdpkeybBell,
                                      rdpkeybChangeKeyboardControl);
             dev = rdpGetDevFromScreen(NULL);
@@ -736,7 +744,7 @@ rdpkeybPreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
     LLOGLN(0, ("rdpkeybPreInit: drv %p info %p, flags 0x%x",
            drv, info, flags));
     info->device_control = rdpkeybControl;
-    info->type_name = "Keyboard";
+    info->type_name = g_Keyboard_str;
 
     return 0;
 }
@@ -756,7 +764,7 @@ rdpkeybUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 static InputDriverRec rdpkeyb =
 {
     PACKAGE_VERSION_MAJOR,  /* version   */
-    XRDP_KEYB_NAME,         /* name      */
+    g_xrdp_keyb_name,       /* name      */
     NULL,                   /* identify  */
     rdpkeybPreInit,         /* preinit   */
     rdpkeybUnInit,          /* uninit    */
@@ -847,12 +855,12 @@ rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info)
     LLOGLN(0, ("rdpLoadLayout: keylayout 0x%8.8x variant %s display %s",
                keylayout, client_info->variant, display));
     memset(&set, 0, sizeof(set));
-    set.rules = "base";
+    set.rules = g_base_str;
 
-    set.model = "pc104";
-    set.layout = "us";
-    set.variant = "";
-    set.options = "";
+    set.model = g_pc104_str;
+    set.layout = g_us_str;
+    set.variant = g_empty_str;
+    set.options = g_empty_str;
 
     if (strlen(client_info->model) > 0)
     {
