@@ -1,0 +1,4 @@
+*.log
+*.log.old
+*.trs
+Xorg.no-setuid
