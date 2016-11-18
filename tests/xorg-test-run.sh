@@ -26,7 +26,7 @@ top_srcdir=`cd $top_srcdir >/dev/null; pwd`
 : ${XCLIENT_OUT=$TESTNAME-xclient-out.log}
 
 # Display number
-: ${DISPLAY=:20}
+: ${TEST_DISPLAY=:20}
 
 # Timeout in seconds
 : ${XORG_START_TIMEOUT=3}
@@ -63,7 +63,7 @@ $XORG \
   -config $top_srcdir/xrdpdev/xorg.conf \
   -logfile $XORG_LOG \
   -novtswitch -sharevts -once -terminate -ac \
-  $DISPLAY $XORG_ARGS >$XORG_OUT 2>$XORG_ERR </dev/null &
+  $TEST_DISPLAY $XORG_ARGS >$XORG_OUT 2>$XORG_ERR </dev/null &
 
 # Record Xorg PID so it can be killed
 XORG_PID=$!
@@ -74,7 +74,7 @@ sleep $XORG_START_TIMEOUT
 
 # Test with an X client
 echo "Running X client"
-$XCLIENT -display $DISPLAY >$XCLIENT_OUT
+$XCLIENT -display $TEST_DISPLAY >$XCLIENT_OUT
 CLIENT_RET=$?
 echo "Client error code: $CLIENT_RET"
 
