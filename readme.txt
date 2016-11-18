@@ -64,7 +64,7 @@ Pre-requisites:
     o sudo apt-get install xserver-xorg-dev
 
 Quick and easy way to run Xorg with the compiled drivers
-    o tests/xorg-test-run.sh
+    o make check
 
     o see /etc/X11/xrdp/xorg.conf to see how things are configured
 

@@ -9,6 +9,7 @@ AC_PROG_CC
 AC_C_CONST
 AC_PROG_LIBTOOL
 
+AC_CONFIG_MACRO_DIR([m4])
 AX_CFLAGS_WARN_ALL
 AX_APPEND_COMPILE_FLAGS([-Wwrite-strings])
 AX_GCC_FUNC_ATTRIBUTE([format])
@@ -65,6 +66,7 @@ AM_CONDITIONAL(WITH_SIMD_X86, [test x$simd_arch = xi386])
 
 AC_CONFIG_FILES([Makefile
                  module/Makefile
+                 tests/Makefile
                  xrdpdev/Makefile
                  xrdpkeyb/Makefile
                  xrdpmouse/Makefile

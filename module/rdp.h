@@ -33,7 +33,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "rdpPri.h"
 
-/* in xrdp/common */
 #include "xrdp_client_info.h"
 #include "xrdp_constants.h"
 
