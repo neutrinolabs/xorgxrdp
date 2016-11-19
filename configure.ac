@@ -21,12 +21,17 @@ if test "x$XRDP_CFLAGS" = "x"; then
   PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.0])
 fi
 
-moduledir=`pkg-config xorg-server --variable=moduledir`
-AC_SUBST([moduledir])
+AC_ARG_ENABLE([strict-locations],
+  [AS_HELP_STRING([--enable-strict-locations], [Use standard installation directories])])
 
-if test "x${prefix}" = "xNONE" ; then
-sysconfdir="/etc";
+if test "x$enable_strict_locations" = "xyes"; then
+  moduledir='${libdir}/xorg/modules'
+else
+  moduledir=`pkg-config xorg-server --variable=moduledir`
+  sysconfdir="/etc"
 fi
+
+AC_SUBST([moduledir])
 
 # SIMD is optional
 AC_ARG_WITH([simd],
