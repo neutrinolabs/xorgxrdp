@@ -17,14 +17,7 @@ AX_GCC_FUNC_ATTRIBUTE([format])
 PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
   [AC_MSG_ERROR([please install xserver-xorg-dev, xorg-x11-server-sdk or xorg-x11-server-devel])])
 
-AC_SUBST([XORG_SERVER_CFLAGS])
-AC_SUBST([XORG_SERVER_LIBS])
-
-PKG_CHECK_MODULES([XRDP], [xrdp >= 0], [],
-  [AC_MSG_ERROR([please install xrdp >= 0])])
-
-AC_SUBST([XRDP_CFLAGS])
-AC_SUBST([XRDP_LIBS])
+PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.0])
 
 moduledir=`pkg-config xorg-server --variable=moduledir`
 AC_SUBST([moduledir])
