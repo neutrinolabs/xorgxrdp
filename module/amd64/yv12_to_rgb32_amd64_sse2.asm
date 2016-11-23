@@ -130,7 +130,7 @@ do8:
 PROC yv12_to_rgb32_amd64_sse2
 %else
 PROC _yv12_to_rgb32_amd64_sse2
-#endif
+%endif
     push rbx
     push rsi
     push rdi
