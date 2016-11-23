@@ -151,7 +151,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     int new_sck;
 
     LLOGLN(0, ("rdpClientConGotConnection:"));
-    clientCon = (rdpClientCon *) g_malloc(sizeof(rdpClientCon), 1);
+    clientCon = g_new0(rdpClientCon, 1);
     clientCon->dev = dev;
     dev->do_dirty_ons = 1;
 
@@ -325,6 +325,8 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
         TimerCancel(clientCon->updateTimer);
         TimerFree(clientCon->updateTimer);
     }
+    free_stream(clientCon->out_s);
+    free_stream(clientCon->in_s);
     g_free(clientCon);
     return 0;
 }
@@ -594,7 +596,7 @@ static int
 rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
                                  int width, int height, int bpp)
 {
-    RRScreenSizePtr pSize;
+    ScrnInfoPtr pScrn;
     int mmwidth;
     int mmheight;
     int bytes;
@@ -654,8 +656,9 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
     }
     clientCon->shmRegion = rdpRegionCreate(NullBox, 0);
 
-    mmwidth = PixelToMM(width);
-    mmheight = PixelToMM(height);
+    pScrn = xf86Screens[dev->pScreen->myNum];
+    mmwidth = PixelToMM(width, pScrn->xDpi);
+    mmheight = PixelToMM(height, pScrn->yDpi);
 
     if ((dev->width != width) || (dev->height != height))
     {
@@ -825,7 +828,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
             clientCon->maxOsBitmaps = clientCon->client_info.offscreen_cache_entries;
             g_free(clientCon->osBitmaps);
             clientCon->osBitmaps = (struct rdpup_os_bitmap *)
-                        g_malloc(sizeof(struct rdpup_os_bitmap) * clientCon->maxOsBitmaps, 1);
+                        g_new0(struct rdpup_os_bitmap, clientCon->maxOsBitmaps);
         }
     }
 
@@ -878,7 +881,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         box.y1 = dev->minfo[0].top;
         box.x2 = dev->minfo[0].right;
         box.y2 = dev->minfo[0].bottom;
-        /* adjust monitor info so it's not negitive */
+        /* adjust monitor info so it's not negative */
         for (index = 1; index < dev->monitorCount; index++)
         {
             box.x1 = min(box.x1, dev->minfo[index].left);
@@ -1204,7 +1207,8 @@ rdpClientConDeinit(rdpPtr dev)
     LLOGLN(0, ("rdpClientConDeinit:"));
     if (dev->listen_sck != 0)
     {
-        close(dev->listen_sck);
+        rdpClientConRemoveEnabledDevice(dev->listen_sck);
+        g_sck_close(dev->listen_sck);
         unlink(dev->uds_data);
     }
     return 0;
@@ -2125,7 +2129,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         /* do not allow captures until we have the client_info */
         clientCon->client_info.size == 0)
     {
-        LLOGLN(0, ("rdpDeferredUpdateCallback: reschedual rect_id %d "
+        LLOGLN(0, ("rdpDeferredUpdateCallback: reschedule rect_id %d "
                "rect_id_ack %d",
                clientCon->rect_id, clientCon->rect_id_ack));
         clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, 40,
@@ -2142,7 +2146,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
            "rdp_Bpp %d screen width %d screen height %d",
            clientCon->rdp_width, clientCon->rdp_height, clientCon->rdp_Bpp,
            id.width, id.height));
-    clientCon->updateSchedualed = FALSE;
+    clientCon->updateScheduled = FALSE;
     rects = 0;
     num_rects = 0;
     LLOGLN(10, ("rdpDeferredUpdateCallback: capture_code %d",
@@ -2178,11 +2182,11 @@ rdpClientConAddDirtyScreenReg(rdpPtr dev, rdpClientCon *clientCon,
     LLOGLN(10, ("rdpClientConAddDirtyScreenReg:"));
 
     rdpRegionUnion(clientCon->dirtyRegion, clientCon->dirtyRegion, reg);
-    if (clientCon->updateSchedualed == FALSE)
+    if (clientCon->updateScheduled == FALSE)
     {
         clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, 40,
                                           rdpDeferredUpdateCallback, clientCon);
-        clientCon->updateSchedualed = TRUE;
+        clientCon->updateScheduled = TRUE;
     }
     return 0;
 }

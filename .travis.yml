@@ -1,0 +1,27 @@
+sudo: false
+
+language: c
+
+branches:
+  except: /^(gh-pages|v[0-9]\..*)/
+
+compiler:
+  - clang
+  - gcc
+
+addons:
+  apt:
+    packages:
+      - xserver-xorg-dev
+      - nasm
+
+env:
+  global:
+    - PKG_CONFIG_PATH=xrdp/pkgconfig
+
+install:
+  - git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git xrdp
+    && sed -e 's/@VERSION@/0.9.0/g' -e "s,@abs_top_srcdir@,`pwd`/xrdp,g" xrdp/pkgconfig/xrdp-uninstalled.pc.in >xrdp/pkgconfig/xrdp-uninstalled.pc
+
+script:
+  - ./bootstrap && ./configure && make && make check

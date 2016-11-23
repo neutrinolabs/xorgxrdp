@@ -58,10 +58,12 @@ rdpRRRegisterSize(ScreenPtr pScreen, int width, int height)
     int mmwidth;
     int mmheight;
     RRScreenSizePtr pSize;
+    ScrnInfoPtr pScrn;
 
     LLOGLN(0, ("rdpRRRegisterSize: width %d height %d", width, height));
-    mmwidth = PixelToMM(width);
-    mmheight = PixelToMM(height);
+    pScrn = xf86Screens[pScreen->myNum];
+    mmwidth = PixelToMM(width, pScrn->xDpi);
+    mmheight = PixelToMM(height, pScrn->yDpi);
     pSize = RRRegisterSize(pScreen, width, height, mmwidth, mmheight);
     /* Tell RandR what the current config is */
     RRSetCurrentConfig(pScreen, RR_Rotate_0, 0, pSize);
@@ -115,7 +117,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     pScreen->mmHeight = mmHeight;
     screenPixmap = pScreen->GetScreenPixmap(pScreen);
     g_free(dev->pfbMemory_alloc);
-    dev->pfbMemory_alloc = (char *) g_malloc(dev->sizeInBytes + 16, 1);
+    dev->pfbMemory_alloc = g_new0(char, dev->sizeInBytes + 16);
     dev->pfbMemory = (char *) RDPALIGN(dev->pfbMemory_alloc, 16);
     if (screenPixmap != 0)
     {
@@ -175,15 +177,15 @@ rdpRRCrtcGetGamma(ScreenPtr pScreen, RRCrtcPtr crtc)
     crtc->gammaSize = 1;
     if (crtc->gammaRed == NULL)
     {
-        crtc->gammaRed = g_malloc(32, 1);
+        crtc->gammaRed = g_new0(CARD16, 16);
     }
     if (crtc->gammaBlue == NULL)
     {
-        crtc->gammaBlue = g_malloc(32, 1);
+        crtc->gammaBlue = g_new0(CARD16, 16);
     }
     if (crtc->gammaGreen == NULL)
     {
-        crtc->gammaGreen = g_malloc(32, 1);
+        crtc->gammaGreen = g_new0(CARD16, 16);
     }
     return TRUE;
 }
@@ -222,6 +224,7 @@ rdpRROutputGetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property)
 }
 
 /******************************************************************************/
+#if 0
 static int
 get_rect(rdpPtr dev, const char *name, BoxPtr rect)
 {
@@ -255,6 +258,7 @@ get_rect(rdpPtr dev, const char *name, BoxPtr rect)
     }
     return 0;
 }
+#endif
 
 /******************************************************************************/
 Bool

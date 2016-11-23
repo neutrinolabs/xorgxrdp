@@ -63,9 +63,8 @@ older notes
 Pre-requisites:
     o sudo apt-get install xserver-xorg-dev
 
-quick and easy way to build and run the driver
-    o cd xorg/server
-    o ./test-in-home.sh
+Quick and easy way to run Xorg with the compiled drivers
+    o make check
 
     o see /etc/X11/xrdp/xorg.conf to see how things are configured
 

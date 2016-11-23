@@ -45,13 +45,15 @@ XVideo
 #include "rdpClientCon.h"
 #include "rdpXv.h"
 
+static char g_xv_image[] = "XV_IMAGE";
+
 #define LOG_LEVEL 1
 #define LLOGLN(_level, _args) \
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 #define T_NUM_ENCODINGS 1
 static XF86VideoEncodingRec g_xrdpVidEncodings[T_NUM_ENCODINGS] =
-{ { 0, "XV_IMAGE", 2046, 2046, { 1, 1 } } };
+{ { 0, g_xv_image, 2046, 2046, { 1, 1 } } };
 
 #define T_NUM_FORMATS 1
 static XF86VideoFormatRec g_xrdpVidFormats[T_NUM_FORMATS] =
@@ -415,7 +417,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
                 *dst32 = pix;
                 while (ih > (1 << 16) - 1)
                 {
-                    /* goes in here alot when downsizing */
+                    /* goes in here a lot when downsizing */
                     ih -= 1 << 16;
                     src32++;
                 }
@@ -427,7 +429,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
         last_lndex = lndex;
         while (iv > (1 << 16) - 1)
         {
-            /* goes in here alot when downsizing */
+            /* goes in here a lot when downsizing */
             iv -= 1 << 16;
             lndex++;
         }
@@ -447,7 +449,7 @@ rdpDeferredXvCleanup(OsTimerPtr timer, CARD32 now, pointer arg)
 
     LLOGLN(0, ("rdpDeferredXvCleanup:"));
     dev = (rdpPtr) arg;
-    dev->xv_timer_schedualed = 0;
+    dev->xv_timer_scheduled = 0;
     dev->xv_data_bytes = 0;
     g_free(dev->xv_data);
     dev->xv_data = 0;
@@ -476,7 +478,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     LLOGLN(10, ("xrdpVidPutImage: src_x %d srcy_y %d", src_x, src_y));
     dev = XRDPPTR(pScrn);
 
-    if (dev->xv_timer_schedualed)
+    if (dev->xv_timer_scheduled)
     {
         TimerCancel(dev->xv_timer);
         dev->xv_timer = TimerSet(dev->xv_timer, 0, 2000,
@@ -484,7 +486,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     }
     else
     {
-        dev->xv_timer_schedualed = 1;
+        dev->xv_timer_scheduled = 1;
         dev->xv_timer = TimerSet(dev->xv_timer, 0, 2000,
                                  rdpDeferredXvCleanup, dev);
     }
@@ -493,7 +495,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     if (index > dev->xv_data_bytes)
     {
         g_free(dev->xv_data);
-        dev->xv_data = g_malloc(index, 0);
+        dev->xv_data = g_new(char, index);
         if (dev->xv_data == NULL)
         {
             LLOGLN(0, ("xrdpVidPutImage: memory alloc error"));
@@ -535,7 +537,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     }
     if ((width == drw_w) && (height == drw_h))
     {
-        LLOGLN(10, ("xrdpVidPutImage: strech skip"));
+        LLOGLN(10, ("xrdpVidPutImage: stretch skip"));
         rgbend32 = rgborg32;
     }
     else
@@ -645,7 +647,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
 {
     XF86VideoAdaptorPtr adaptor;
     DevUnion* pDevUnion;
-    int bytes;
+    char name[256];
 
     adaptor = xf86XVAllocateVideoAdaptorRec(pScrn);
     if (adaptor == 0)
@@ -657,7 +659,9 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
     //adaptor->flags = VIDEO_NO_CLIPPING;
     //adaptor->flags = VIDEO_CLIP_TO_VIEWPORT;
     adaptor->flags = 0;
-    adaptor->name = XRDP_MODULE_NAME " XVideo Adaptor";
+    snprintf(name, 255, "%s XVideo Adaptor", XRDP_MODULE_NAME);
+    name[255] = 0;
+    adaptor->name = name;
     adaptor->nEncodings = T_NUM_ENCODINGS;
     adaptor->pEncodings = &(g_xrdpVidEncodings[0]);
     adaptor->nFormats = T_NUM_FORMATS;
@@ -669,8 +673,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
     adaptor->nAttributes = 0;
     adaptor->pAttributes = 0;
     adaptor->nPorts = T_MAX_PORTS;
-    bytes = sizeof(DevUnion) * T_MAX_PORTS;
-    pDevUnion = (DevUnion*) g_malloc(bytes, 1);
+    pDevUnion = g_new0(DevUnion, T_MAX_PORTS);
     adaptor->pPortPrivates = pDevUnion;
     adaptor->PutVideo = xrdpVidPutVideo;
     adaptor->PutStill = xrdpVidPutStill;

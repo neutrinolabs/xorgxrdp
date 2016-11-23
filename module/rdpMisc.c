@@ -166,7 +166,7 @@ g_free(void *ptr)
 
 /*****************************************************************************/
 void
-g_sprintf(char *dest, char *format, ...)
+g_sprintf(char *dest, const char *format, ...)
 {
     va_list ap;
 

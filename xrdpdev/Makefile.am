@@ -2,8 +2,8 @@ EXTRA_DIST =
 
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
-  -I$(top_srcdir)/module \
-  -I$(top_srcdir)/../common
+  $(XRDP_CFLAGS) \
+  -I$(top_srcdir)/module
 
 xrdpdev_drv_la_LTLIBRARIES = xrdpdev_drv.la
 

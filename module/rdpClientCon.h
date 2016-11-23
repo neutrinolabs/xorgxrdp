@@ -25,7 +25,6 @@ Client connection to xrdp
 #include <xorgVersion.h>
 #include <xf86.h>
 
-/* in xrdp/common */
 #include "xrdp_client_info.h"
 #include "xrdp_constants.h"
 
@@ -108,7 +107,7 @@ struct _rdpClientCon
     int rect_id_ack;
 
     OsTimerPtr updateTimer;
-    int updateSchedualed; /* boolean */
+    int updateScheduled; /* boolean */
 
     RegionPtr dirtyRegion;
 

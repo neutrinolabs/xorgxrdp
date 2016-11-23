@@ -42,7 +42,7 @@ SECTION .text
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
 
-; s8 and d8 do not need to be alighed but they should match
+; s8 and d8 do not need to be aligned but they should match
 ; in the lsb nibble, ie. s8 & 0xf == d8 & 0xf
 ; if not, it won't make use of the simd
 ;int

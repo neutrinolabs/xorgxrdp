@@ -81,6 +81,8 @@ int g_blueBits = 8;
 static int g_setup_done = 0;
 static OsTimerPtr g_timer = 0;
 
+static char g_xrdp_driver_name[] = XRDP_DRIVER_NAME;
+
 /* Supported "chipsets" */
 static SymTabRec g_Chipsets[] =
 {
@@ -170,7 +172,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     pScrn->progClock = 1;
     pScrn->rgbBits = g_rgb_bits;
     pScrn->depth = g_depth;
-    pScrn->chipset = XRDP_DRIVER_NAME;
+    pScrn->chipset = g_xrdp_driver_name;
     pScrn->currentMode = pScrn->modes;
     pScrn->offset.blue = g_blueOffset;
     pScrn->offset.green = g_greenOffset;
@@ -292,12 +294,13 @@ rdpResizeSession(rdpPtr dev, int width, int height)
 {
     int mmwidth;
     int mmheight;
-    RRScreenSizePtr pSize;
+    ScrnInfoPtr pScrn;
     Bool ok;
 
     LLOGLN(0, ("rdpResizeSession: width %d height %d", width, height));
-    mmwidth = PixelToMM(width);
-    mmheight = PixelToMM(height);
+    pScrn = xf86Screens[dev->pScreen->myNum];
+    mmwidth = PixelToMM(width, pScrn->xDpi);
+    mmheight = PixelToMM(height, pScrn->yDpi);
 
     ok = TRUE;
     if ((dev->width != width) || (dev->height != height))
@@ -449,7 +452,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     dev->bitsPerPixel = rdpBitsPerPixel(dev->depth);
     dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
     LLOGLN(0, ("rdpScreenInit: pfbMemory bytes %d", dev->sizeInBytes));
-    dev->pfbMemory_alloc = (char *) g_malloc(dev->sizeInBytes + 16, 1);
+    dev->pfbMemory_alloc = g_new0(char, dev->sizeInBytes + 16);
     dev->pfbMemory = (char*) RDPALIGN(dev->pfbMemory_alloc, 16);
     LLOGLN(0, ("rdpScreenInit: pfbMemory %p", dev->pfbMemory));
     if (!fbScreenInit(pScreen, dev->pfbMemory,
@@ -686,8 +689,8 @@ rdpProbe(DriverPtr drv, int flags)
             LLOGLN(10, ("rdpProbe: found screen"));
             found_screen = 1;
             pscrn->driverVersion = XRDP_VERSION;
-            pscrn->driverName    = XRDP_DRIVER_NAME;
-            pscrn->name          = XRDP_DRIVER_NAME;
+            pscrn->driverName    = g_xrdp_driver_name;
+            pscrn->name          = g_xrdp_driver_name;
             pscrn->Probe         = rdpProbe;
             pscrn->PreInit       = rdpPreInit;
             pscrn->ScreenInit    = rdpScreenInit;
@@ -746,7 +749,7 @@ rdpIdentify(int flags)
 _X_EXPORT DriverRec g_DriverRec =
 {
     XRDP_VERSION,
-    XRDP_DRIVER_NAME,
+    g_xrdp_driver_name,
     rdpIdentify,
     rdpProbe,
     rdpAvailableOptions,

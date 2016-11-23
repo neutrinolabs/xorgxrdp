@@ -30,6 +30,15 @@ the rest
 
 #include <X11/Xos.h>
 
+#include <config_ac.h>
+
+#if defined(HAVE_FUNC_ATTRIBUTE_FORMAT)
+#define printflike(arg_format, arg_first_check) \
+ __attribute__((__format__(__printf__, arg_format, arg_first_check)))
+#else
+#define printflike(arg_format, arg_first_check)
+#endif
+
 extern _X_EXPORT int
 rdpBitsPerPixel(int depth);
 extern _X_EXPORT int
@@ -49,7 +58,7 @@ g_malloc(int size, int zero);
 extern _X_EXPORT void
 g_free(void *ptr);
 extern _X_EXPORT void
-g_sprintf(char *dest, char *format, ...);
+g_sprintf(char *dest, const char *format, ...);
 extern _X_EXPORT int
 g_sck_tcp_socket(void);
 extern _X_EXPORT int
@@ -82,6 +91,14 @@ extern _X_EXPORT int
 g_chmod_hex(const char *filename, int flags);
 extern _X_EXPORT void
 g_hexdump(void *p, long len);
+
+
+/* glib-style memory allocation macros */
+#define g_new(struct_type, n_structs) \
+    (struct_type *) malloc(sizeof(struct_type) * (n_structs))
+#define g_new0(struct_type, n_structs) \
+    (struct_type *) calloc((n_structs), sizeof(struct_type))
+
 
 #if defined(X_BYTE_ORDER)
 #  if X_BYTE_ORDER == X_LITTLE_ENDIAN
@@ -151,7 +168,7 @@ do {                                         \
     if ((v) > (s)->size)                     \
     {                                        \
         g_free((s)->data);                   \
-        (s)->data = (char*)g_malloc((v), 0); \
+        (s)->data = g_new(char, (v));        \
         (s)->size = (v);                     \
     }                                        \
     (s)->p = (s)->data;                      \
@@ -249,7 +266,7 @@ do {                    \
 /******************************************************************************/
 #define make_stream(s)                                        \
 do {                                                          \
-    (s) = (struct stream*)g_malloc(sizeof(struct stream), 1); \
+    (s) = g_new0(struct stream, 1);                           \
 } while (0)
 
 /******************************************************************************/

@@ -47,6 +47,7 @@ xrdp keyboard module
 #include "rdp.h"
 #include "rdpInput.h"
 #include "rdpDraw.h"
+#include "rdpMisc.h"
 
 /******************************************************************************/
 #define LOG_LEVEL 1
@@ -76,6 +77,14 @@ xrdp keyboard module
 
 #define N_PREDEFINED_KEYS \
     (sizeof(g_kbdMap) / (sizeof(KeySym) * GLYPHS_PER_KEY))
+
+static char g_base_str[] = "base";
+static char g_pc104_str[] = "pc104";
+static char g_us_str[] = "us";
+static char g_empty_str[] = "";
+static char g_Keyboard_str[] = "Keyboard";
+
+static char g_xrdp_keyb_name[] = XRDP_KEYB_NAME;
 
 static OsTimerPtr g_kbtimer = 0;
 
@@ -445,7 +454,7 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
             rdpEnqueueKey(keyboard->device, type, 156);
             break;
 
-        case 115: /* "/ ?" on br keybaord */
+        case 115: /* "/ ?" on br keyboard */
             sendDownUpKeyEvent(keyboard->device, type, 211);
             break;
 
@@ -552,11 +561,10 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
     pKeySyms->minKeyCode = MIN_KEY_CODE;
     pKeySyms->maxKeyCode = MAX_KEY_CODE;
     pKeySyms->mapWidth = GLYPHS_PER_KEY;
-    i = sizeof(KeySym) * MAP_LENGTH * GLYPHS_PER_KEY;
-    pKeySyms->map = (KeySym *)malloc(i);
+    pKeySyms->map = g_new(KeySym, MAP_LENGTH * GLYPHS_PER_KEY);
     if (pKeySyms->map == 0)
     {
-        LLOGLN(0, ("rdpkeybDeviceInit: malloc failed"));
+        LLOGLN(0, ("rdpkeybDeviceInit: out of memory"));
         exit(1);
     }
     else
@@ -640,7 +648,7 @@ rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
         if (ctrls->enabled_ctrls & XkbRepeatKeysMask)
         {
             LLOGLN(0, ("rdpkeybChangeKeyboardControl: autoRepeat on"));
-            /* schedual to turn off the autorepeat after 100 ms so any app
+            /* schedule to turn off the autorepeat after 100 ms so any app
              * polling it will be happy it's on */
             g_kbtimer = TimerSet(g_kbtimer, 0, 100,
                                  rdpInDeferredUpdateCallback, pDev);
@@ -670,11 +678,11 @@ rdpkeybControl(DeviceIntPtr device, int what)
         case DEVICE_INIT:
             rdpkeybDeviceInit(device, &keySyms, modMap);
             memset(&set, 0, sizeof(set));
-            set.rules = "base";
-            set.model = "pc104";
-            set.layout = "us";
-            set.variant = "";
-            set.options = "";
+            set.rules = g_base_str;
+            set.model = g_pc104_str;
+            set.layout = g_us_str;
+            set.variant = g_empty_str;
+            set.options = g_empty_str;
             InitKeyboardDeviceStruct(device, &set, rdpkeybBell,
                                      rdpkeybChangeKeyboardControl);
             dev = rdpGetDevFromScreen(NULL);
@@ -736,7 +744,7 @@ rdpkeybPreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
     LLOGLN(0, ("rdpkeybPreInit: drv %p info %p, flags 0x%x",
            drv, info, flags));
     info->device_control = rdpkeybControl;
-    info->type_name = "Keyboard";
+    info->type_name = g_Keyboard_str;
 
     return 0;
 }
@@ -756,7 +764,7 @@ rdpkeybUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 static InputDriverRec rdpkeyb =
 {
     PACKAGE_VERSION_MAJOR,  /* version   */
-    XRDP_KEYB_NAME,         /* name      */
+    g_xrdp_keyb_name,       /* name      */
     NULL,                   /* identify  */
     rdpkeybPreInit,         /* preinit   */
     rdpkeybUnInit,          /* uninit    */
@@ -826,6 +834,8 @@ reload_xkb(DeviceIntPtr keyboard, XkbRMLVOSet *set)
                                       NULL, serverClient);
             }
         }
+        free(keySyms->map);
+        free(keySyms);
     }
     else
     {
@@ -845,12 +855,12 @@ rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info)
     LLOGLN(0, ("rdpLoadLayout: keylayout 0x%8.8x variant %s display %s",
                keylayout, client_info->variant, display));
     memset(&set, 0, sizeof(set));
-    set.rules = "base";
+    set.rules = g_base_str;
 
-    set.model = "pc104";
-    set.layout = "us";
-    set.variant = "";
-    set.options = "";
+    set.model = g_pc104_str;
+    set.layout = g_us_str;
+    set.variant = g_empty_str;
+    set.options = g_empty_str;
 
     if (strlen(client_info->model) > 0)
     {

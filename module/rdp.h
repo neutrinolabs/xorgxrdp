@@ -33,11 +33,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "rdpPri.h"
 
-/* in xrdp/common */
 #include "xrdp_client_info.h"
 #include "xrdp_constants.h"
 
-#define XRDP_MODULE_NAME "XRDPMOD"
+#define XRDP_MODULE_NAME "XORGXRDP"
 #define XRDP_DRIVER_NAME "XRDPDEV"
 #define XRDP_MOUSE_NAME "XRDPMOUSE"
 #define XRDP_KEYB_NAME "XRDPKEYB"
@@ -85,8 +84,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XRDP_i420 \
 ((12 << 24) | (65 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
 
-#define PixelDPI 100
-#define PixelToMM(_size) (((_size) * 254 + (PixelDPI) * 5) / ((PixelDPI) * 10))
+#define PixelToMM(_size, _dpi) (((_size) * 254 + (_dpi) * 5) / ((_dpi) * 10))
 
 #define RDPMIN(_val1, _val2) ((_val1) < (_val2) ? (_val1) : (_val2))
 #define RDPMAX(_val1, _val2) ((_val1) < (_val2) ? (_val2) : (_val1))
@@ -300,7 +298,7 @@ struct _rdpRec
     yuv_to_rgb32_proc uyvy_to_rgb32;
     char *xv_data;
     int xv_data_bytes;
-    int xv_timer_schedualed;
+    int xv_timer_scheduled;
     OsTimerPtr xv_timer;
 
     copy_box_proc a8r8g8b8_to_a8b8g8r8_box;

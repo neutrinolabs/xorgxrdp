@@ -1,20 +1,30 @@
 # Process this file with autoconf to produce a configure script
 
 AC_PREREQ(2.59)
-AC_INIT([xrdpmod], [0.1.0], [xrdp-devel@googlegroups.com])
+AC_INIT([xorgxrdp], [0.1.0], [xrdp-devel@googlegroups.com])
 AC_CONFIG_HEADERS(config_ac.h:config_ac-h.in)
 AM_INIT_AUTOMAKE([1.6 foreign])
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_PROG_CC
 AC_C_CONST
 AC_PROG_LIBTOOL
 
-AC_CHECK_HEADER([xorg/xorg-server.h], [],
-  [AC_MSG_ERROR([please install xserver-xorg-dev or xorg-x11-server-sdk])])
+AC_CONFIG_MACRO_DIR([m4])
+AX_CFLAGS_WARN_ALL
+AX_APPEND_COMPILE_FLAGS([-Wwrite-strings])
+AX_GCC_FUNC_ATTRIBUTE([format])
 
-PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0])
+PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
+  [AC_MSG_ERROR([please install xserver-xorg-dev, xorg-x11-server-sdk or xorg-x11-server-devel])])
+
 AC_SUBST([XORG_SERVER_CFLAGS])
 AC_SUBST([XORG_SERVER_LIBS])
+
+PKG_CHECK_MODULES([XRDP], [xrdp >= 0], [],
+  [AC_MSG_ERROR([please install xrdp >= 0])])
+
+AC_SUBST([XRDP_CFLAGS])
+AC_SUBST([XRDP_LIBS])
 
 moduledir=`pkg-config xorg-server --variable=moduledir`
 AC_SUBST([moduledir])
@@ -56,6 +66,7 @@ AM_CONDITIONAL(WITH_SIMD_X86, [test x$simd_arch = xi386])
 
 AC_CONFIG_FILES([Makefile
                  module/Makefile
+                 tests/Makefile
                  xrdpdev/Makefile
                  xrdpkeyb/Makefile
                  xrdpmouse/Makefile
