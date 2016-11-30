@@ -1,6 +1,7 @@
 EXTRA_DIST = yuv2rgb
 
-TESTS_ENVIRONMENT = top_builddir=$(top_builddir) top_srcdir=$(top_srcdir) $(SHELL)
+TEST_EXTENSIONS = .sh
+SH_LOG_COMPILER = $(SHELL)
 
 TESTS = xorg-test-run.sh
 
