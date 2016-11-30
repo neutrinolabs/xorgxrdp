@@ -34,7 +34,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdpPri.h"
 
 #include "xrdp_client_info.h"
-#include "xrdp_constants.h"
 
 #define XRDP_MODULE_NAME "XORGXRDP"
 #define XRDP_DRIVER_NAME "XRDPDEV"
