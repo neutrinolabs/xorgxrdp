@@ -1209,6 +1209,7 @@ rdpClientConDeinit(rdpPtr dev)
     {
         rdpClientConRemoveEnabledDevice(dev->listen_sck);
         g_sck_close(dev->listen_sck);
+        LLOGLN(0, ("rdpClientConDeinit: deleting file %s", dev->uds_data));
         unlink(dev->uds_data);
     }
     return 0;
