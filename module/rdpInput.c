@@ -75,22 +75,13 @@ int
 rdpUnregisterInputCallback(rdpInputEventProcPtr proc)
 {
     int index;
-    char text[256];
 
     LLOGLN(0, ("rdpUnregisterInputCallback: proc %p", proc));
     for (index = 0; index < MAX_INPUT_PROC; index++)
     {
         if (g_input_proc[index].proc == proc)
         {
-            if (index == 0)
-            {
-                /* hack to cleanup
-                   remove when xrdpdevTearDown is working */
-                g_sprintf(text, "/tmp/.xrdp/xrdp_display_%s", display);
-                LLOGLN(0, ("rdpUnregisterInputCallback: deleting file %s", text));
-                unlink(text);
-            }
-            g_input_proc[index].proc = 0; 
+            g_input_proc[index].proc = 0;
             return 0;
         }
     }
