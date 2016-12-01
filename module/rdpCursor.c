@@ -43,7 +43,6 @@ cursor
 #include <X11/Xarch.h>
 
 #include "rdp.h"
-#include "rdpMain.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
 #include "rdpCursor.h"
@@ -354,5 +353,4 @@ void
 rdpSpriteDeviceCursorCleanup(DeviceIntPtr pDev, ScreenPtr pScr)
 {
     LLOGLN(10, ("rdpSpriteDeviceCursorCleanup:"));
-    xorgxrdpDownDown(pScr);
 }
