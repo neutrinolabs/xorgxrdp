@@ -1205,6 +1205,15 @@ int
 rdpClientConDeinit(rdpPtr dev)
 {
     LLOGLN(0, ("rdpClientConDeinit:"));
+
+    if (dev->clientConTail != NULL)
+    {
+        LLOGLN(0, ("rdpClientConDeinit: disconnecting only clientCon"));
+        rdpClientConDisconnect(dev, dev->clientConTail);
+        dev->clientConHead = NULL;
+        dev->clientConTail = NULL;
+    }
+
     if (dev->listen_sck != 0)
     {
         rdpClientConRemoveEnabledDevice(dev->listen_sck);
