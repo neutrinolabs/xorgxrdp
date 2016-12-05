@@ -1205,10 +1205,20 @@ int
 rdpClientConDeinit(rdpPtr dev)
 {
     LLOGLN(0, ("rdpClientConDeinit:"));
+
+    if (dev->clientConTail != NULL)
+    {
+        LLOGLN(0, ("rdpClientConDeinit: disconnecting only clientCon"));
+        rdpClientConDisconnect(dev, dev->clientConTail);
+        dev->clientConHead = NULL;
+        dev->clientConTail = NULL;
+    }
+
     if (dev->listen_sck != 0)
     {
         rdpClientConRemoveEnabledDevice(dev->listen_sck);
         g_sck_close(dev->listen_sck);
+        LLOGLN(0, ("rdpClientConDeinit: deleting file %s", dev->uds_data));
         unlink(dev->uds_data);
     }
     return 0;

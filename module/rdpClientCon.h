@@ -26,7 +26,6 @@ Client connection to xrdp
 #include <xf86.h>
 
 #include "xrdp_client_info.h"
-#include "xrdp_constants.h"
 
 #ifndef _RDPCLIENTCON_H
 #define _RDPCLIENTCON_H

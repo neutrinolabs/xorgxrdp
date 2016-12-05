@@ -1,9 +1,9 @@
 # Process this file with autoconf to produce a configure script
 
-AC_PREREQ(2.59)
+AC_PREREQ(2.65)
 AC_INIT([xorgxrdp], [0.1.0], [xrdp-devel@googlegroups.com])
 AC_CONFIG_HEADERS(config_ac.h:config_ac-h.in)
-AM_INIT_AUTOMAKE([1.6 foreign])
+AM_INIT_AUTOMAKE([1.11 foreign parallel-tests])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_PROG_CC
 AC_C_CONST
@@ -17,14 +17,9 @@ AX_GCC_FUNC_ATTRIBUTE([format])
 PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
   [AC_MSG_ERROR([please install xserver-xorg-dev, xorg-x11-server-sdk or xorg-x11-server-devel])])
 
-AC_SUBST([XORG_SERVER_CFLAGS])
-AC_SUBST([XORG_SERVER_LIBS])
-
-PKG_CHECK_MODULES([XRDP], [xrdp >= 0], [],
-  [AC_MSG_ERROR([please install xrdp >= 0])])
-
-AC_SUBST([XRDP_CFLAGS])
-AC_SUBST([XRDP_LIBS])
+if test "x$XRDP_CFLAGS" = "x"; then
+  PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.0])
+fi
 
 moduledir=`pkg-config xorg-server --variable=moduledir`
 AC_SUBST([moduledir])

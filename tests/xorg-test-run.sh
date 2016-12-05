@@ -13,8 +13,8 @@
 top_builddir=`cd $top_builddir >/dev/null; pwd`
 
 # Source directory where xorg.conf is located
-: ${top_srcdir=..}
-top_srcdir=`cd $top_srcdir >/dev/null; pwd`
+: ${srcdir=`dirname $0`}
+top_srcdir=`cd $srcdir/.. >/dev/null; pwd`
 
 # Test name
 : ${TESTNAME=test}
