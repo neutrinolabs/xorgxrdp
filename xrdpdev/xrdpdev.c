@@ -533,6 +533,9 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     dev->privateKeyRecGC = rdpAllocateGCPrivate(pScreen, sizeof(rdpGCRec));
     dev->privateKeyRecPixmap = rdpAllocatePixmapPrivate(pScreen, sizeof(rdpPixmapRec));
 
+    dev->CloseScreen = pScreen->CloseScreen;
+    pScreen->CloseScreen = rdpCloseScreen;
+
     dev->CopyWindow = pScreen->CopyWindow;
     pScreen->CopyWindow = rdpCopyWindow;
 
