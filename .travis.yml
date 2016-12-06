@@ -17,7 +17,7 @@ addons:
 
 env:
   global:
-    - PKG_CONFIG_PATH=xrdp/pkgconfig
+    - PKG_CONFIG_PATH=`pwd`/xrdp/pkgconfig
 
 install:
   - git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git xrdp
