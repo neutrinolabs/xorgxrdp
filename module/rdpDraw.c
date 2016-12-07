@@ -45,6 +45,7 @@ misc draw calls
 #include "rdpMisc.h"
 #include "rdpGlyphs.h"
 #include "rdpReg.h"
+#include "rdpMain.h"
 
 #define LOG_LEVEL 1
 #define LLOGLN(_level, _args) \
@@ -364,6 +365,7 @@ rdpCloseScreen(int index, ScreenPtr pScreen)
     dev->pScreen->CloseScreen = dev->CloseScreen;
     rv = dev->pScreen->CloseScreen(index, pScreen);
     dev->pScreen->CloseScreen = rdpCloseScreen;
+    xorgxrdpDownDown(pScreen);
     return rv;
 }
 
@@ -381,6 +383,7 @@ rdpCloseScreen(ScreenPtr pScreen)
     dev->pScreen->CloseScreen = dev->CloseScreen;
     rv = dev->pScreen->CloseScreen(pScreen);
     dev->pScreen->CloseScreen = rdpCloseScreen;
+    xorgxrdpDownDown(pScreen);
     return rv;
 }
 

@@ -1,9 +1,10 @@
 ACLOCAL_AMFLAGS = -I m4
+AM_DISTCHECK_CONFIGURE_FLAGS = --enable-strict-locations
 
 EXTRA_DIST = \
   bootstrap \
   m4 \
-  readme.txt
+  README.md
 
 SUBDIRS = \
   module \
