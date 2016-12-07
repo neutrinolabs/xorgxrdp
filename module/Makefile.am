@@ -94,7 +94,7 @@ nasm_verbose_ = $(nasm_verbose_@AM_DEFAULT_V@)
 nasm_verbose_0 = @
 
 .asm.lo:
-	$(nasm_verbose)$(LIBTOOL) $(AM_V_lt) --mode=compile --tag NASM \
+	$(nasm_verbose)$(LIBTOOL) $(AM_V_lt) --mode=compile \
 	  $(srcdir)/nasm_lt.sh $(NASM) $(NAFLAGS) -I$(srcdir) -I. $< -o $@
 
 libxorgxrdp_la_LIBADD =
