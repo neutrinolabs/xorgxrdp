@@ -74,6 +74,7 @@ e GXor,           DPo
 f GXset           1
 */
 
+#if 0
 static int g_rdp_opcodes[16] =
 {
     0x00, /* GXclear        0x0 0 */
@@ -93,6 +94,7 @@ static int g_rdp_opcodes[16] =
     0x77, /* GXnand         0xe NOT src OR NOT dst */
     0xff  /* GXset          0xf 1 */
 };
+#endif
 
 static int
 rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon);
@@ -1298,6 +1300,7 @@ rdpClientConPreCheck(rdpPtr dev, rdpClientCon *clientCon, int in_size)
     return rv;
 }
 
+#if 0
 /******************************************************************************/
 int
 rdpClientConFillRect(rdpPtr dev, rdpClientCon *clientCon,
@@ -1653,6 +1656,7 @@ rdpClientConSetCursor(rdpPtr dev, rdpClientCon *clientCon,
 
     return 0;
 }
+#endif
 
 /******************************************************************************/
 int
@@ -1686,6 +1690,7 @@ rdpClientConSetCursorEx(rdpPtr dev, rdpClientCon *clientCon,
     return 0;
 }
 
+#if 0
 /******************************************************************************/
 int
 rdpClientConCreateOsSurface(rdpPtr dev, rdpClientCon *clientCon,
@@ -1991,6 +1996,7 @@ rdpClientConUpdateOsUse(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
 
     return 0;
 }
+#endif
 
 /******************************************************************************/
 static CARD32
@@ -2246,6 +2252,7 @@ rdpClientConGetScreenImageRect(rdpPtr dev, rdpClientCon *clientCon,
     id->shmem_lineBytes = clientCon->shmem_lineBytes;
 }
 
+#if 0
 /******************************************************************************/
 void
 rdpClientConGetPixmapImageRect(rdpPtr dev, rdpClientCon *clientCon,
@@ -2374,6 +2381,7 @@ rdpClientConSendArea(rdpPtr dev, rdpClientCon *clientCon,
         }
     }
 }
+#endif
 
 /******************************************************************************/
 int

@@ -205,6 +205,7 @@ GetTextBoundingBox(DrawablePtr pDrawable, FontPtr font, int x, int y,
     }
 }
 
+#if 0
 /******************************************************************************/
 int
 rdpDrawItemAdd(rdpPtr dev, rdpPixmapRec *priv, struct rdp_draw_item *di)
@@ -230,6 +231,7 @@ rdpDrawItemAdd(rdpPtr dev, rdpPixmapRec *priv, struct rdp_draw_item *di)
 
     return 0;
 }
+#endif
 
 /******************************************************************************/
 int
