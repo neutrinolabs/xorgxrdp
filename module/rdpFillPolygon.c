@@ -42,7 +42,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
-void
+static void
 rdpFillPolygonOrg(DrawablePtr pDrawable, GCPtr pGC,
                   int shape, int mode, int count,
                   DDXPointPtr pPts)

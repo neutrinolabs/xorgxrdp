@@ -219,7 +219,7 @@ set_pixel_safe(char *data, int x, int y, int width, int height, int bpp,
 }
 
 /******************************************************************************/
-void
+static void
 rdpSpriteSetCursorCon(rdpClientCon *clientCon,
                       DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs,
                       int x, int y)

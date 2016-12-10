@@ -534,7 +534,7 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
 }
 
 /******************************************************************************/
-void
+static void
 rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
 {
     int i;

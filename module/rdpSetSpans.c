@@ -42,7 +42,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
-void
+static void
 rdpSetSpansOrg(DrawablePtr pDrawable, GCPtr pGC, char *psrc,
                DDXPointPtr ppt, int *pwidth, int nspans, int fSorted)
 {
