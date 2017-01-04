@@ -32,18 +32,18 @@ capture
 extern _X_EXPORT Bool
 rdpCapture(rdpClientCon *clientCon,
            RegionPtr in_reg, BoxPtr *out_rects, int *num_out_rects,
-           void *src, int src_left, int src_top,
+           const char *src, int src_left, int src_top,
            int src_width, int src_height,
            int src_stride, int src_format,
-           void *dst, int dst_width, int dst_height,
+           char *dst, int dst_width, int dst_height,
            int dst_stride, int dst_format, int mode);
 
 extern _X_EXPORT int
-a8r8g8b8_to_a8b8g8r8_box(char *s8, int src_stride,
+a8r8g8b8_to_a8b8g8r8_box(const char *s8, int src_stride,
                          char *d8, int dst_stride,
                          int width, int height);
 extern _X_EXPORT int
-a8r8g8b8_to_nv12_box(char *s8, int src_stride,
+a8r8g8b8_to_nv12_box(const char *s8, int src_stride,
                      char *d8_y, int dst_stride_y,
                      char *d8_uv, int dst_stride_uv,
                      int width, int height);
