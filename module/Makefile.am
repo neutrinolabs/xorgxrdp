@@ -91,7 +91,7 @@ $(EXTRA_SOURCES)
 
 nasm_verbose = $(nasm_verbose_@AM_V@)
 nasm_verbose_ = $(nasm_verbose_@AM_DEFAULT_V@)
-nasm_verbose_0 = @
+nasm_verbose_0 = @echo "  NASM     $@";
 
 .asm.lo:
 	$(nasm_verbose)$(LIBTOOL) $(AM_V_lt) --mode=compile \
