@@ -33,7 +33,7 @@ xrdp keyboard module
 #include <xf86.h>
 #include <xf86_OSproc.h>
 
-#include "xf86Xinput.h"
+#include <xf86Xinput.h>
 
 #include <mipointer.h>
 #include <fb.h>
@@ -42,7 +42,7 @@ xrdp keyboard module
 
 #include <xkbsrv.h>
 
-#include "X11/keysym.h"
+#include <X11/keysym.h>
 
 #include "rdp.h"
 #include "rdpInput.h"
