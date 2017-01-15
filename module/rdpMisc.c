@@ -138,33 +138,6 @@ g_sck_send(int sck, void *ptr, int len, int flags)
 }
 
 /*****************************************************************************/
-void *
-g_malloc(int size, int zero)
-{
-    char *rv;
-
-    rv = (char *)malloc(size);
-    if (zero)
-    {
-        if (rv != 0)
-        {
-            memset(rv, 0, size);
-        }
-    }
-    return rv;
-}
-
-/*****************************************************************************/
-void
-g_free(void *ptr)
-{
-    if (ptr != 0)
-    {
-        free(ptr);
-    }
-}
-
-/*****************************************************************************/
 void
 g_sprintf(char *dest, const char *format, ...)
 {

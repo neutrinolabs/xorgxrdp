@@ -116,7 +116,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     pScreen->mmWidth = mmWidth;
     pScreen->mmHeight = mmHeight;
     screenPixmap = pScreen->GetScreenPixmap(pScreen);
-    g_free(dev->pfbMemory_alloc);
+    free(dev->pfbMemory_alloc);
     dev->pfbMemory_alloc = g_new0(char, dev->sizeInBytes + 16);
     dev->pfbMemory = (char *) RDPALIGN(dev->pfbMemory_alloc, 16);
     if (screenPixmap != 0)

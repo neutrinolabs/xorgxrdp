@@ -451,7 +451,7 @@ rdpDeferredXvCleanup(OsTimerPtr timer, CARD32 now, pointer arg)
     dev = (rdpPtr) arg;
     dev->xv_timer_scheduled = 0;
     dev->xv_data_bytes = 0;
-    g_free(dev->xv_data);
+    free(dev->xv_data);
     dev->xv_data = 0;
     return 0;
 }
@@ -494,7 +494,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     index = width * height * 4 + drw_w * drw_h * 4 + 64;
     if (index > dev->xv_data_bytes)
     {
-        g_free(dev->xv_data);
+        free(dev->xv_data);
         dev->xv_data = g_new(char, index);
         if (dev->xv_data == NULL)
         {
