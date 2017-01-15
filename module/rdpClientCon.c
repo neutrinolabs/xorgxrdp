@@ -284,7 +284,7 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
             }
         }
     }
-    g_free(clientCon->osBitmaps);
+    free(clientCon->osBitmaps);
 
     plcli = NULL;
     pcli = dev->clientConHead;
@@ -327,7 +327,7 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     }
     free_stream(clientCon->out_s);
     free_stream(clientCon->in_s);
-    g_free(clientCon);
+    free(clientCon);
     return 0;
 }
 
@@ -826,7 +826,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         if (clientCon->client_info.offscreen_cache_entries > 0)
         {
             clientCon->maxOsBitmaps = clientCon->client_info.offscreen_cache_entries;
-            g_free(clientCon->osBitmaps);
+            free(clientCon->osBitmaps);
             clientCon->osBitmaps = (struct rdpup_os_bitmap *)
                         g_new0(struct rdpup_os_bitmap, clientCon->maxOsBitmaps);
         }
@@ -2173,7 +2173,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         rdpClientConSendPaintRectShmEx(clientCon->dev, clientCon, &id,
                                        clientCon->dirtyRegion,
                                        rects, num_rects);
-        g_free(rects);
+        free(rects);
     }
     else
     {

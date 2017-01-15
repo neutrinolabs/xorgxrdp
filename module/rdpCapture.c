@@ -947,7 +947,7 @@ rdpCapture2(rdpClientCon *clientCon,
                 out_rect_index++;
                 if (out_rect_index >= RDP_MAX_TILES)
                 {
-                    g_free(*out_rects);
+                    free(*out_rects);
                     *out_rects = NULL;
                     rdpRegionUninit(&temp_reg);
                     rdpRegionUninit(&lin_reg);

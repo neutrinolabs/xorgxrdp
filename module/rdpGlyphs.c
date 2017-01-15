@@ -61,13 +61,13 @@ rdpGlyphDeleteRdpText(struct rdp_text *rtext)
     {
         if (rtext->chars[index] != NULL)
         {
-            g_free(rtext->chars[index]->data);
-            g_free(rtext->chars[index]);
+            free(rtext->chars[index]->data);
+            free(rtext->chars[index]);
         }
     }
     rdpRegionDestroy(rtext->reg);
     rdpGlyphDeleteRdpText(rtext->next);
-    g_free(rtext);
+    free(rtext);
     return 0;
 }
 

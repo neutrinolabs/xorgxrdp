@@ -259,7 +259,7 @@ rdpDrawItemRemove(rdpPtr dev, rdpPixmapRec *priv, struct rdp_draw_item *di)
     {
         if (di->u.line.segs != NULL)
         {
-            g_free(di->u.line.segs);
+            free(di->u.line.segs);
         }
     }
 
@@ -269,7 +269,7 @@ rdpDrawItemRemove(rdpPtr dev, rdpPixmapRec *priv, struct rdp_draw_item *di)
     }
 
     rdpRegionDestroy(di->reg);
-    g_free(di);
+    free(di);
     return 0;
 }
 

@@ -53,10 +53,6 @@ extern _X_EXPORT void
 g_sleep(int msecs);
 extern _X_EXPORT int
 g_sck_send(int sck, void *ptr, int len, int flags);
-extern _X_EXPORT void *
-g_malloc(int size, int zero);
-extern _X_EXPORT void
-g_free(void *ptr);
 extern _X_EXPORT void
 g_sprintf(char *dest, const char *format, ...);
 extern _X_EXPORT int
@@ -167,7 +163,7 @@ do {                                                    \
 do {                                         \
     if ((v) > (s)->size)                     \
     {                                        \
-        g_free((s)->data);                   \
+        free((s)->data);                   \
         (s)->data = g_new(char, (v));        \
         (s)->size = (v);                     \
     }                                        \
@@ -274,9 +270,9 @@ do {                                                          \
 do {                       \
     if ((s) != 0)          \
     {                      \
-        g_free((s)->data); \
+        free((s)->data); \
     }                      \
-    g_free((s));           \
+    free((s));           \
 } while (0)
 
 #endif
