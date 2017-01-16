@@ -239,7 +239,8 @@ rdpDeferredDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     lnow_ms = GetTimeInMillis();
     if (lnow_ms - dev->disconnect_time_ms > dev->disconnect_timeout_s * 1000)
     {
-        LLOGLN(0, ("rdpDeferredDisconnectCallback: exit X11rdp"));
+        LLOGLN(0, ("rdpDeferredDisconnectCallback: "
+                   "disconnect timeout exceeded, exiting"));
         kill(getpid(), SIGTERM);
         return 0;
     }
@@ -261,7 +262,8 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     {
         if (dev->disconnect_scheduled == FALSE)
         {
-            LLOGLN(0, ("rdpClientConDisconnect: starting g_dis_timer"));
+            LLOGLN(0, ("rdpClientConDisconnect: starting g_dis_timer, "
+                       "exit after %d seconds", dev->disconnect_timeout_s));
             dev->disconnectTimer = TimerSet(dev->disconnectTimer, 0, 1000 * 10,
                                             rdpDeferredDisconnectCallback, dev);
             dev->disconnect_scheduled = TRUE;
@@ -1229,7 +1231,7 @@ rdpClientConInit(rdpPtr dev)
     }
 
     LLOGLN(0, ("rdpClientConInit: kill disconnected [%d] timeout [%d] sec\n",
-           dev->do_kill_disconnected, dev->disconnect_timeout_s));
+               dev->do_kill_disconnected, dev->disconnect_timeout_s));
 
 
     return 0;
