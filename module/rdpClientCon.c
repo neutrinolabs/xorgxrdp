@@ -1165,6 +1165,7 @@ int
 rdpClientConInit(rdpPtr dev)
 {
     int i;
+    char *ptext;
 
     if (!g_directory_exist("/tmp/.xrdp"))
     {
@@ -1197,6 +1198,40 @@ rdpClientConInit(rdpPtr dev)
         g_sck_listen(dev->listen_sck);
         rdpClientConAddEnabledDevice(dev->pScreen, dev->listen_sck);
     }
+
+    ptext = getenv("XRDP_SESMAN_MAX_IDLE_TIME");
+    if (ptext != 0)
+    {
+    }
+    ptext = getenv("XRDP_SESMAN_MAX_DISC_TIME");
+    if (ptext != 0)
+    {
+        i = atoi(ptext);
+        if (i > 0)
+        {
+            dev->do_kill_disconnected = 1;
+            dev->disconnect_timeout_s = atoi(ptext);
+        }
+    }
+    ptext = getenv("XRDP_SESMAN_KILL_DISCONNECTED");
+    if (ptext != 0)
+    {
+        i = atoi(ptext);
+        if (i != 0)
+        {
+            dev->do_kill_disconnected = 1;
+        }
+    }
+
+    if (dev->do_kill_disconnected && (dev->disconnect_timeout_s < 60))
+    {
+        dev->disconnect_timeout_s = 60;
+    }
+
+    LLOGLN(0, ("rdpClientConInit: kill disconnected [%d] timeout [%d] sec\n",
+           dev->do_kill_disconnected, dev->disconnect_timeout_s));
+
+
     return 0;
 }
 
