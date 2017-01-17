@@ -1201,10 +1201,6 @@ rdpClientConInit(rdpPtr dev)
         rdpClientConAddEnabledDevice(dev->pScreen, dev->listen_sck);
     }
 
-    ptext = getenv("XRDP_SESMAN_MAX_IDLE_TIME");
-    if (ptext != 0)
-    {
-    }
     ptext = getenv("XRDP_SESMAN_MAX_DISC_TIME");
     if (ptext != 0)
     {
