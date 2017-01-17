@@ -829,8 +829,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         {
             clientCon->maxOsBitmaps = clientCon->client_info.offscreen_cache_entries;
             free(clientCon->osBitmaps);
-            clientCon->osBitmaps = (struct rdpup_os_bitmap *)
-                        g_new0(struct rdpup_os_bitmap, clientCon->maxOsBitmaps);
+            clientCon->osBitmaps = g_new0(struct rdpup_os_bitmap,
+                                          clientCon->maxOsBitmaps);
         }
     }
 
