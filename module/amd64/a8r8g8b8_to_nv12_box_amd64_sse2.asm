@@ -74,7 +74,7 @@ SECTION .text
 ; RDI, RSI, RDX, RCX, R8, and R9
 
 ;int
-;a8r8g8b8_to_nv12_box_amd64_sse2(char *s8, int src_stride,
+;a8r8g8b8_to_nv12_box_amd64_sse2(const char *s8, int src_stride,
 ;                                char *d8_y, int dst_stride_y,
 ;                                char *d8_uv, int dst_stride_uv,
 ;                                int width, int height);

@@ -33,7 +33,7 @@ composite(alpha blending) calls
 #include <xf86.h>
 #include <xf86_OSproc.h>
 
-#include "mipict.h"
+#include <mipict.h>
 #include <picture.h>
 
 #include "rdp.h"

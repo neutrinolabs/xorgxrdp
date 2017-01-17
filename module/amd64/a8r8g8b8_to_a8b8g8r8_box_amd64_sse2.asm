@@ -46,7 +46,7 @@ SECTION .text
 ; in the lsb nibble, ie. s8 & 0xf == d8 & 0xf
 ; if not, it won't make use of the simd
 ;int
-;a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(char *s8, int src_stride,
+;a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(const char *s8, int src_stride,
 ;                                    char *d8, int dst_stride,
 ;                                    int width, int height);
 %ifidn __OUTPUT_FORMAT__,elf64
@@ -66,7 +66,7 @@ PROC _a8r8g8b8_to_a8b8g8r8_box_amd64_sse2
     ; long dst_stride
     ; long width
     ; long height
-    ; char* src
+    ; const char* src
     ; char* dst
     sub rsp, 48         ; local vars, 48 bytes
 

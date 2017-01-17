@@ -35,11 +35,11 @@ yuy2_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
 int
 uyvy_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
 int
-a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(char *s8, int src_stride,
+a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(const char *s8, int src_stride,
                                     char *d8, int dst_stride,
                                     int width, int height);
 int
-a8r8g8b8_to_nv12_box_amd64_sse2(char *s8, int src_stride,
+a8r8g8b8_to_nv12_box_amd64_sse2(const char *s8, int src_stride,
                                 char *d8_y, int dst_stride_y,
                                 char *d8_uv, int dst_stride_uv,
                                 int width, int height);

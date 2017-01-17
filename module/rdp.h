@@ -210,11 +210,11 @@ struct _rdpCounts
 
 typedef int (*yuv_to_rgb32_proc)(unsigned char *yuvs, int width, int height, int *rgbs);
 
-typedef int (*copy_box_proc)(char *s8, int src_stride,
+typedef int (*copy_box_proc)(const char *s8, int src_stride,
                              char *d8, int dst_stride,
                              int width, int height);
 /* copy_box_proc but 2 dest */
-typedef int (*copy_box_dst2_proc)(char *s8, int src_stride,
+typedef int (*copy_box_dst2_proc)(const char *s8, int src_stride,
                                   char *d8_y, int dst_stride_y,
                                   char *d8_uv, int dst_stride_uv,
                                   int width, int height);
