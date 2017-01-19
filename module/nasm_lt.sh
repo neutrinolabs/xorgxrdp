@@ -53,5 +53,4 @@ if [ "$o_opt" != yes ] ; then
     outfile="-o `echo $infile | sed -e 's%^.*/%%' -e 's%\.[^.]*$%%'`.o"
     command="$command $outfile"
 fi
-echo $command
 exec $command
