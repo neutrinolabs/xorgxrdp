@@ -445,7 +445,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
     LLOGLN(0, ("rdpScreenInit: pfbMemory bytes %d", dev->sizeInBytes));
     dev->pfbMemory_alloc = g_new0(char, dev->sizeInBytes + 16);
-    dev->pfbMemory = (char*) RDPALIGN(dev->pfbMemory_alloc, 16);
+    dev->pfbMemory = (char *) RDPALIGN(dev->pfbMemory_alloc, 16);
     LLOGLN(0, ("rdpScreenInit: pfbMemory %p", dev->pfbMemory));
     if (!fbScreenInit(pScreen, dev->pfbMemory,
                       pScrn->virtualX, pScrn->virtualY,
@@ -461,7 +461,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     miInitializeBackingStore(pScreen);
 #endif
 
-    /* try in init simd functions */
+    /* try to init simd functions */
     rdpSimdInit(pScreen, pScrn);
 
 #if defined(XvExtension) && XvExtension
