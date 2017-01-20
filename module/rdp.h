@@ -283,7 +283,6 @@ struct _rdpRec
     int do_kill_disconnected; /* boolean */
 
     OsTimerPtr disconnectTimer;
-    int disconnectScheduled; /* boolean */
     int disconnect_timeout_s;
     int disconnect_time_ms;
 
