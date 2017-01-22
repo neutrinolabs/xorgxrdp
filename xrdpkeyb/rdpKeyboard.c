@@ -561,15 +561,11 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
     pKeySyms->minKeyCode = MIN_KEY_CODE;
     pKeySyms->maxKeyCode = MAX_KEY_CODE;
     pKeySyms->mapWidth = GLYPHS_PER_KEY;
-    pKeySyms->map = g_new(KeySym, MAP_LENGTH * GLYPHS_PER_KEY);
+    pKeySyms->map = g_new0(KeySym, MAP_LENGTH * GLYPHS_PER_KEY);
     if (pKeySyms->map == 0)
     {
         LLOGLN(0, ("rdpkeybDeviceInit: out of memory"));
         exit(1);
-    }
-    else
-    {
-        memset(pKeySyms->map, 0, i);
     }
 
     for (i = 0; i < MAP_LENGTH * GLYPHS_PER_KEY; i++)
