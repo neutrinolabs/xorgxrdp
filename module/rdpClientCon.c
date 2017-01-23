@@ -396,8 +396,9 @@ rdpClientConSendMsg(rdpPtr dev, rdpClientCon *clientCon)
 
         if (len > s->size)
         {
-            LLOGLN(0, ("rdpClientConSendMsg: overrun error len %d count %d",
-                   len, clientCon->count));
+            LLOGLN(0, ("rdpClientConSendMsg: overrun error len, %d "
+                       "stream size %d, client count %d",
+                       len, s->size, clientCon->count));
         }
 
         s_pop_layer(s, iso_hdr);
