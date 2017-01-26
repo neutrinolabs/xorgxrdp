@@ -66,10 +66,10 @@ loop_y:
 loop_xpre:
     mov eax, esi         ; look for aligned
     and eax, 0x0F        ; we can jump to next
-    mov ebx, eax
+    mov ebp, eax
     mov eax, edi
     and eax, 0x0F
-    or eax, ebx
+    or eax, ebp
     cmp eax, 0
     je done_loop_xpre
     cmp ecx, 1
@@ -78,14 +78,14 @@ loop_xpre:
     lea esi, [esi + 4]
     mov edx, eax         ; a and g
     and edx, 0xFF00FF00
-    mov ebx, eax         ; r
-    and ebx, 0x00FF0000
-    shr ebx, 16
-    or edx, ebx
-    mov ebx, eax         ; b
-    and ebx, 0x000000FF
-    shl ebx, 16
-    or edx, ebx
+    mov ebp, eax         ; r
+    and ebp, 0x00FF0000
+    shr ebp, 16
+    or edx, ebp
+    mov ebp, eax         ; b
+    and ebp, 0x000000FF
+    shl ebp, 16
+    or edx, ebp
     mov [edi], edx
     lea edi, [edi + 4]
     dec ecx
@@ -145,14 +145,14 @@ loop_x:
     lea esi, [esi + 4]
     mov edx, eax         ; a and g
     and edx, 0xFF00FF00
-    mov ebx, eax         ; r
-    and ebx, 0x00FF0000
-    shr ebx, 16
-    or edx, ebx
-    mov ebx, eax         ; b
-    and ebx, 0x000000FF
-    shl ebx, 16
-    or edx, ebx
+    mov ebp, eax         ; r
+    and ebp, 0x00FF0000
+    shr ebp, 16
+    or edx, ebp
+    mov ebp, eax         ; b
+    and ebp, 0x000000FF
+    shl ebp, 16
+    or edx, ebp
     mov [edi], edx
     lea edi, [edi + 4]
     dec ecx

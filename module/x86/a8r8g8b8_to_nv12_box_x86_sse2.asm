@@ -88,8 +88,8 @@ PROC _a8r8g8b8_to_nv12_box_x86_sse2
 
     pxor xmm7, xmm7
 
-    mov ebx, LHEIGHT           ; ebx = height
-    shr ebx, 1                 ; doing 2 lines at a time
+    mov ebp, LHEIGHT           ; ebp = height
+    shr ebp, 1                 ; doing 2 lines at a time
 
 row_loop1:
     mov esi, LS8               ; s8
@@ -312,7 +312,7 @@ loop1:
     add eax, LDST_UV_STRIDE    ; d8_uv += dst_stride_uv
     mov LD8_UV, eax
 
-    dec ebx
+    dec ebp
     jnz row_loop1
 
     mov eax, 0                 ; return value
