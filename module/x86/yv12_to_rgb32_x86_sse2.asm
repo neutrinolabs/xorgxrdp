@@ -56,8 +56,8 @@ SECTION .text
 do8_uv:
 
     ; u
-    movd xmm1, [ebx]     ; 4 at a time
-    lea ebx, [ebx + 4]
+    movd xmm1, [ebp]     ; 4 at a time
+    lea ebp, [ebp + 4]
     punpcklbw xmm1, xmm1
     pxor xmm6, xmm6
     punpcklbw xmm1, xmm6
@@ -144,9 +144,6 @@ PROC _yv12_to_rgb32_x86_sse2
 
     mov esi, [esp + 20] ; y
 
-    mov ebx, esi        ; u = y + width * height
-    add ebx, eax
-
     ; local vars
     ; char* yptr1
     ; char* yptr2
@@ -156,13 +153,18 @@ PROC _yv12_to_rgb32_x86_sse2
     ; int* rgbs2
     ; int width
     sub esp, 28         ; local vars, 28 bytes
+
+    push ebp            ; must come after the above line
+    mov ebp, esi        ; u = y + width * height
+    add ebp, eax
+
     mov [esp + 0], esi  ; save y1
     add esi, edx
     mov [esp + 4], esi  ; save y2
-    mov [esp + 8], ebx  ; save u
+    mov [esp + 8], ebp  ; save u
     shr eax, 2
-    add ebx, eax        ; v = u + (width * height / 4)
-    mov [esp + 12], ebx ; save v
+    add ebp, eax        ; v = u + (width * height / 4)
+    mov [esp + 12], ebp ; save v
 
     mov [esp + 16], edi ; save rgbs1
     mov eax, edx
@@ -185,7 +187,7 @@ loop_y:
 loop_x:
 
     mov esi, [esp + 0]  ; y1
-    mov ebx, [esp + 8]  ; u
+    mov ebp, [esp + 8]  ; u
     mov edx, [esp + 12] ; v
     mov edi, [esp + 16] ; rgbs1
 
@@ -202,7 +204,7 @@ loop_x:
     call do8
 
     mov [esp + 4], esi  ; y2
-    mov [esp + 8], ebx  ; u
+    mov [esp + 8], ebp  ; u
     mov [esp + 12], edx ; v
     mov [esp + 20], edi ; rgbs2
 
@@ -214,30 +216,33 @@ loop_x:
 
     ; update y1 and 2
     mov eax, [esp + 0]
-    mov ebx, edx
-    add eax, ebx
+    mov ebp, edx
+    add eax, ebp
     mov [esp + 0], eax
 
     mov eax, [esp + 4]
-    add eax, ebx
+    add eax, ebp
     mov [esp + 4], eax
 
     ; update rgb1 and 2
     mov eax, [esp + 16]
-    mov ebx, edx
-    shl ebx, 2
-    add eax, ebx
+    mov ebp, edx
+    shl ebp, 2
+    add eax, ebp
     mov [esp + 16], eax
 
     mov eax, [esp + 20]
-    add eax, ebx
+    add eax, ebp
     mov [esp + 20], eax
 
+    pop ebp
     mov ecx, ebp
     dec ecx             ; height
     mov ebp, ecx
+    push ebp
     jnz loop_y
 
+    pop ebp
     add esp, 28
 
     mov eax, 0
