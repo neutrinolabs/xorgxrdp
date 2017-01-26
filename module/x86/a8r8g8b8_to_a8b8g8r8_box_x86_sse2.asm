@@ -1,5 +1,6 @@
 ;
 ;Copyright 2014 Jay Sorg
+;Copyright 2017 mirabilos
 ;
 ;Permission to use, copy, modify, distribute, and sell this software and its
 ;documentation for any purpose is hereby granted without fee, provided that
@@ -22,7 +23,30 @@
 ;
 
 %ifidn __OUTPUT_FORMAT__,elf
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
+section .note.GNU-stack noalloc noexec nowrite progbits
+%ifdef PIC
+section .text
+extern _GLOBAL_OFFSET_TABLE_
+..@get_GOT:
+	mov ebx, [esp]
+	ret
+%define lsym(name) ebx + name wrt ..gotoff
+%macro get_GOT 0
+	call ..@get_GOT
+%%getgot:
+	add ebx, _GLOBAL_OFFSET_TABLE_ + $$ - %%getgot wrt ..gotpc
+%endmacro
+%endif
+%else
+; not ELF
+%ifdef PIC
+%error "Position-Independent Code is currently only supported for ELF"
+%endif
+%endif
+%ifndef lsym
+%define lsym(name) name
+%macro get_GOT 0
+%endmacro
 %endif
 
 SECTION .data
@@ -49,13 +73,14 @@ PROC a8r8g8b8_to_a8b8g8r8_box_x86_sse2
 PROC _a8r8g8b8_to_a8b8g8r8_box_x86_sse2
 %endif
     push ebx
+    get_GOT
     push esi
     push edi
     push ebp
 
-    movdqa xmm4, [c1]
-    movdqa xmm5, [c2]
-    movdqa xmm6, [c3]
+    movdqa xmm4, [lsym(c1)]
+    movdqa xmm5, [lsym(c2)]
+    movdqa xmm6, [lsym(c3)]
 
     mov esi, [esp + 20]  ; src
     mov edi, [esp + 28]  ; dst

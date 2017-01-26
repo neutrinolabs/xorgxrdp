@@ -1,5 +1,6 @@
 ;
 ;Copyright 2015 Jay Sorg
+;Copyright 2017 mirabilos
 ;
 ;Permission to use, copy, modify, distribute, and sell this software and its
 ;documentation for any purpose is hereby granted without fee, provided that
@@ -26,7 +27,30 @@
 ;   height should be even and > 0
 
 %ifidn __OUTPUT_FORMAT__,elf
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
+section .note.GNU-stack noalloc noexec nowrite progbits
+%ifdef PIC
+section .text
+extern _GLOBAL_OFFSET_TABLE_
+..@get_GOT:
+	mov ebx, [esp]
+	ret
+%define lsym(name) ebx + name wrt ..gotoff
+%macro get_GOT 0
+	call ..@get_GOT
+%%getgot:
+	add ebx, _GLOBAL_OFFSET_TABLE_ + $$ - %%getgot wrt ..gotpc
+%endmacro
+%endif
+%else
+; not ELF
+%ifdef PIC
+%error "Position-Independent Code is currently only supported for ELF"
+%endif
+%endif
+%ifndef lsym
+%define lsym(name) name
+%macro get_GOT 0
+%endmacro
 %endif
 
 SECTION .data
@@ -81,6 +105,7 @@ PROC a8r8g8b8_to_nv12_box_x86_sse2
 PROC _a8r8g8b8_to_nv12_box_x86_sse2
 %endif
     push ebx
+    get_GOT
     push esi
     push edi
     push ebp
@@ -103,23 +128,23 @@ loop1:
     ; first line
     movdqu xmm0, [esi]         ; 4 pixels, 16 bytes
     movdqa xmm1, xmm0          ; blue
-    pand xmm1, [cd255]         ; blue
+    pand xmm1, [lsym(cd255)]   ; blue
     movdqa xmm2, xmm0          ; green
     psrld xmm2, 8              ; green
-    pand xmm2, [cd255]         ; green
+    pand xmm2, [lsym(cd255)]   ; green
     movdqa xmm3, xmm0          ; red
     psrld xmm3, 16             ; red
-    pand xmm3, [cd255]         ; red
+    pand xmm3, [lsym(cd255)]   ; red
 
     movdqu xmm0, [esi + 16]    ; 4 pixels, 16 bytes
     movdqa xmm4, xmm0          ; blue
-    pand xmm4, [cd255]         ; blue
+    pand xmm4, [lsym(cd255)]   ; blue
     movdqa xmm5, xmm0          ; green
     psrld xmm5, 8              ; green
-    pand xmm5, [cd255]         ; green
+    pand xmm5, [lsym(cd255)]   ; green
     movdqa xmm6, xmm0          ; red
     psrld xmm6, 16             ; red
-    pand xmm6, [cd255]         ; red
+    pand xmm6, [lsym(cd255)]   ; red
 
     packssdw xmm1, xmm4        ; xmm1 = 8 blues
     packssdw xmm2, xmm5        ; xmm2 = 8 greens
@@ -129,14 +154,14 @@ loop1:
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm6, xmm3          ; red
-    pmullw xmm4, [cw25]
-    pmullw xmm5, [cw129]
-    pmullw xmm6, [cw66]
+    pmullw xmm4, [lsym(cw25)]
+    pmullw xmm5, [lsym(cw129)]
+    pmullw xmm6, [lsym(cw66)]
     paddw xmm4, xmm5
     paddw xmm4, xmm6
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     psrlw xmm4, 8
-    paddw xmm4, [cw16]
+    paddw xmm4, [lsym(cw16)]
     packuswb xmm4, xmm7
     movq [edi], xmm4           ; out 8 bytes yyyyyyyy
 
@@ -144,14 +169,14 @@ loop1:
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm6, xmm3          ; red
-    pmullw xmm4, [cw112]
-    pmullw xmm5, [cw74]
-    pmullw xmm6, [cw38]
+    pmullw xmm4, [lsym(cw112)]
+    pmullw xmm5, [lsym(cw74)]
+    pmullw xmm6, [lsym(cw38)]
     psubw xmm4, xmm5
     psubw xmm4, xmm6
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     psraw xmm4, 8
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     packuswb xmm4, xmm7
     movq LU1, xmm4             ; save for later
 
@@ -159,14 +184,14 @@ loop1:
     movdqa xmm6, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm4, xmm3          ; red
-    pmullw xmm4, [cw112]
-    pmullw xmm5, [cw94]
-    pmullw xmm6, [cw18]
+    pmullw xmm4, [lsym(cw112)]
+    pmullw xmm5, [lsym(cw94)]
+    pmullw xmm6, [lsym(cw18)]
     psubw xmm4, xmm5
     psubw xmm4, xmm6
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     psraw xmm4, 8
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     packuswb xmm4, xmm7
     movq LV1, xmm4             ; save for later
 
@@ -177,23 +202,23 @@ loop1:
     ; second line
     movdqu xmm0, [esi]         ; 4 pixels, 16 bytes
     movdqa xmm1, xmm0          ; blue
-    pand xmm1, [cd255]         ; blue
+    pand xmm1, [lsym(cd255)]   ; blue
     movdqa xmm2, xmm0          ; green
     psrld xmm2, 8              ; green
-    pand xmm2, [cd255]         ; green
+    pand xmm2, [lsym(cd255)]   ; green
     movdqa xmm3, xmm0          ; red
     psrld xmm3, 16             ; red
-    pand xmm3, [cd255]         ; red
+    pand xmm3, [lsym(cd255)]   ; red
 
     movdqu xmm0, [esi + 16]    ; 4 pixels, 16 bytes
     movdqa xmm4, xmm0          ; blue
-    pand xmm4, [cd255]         ; blue
+    pand xmm4, [lsym(cd255)]   ; blue
     movdqa xmm5, xmm0          ; green
     psrld xmm5, 8              ; green
-    pand xmm5, [cd255]         ; green
+    pand xmm5, [lsym(cd255)]   ; green
     movdqa xmm6, xmm0          ; red
     psrld xmm6, 16             ; red
-    pand xmm6, [cd255]         ; red
+    pand xmm6, [lsym(cd255)]   ; red
 
     packssdw xmm1, xmm4        ; xmm1 = 8 blues
     packssdw xmm2, xmm5        ; xmm2 = 8 greens
@@ -203,14 +228,14 @@ loop1:
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm6, xmm3          ; red 
-    pmullw xmm4, [cw25]
-    pmullw xmm5, [cw129]
-    pmullw xmm6, [cw66]
+    pmullw xmm4, [lsym(cw25)]
+    pmullw xmm5, [lsym(cw129)]
+    pmullw xmm6, [lsym(cw66)]
     paddw xmm4, xmm5
     paddw xmm4, xmm6
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     psrlw xmm4, 8
-    paddw xmm4, [cw16]
+    paddw xmm4, [lsym(cw16)]
     packuswb xmm4, xmm7
     movq [edi], xmm4           ; out 8 bytes yyyyyyyy
 
@@ -218,14 +243,14 @@ loop1:
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm6, xmm3          ; red
-    pmullw xmm4, [cw112]
-    pmullw xmm5, [cw74]
-    pmullw xmm6, [cw38]
+    pmullw xmm4, [lsym(cw112)]
+    pmullw xmm5, [lsym(cw74)]
+    pmullw xmm6, [lsym(cw38)]
     psubw xmm4, xmm5
     psubw xmm4, xmm6
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     psraw xmm4, 8
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     packuswb xmm4, xmm7
     movq LU2, xmm4             ; save for later
 
@@ -233,48 +258,48 @@ loop1:
     movdqa xmm6, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
     movdqa xmm4, xmm3          ; red
-    pmullw xmm4, [cw112]
-    pmullw xmm5, [cw94]
-    pmullw xmm6, [cw18]
+    pmullw xmm4, [lsym(cw112)]
+    pmullw xmm5, [lsym(cw94)]
+    pmullw xmm6, [lsym(cw18)]
     psubw xmm4, xmm5
     psubw xmm4, xmm6
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     psraw xmm4, 8
-    paddw xmm4, [cw128]
+    paddw xmm4, [lsym(cw128)]
     packuswb xmm4, xmm7
     movq LV2, xmm4             ; save for later
 
     ; uv add and divide(average)
     movq mm1, LU1              ; u from first line
     movq mm3, mm1
-    pand mm1, [cw255]
+    pand mm1, [lsym(cw255)]
     psrlw mm3, 8
-    pand mm3, [cw255]
+    pand mm3, [lsym(cw255)]
     paddw mm1, mm3             ; add
     movq mm2, LU2              ; u from second line
     movq mm3, mm2
-    pand mm2, [cw255]
+    pand mm2, [lsym(cw255)]
     paddw mm1, mm2             ; add
     psrlw mm3, 8
-    pand mm3, [cw255]
+    pand mm3, [lsym(cw255)]
     paddw mm1, mm3             ; add
-    paddw mm1, [cw2]           ; add 2
+    paddw mm1, [lsym(cw2)]     ; add 2
     psrlw mm1, 2               ; div 4
 
     movq mm2, LV1              ; v from first line
     movq mm4, mm2
-    pand mm2, [cw255]
+    pand mm2, [lsym(cw255)]
     psrlw mm4, 8
-    pand mm4, [cw255]
+    pand mm4, [lsym(cw255)]
     paddw mm2, mm4             ; add
     movq mm3, LV2              ; v from second line
     movq mm4, mm3
-    pand mm3, [cw255]
+    pand mm3, [lsym(cw255)]
     paddw mm2, mm3             ; add
     psrlw mm4, 8
-    pand mm4, [cw255]
+    pand mm4, [lsym(cw255)]
     paddw mm2, mm4             ; add
-    paddw mm2, [cw2]           ; add 2
+    paddw mm2, [lsym(cw2)]     ; add 2
     psrlw mm2, 2               ; div 4
 
     packuswb mm1, mm1

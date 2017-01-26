@@ -1,5 +1,6 @@
 ;
 ;Copyright 2014 Jay Sorg
+;Copyright 2017 mirabilos
 ;
 ;Permission to use, copy, modify, distribute, and sell this software and its
 ;documentation for any purpose is hereby granted without fee, provided that
@@ -34,7 +35,30 @@
 ;   4096     9324     0
 
 %ifidn __OUTPUT_FORMAT__,elf
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
+section .note.GNU-stack noalloc noexec nowrite progbits
+%ifdef PIC
+section .text
+extern _GLOBAL_OFFSET_TABLE_
+..@get_GOT:
+	mov ebx, [esp]
+	ret
+%define lsym(name) ebx + name wrt ..gotoff
+%macro get_GOT 0
+	call ..@get_GOT
+%%getgot:
+	add ebx, _GLOBAL_OFFSET_TABLE_ + $$ - %%getgot wrt ..gotpc
+%endmacro
+%endif
+%else
+; not ELF
+%ifdef PIC
+%error "Position-Independent Code is currently only supported for ELF"
+%endif
+%endif
+%ifndef lsym
+%define lsym(name) name
+%macro get_GOT 0
+%endmacro
 %endif
 
 SECTION .data
@@ -61,7 +85,7 @@ do8_uv:
     punpcklbw xmm1, xmm1
     pxor xmm6, xmm6
     punpcklbw xmm1, xmm6
-    movdqa xmm7, [c128]
+    movdqa xmm7, [lsym(c128)]
     psubw xmm1, xmm7
     psllw xmm1, 4
 
@@ -82,22 +106,22 @@ do8:
     punpcklbw xmm0, xmm6
 
     ; r = y + hiword(4669 * (v << 4))
-    movdqa xmm4, [c4669]
+    movdqa xmm4, [lsym(c4669)]
     pmulhw xmm4, xmm2
     movdqa xmm3, xmm0
     paddw xmm3, xmm4
 
     ; g = y - hiword(1616 * (u << 4)) - hiword(2378 * (v << 4))
-    movdqa xmm5, [c1616]
+    movdqa xmm5, [lsym(c1616)]
     pmulhw xmm5, xmm1
-    movdqa xmm6, [c2378]
+    movdqa xmm6, [lsym(c2378)]
     pmulhw xmm6, xmm2
     movdqa xmm4, xmm0
     psubw xmm4, xmm5
     psubw xmm4, xmm6
 
     ; b = y + hiword(9324 * (u << 4))
-    movdqa xmm6, [c9324]
+    movdqa xmm6, [lsym(c9324)]
     pmulhw xmm6, xmm1
     movdqa xmm5, xmm0
     paddw xmm5, xmm6
@@ -129,6 +153,7 @@ PROC yv12_to_rgb32_x86_sse2
 PROC _yv12_to_rgb32_x86_sse2
 %endif
     push ebx
+    get_GOT
     push esi
     push edi
     push ebp
