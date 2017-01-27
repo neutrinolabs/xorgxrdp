@@ -269,7 +269,8 @@ rdpRRGetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
     BoxRec totalAreaRect;
     BoxRec trackingAreaRect;
 
-    LLOGLN(0, ("rdpRRGetPanning: %p", crtc));
+    LLOGLN(10, ("rdpRRGetPanning: totalArea %p trackingArea %p border %p",
+                totalArea, trackingArea, border));
 
     if (!g_panning)
     {
