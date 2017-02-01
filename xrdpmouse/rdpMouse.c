@@ -124,7 +124,7 @@ PtrAddEvent(rdpPointer *pointer)
         pointer->old_cursor_y = pointer->cursor_y;
     }
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 7; i++)
     {
         if ((pointer->button_mask ^ pointer->old_button_mask) & (1 << i))
         {
@@ -206,6 +206,22 @@ rdpInputMouse(rdpPtr dev, int msg,
             pointer->button_mask = pointer->button_mask | 16;
             PtrAddEvent(pointer);
             break;
+        case 111:
+            pointer->button_mask = pointer->button_mask & (~32);
+            PtrAddEvent(pointer);
+            break;
+        case 112:
+            pointer->button_mask = pointer->button_mask | 32;
+            PtrAddEvent(pointer);
+            break;
+        case 113:
+            pointer->button_mask = pointer->button_mask & (~64);
+            PtrAddEvent(pointer);
+            break;
+        case 114:
+            pointer->button_mask = pointer->button_mask | 64;
+            PtrAddEvent(pointer);
+            break;
     }
     return 0;
 }
@@ -214,9 +230,9 @@ rdpInputMouse(rdpPtr dev, int msg,
 static int
 rdpmouseControl(DeviceIntPtr device, int what)
 {
-    BYTE map[6];
+    BYTE map[9];
     DevicePtr pDev;
-    Atom btn_labels[6];
+    Atom btn_labels[9];
     Atom axes_labels[2];
     rdpPtr dev;
 
@@ -233,17 +249,24 @@ rdpmouseControl(DeviceIntPtr device, int what)
             map[3] = 3;
             map[4] = 4;
             map[5] = 5;
+            map[6] = 6;
+            map[7] = 7;
+            map[8] = 8;
 
             btn_labels[0] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_LEFT);
             btn_labels[1] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_MIDDLE);
             btn_labels[2] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_RIGHT);
             btn_labels[3] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_WHEEL_UP);
             btn_labels[4] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_WHEEL_DOWN);
+            btn_labels[5] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_HWHEEL_LEFT);
+            btn_labels[6] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_HWHEEL_RIGHT);
+            btn_labels[7] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_BACK);
+            btn_labels[8] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_FORWARD);
 
             axes_labels[0] = XIGetKnownProperty(AXIS_LABEL_PROP_REL_X);
             axes_labels[1] = XIGetKnownProperty(AXIS_LABEL_PROP_REL_Y);
 
-            InitPointerDeviceStruct(pDev, map, 5, btn_labels, rdpmouseCtrl,
+            InitPointerDeviceStruct(pDev, map, 9, btn_labels, rdpmouseCtrl,
                                     GetMotionHistorySize(), 2, axes_labels);
             dev = rdpGetDevFromScreen(NULL);
             dev->pointer.device = device;
