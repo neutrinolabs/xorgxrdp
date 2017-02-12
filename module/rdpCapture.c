@@ -688,6 +688,7 @@ rdpCapture1(rdpClientCon *clientCon,
 {
     BoxPtr psrc_rects;
     BoxRec rect;
+    BoxRec srect;
     RegionRec reg;
     const char *src_rect;
     char *dst_rect;
@@ -696,8 +697,6 @@ rdpCapture1(rdpClientCon *clientCon,
     int dst_bytespp;
     int width;
     int height;
-    int min_width;
-    int min_height;
     int src_offset;
     int dst_offset;
     int index;
@@ -716,14 +715,14 @@ rdpCapture1(rdpClientCon *clientCon,
 
     rv = TRUE;
 
-    min_width = RDPMIN(dst_width, src_width);
-    min_height = RDPMIN(dst_height, src_height);
+    srect.x1 = src_left;
+    srect.y1 = src_top;
+    srect.x2 = src_left + src_width;
+    srect.x2 = RDPMIN(dst_width, srect.x2);
+    srect.y2 = src_top + src_height;
+    srect.y2 = RDPMIN(dst_height, srect.y2);
 
-    rect.x1 = 0;
-    rect.y1 = 0;
-    rect.x2 = min_width;
-    rect.y2 = min_height;
-    rdpRegionInit(&reg, &rect, 0);
+    rdpRegionInit(&reg, &srect, 0);
     rdpRegionIntersect(&reg, in_reg, &reg);
 
     num_regions = REGION_NUM_RECTS(&reg);
@@ -756,12 +755,12 @@ rdpCapture1(rdpClientCon *clientCon,
         if (ex != 0)
         {
             rect.x2 += ex;
-            if (rect.x2 > min_width)
+            if (rect.x2 > srect.x2)
             {
-                rect.x1 -= rect.x2 - min_width;
-                rect.x2 = min_width;
+                rect.x1 -= rect.x2 - srect.x2;
+                rect.x2 = srect.x2;
             }
-            if (rect.x1 < 0)
+            if (rect.x1 < srect.x1)
             {
                 rect.x1 += 16;
             }
@@ -770,42 +769,16 @@ rdpCapture1(rdpClientCon *clientCon,
         if (ey != 0)
         {
             rect.y2 += ey;
-            if (rect.y2 > min_height)
+            if (rect.y2 > srect.y2)
             {
-                rect.y1 -= rect.y2 - min_height;
-                rect.y2 = min_height;
+                rect.y1 -= rect.y2 - srect.y2;
+                rect.y2 = srect.y2;
             }
-            if (rect.y1 < 0)
+            if (rect.y1 < srect.y1)
             {
                 rect.y1 += 16;
             }
         }
-#if 0
-        if (rect.x1 < 0)
-        {
-            LLOGLN(0, ("rdpCapture1: error"));
-        }
-        if (rect.y1 < 0)
-        {
-            LLOGLN(0, ("rdpCapture1: error"));
-        }
-        if (rect.x2 > min_width)
-        {
-            LLOGLN(0, ("rdpCapture1: error"));
-        }
-        if (rect.y2 > min_height)
-        {
-            LLOGLN(0, ("rdpCapture1: error"));
-        }
-        if ((rect.x2 - rect.x1) % 16 != 0)
-        {
-            LLOGLN(0, ("rdpCapture1: error"));
-        }
-        if ((rect.y2 - rect.y1) % 16 != 0)
-        {
-            LLOGLN(0, ("rdpCapture1: error"));
-        }
-#endif
         (*out_rects)[index] = rect;
         index++;
     }
@@ -887,11 +860,13 @@ rdpCapture2(rdpClientCon *clientCon,
     }
     out_rect_index = 0;
 
-    /* clip for smaller of 2 */
-    rect.x1 = 0;
-    rect.y1 = 0;
-    rect.x2 = min(dst_width, src_width);
-    rect.y2 = min(dst_height, src_height);
+    rect.x1 = src_left;
+    rect.y1 = src_top;
+    rect.x2 = src_left + src_width;
+    rect.x2 = RDPMIN(dst_width, rect.x2);
+    rect.y2 = src_top + src_height;
+    rect.y2 = RDPMIN(dst_height, rect.y2);
+
     rdpRegionInit(&temp_reg, &rect, 0);
     rdpRegionIntersect(&temp_reg, in_reg, &temp_reg);
 
@@ -983,8 +958,6 @@ rdpCapture3(rdpClientCon *clientCon,
     BoxRec rect;
     RegionRec reg;
     int num_rects;
-    int min_width;
-    int min_height;
     int index;
     char *dst_uv;
     Bool rv;
@@ -995,13 +968,13 @@ rdpCapture3(rdpClientCon *clientCon,
 
     rv = TRUE;
 
-    min_width = RDPMIN(dst_width, src_width);
-    min_height = RDPMIN(dst_height, src_height);
+    rect.x1 = src_left;
+    rect.y1 = src_top;
+    rect.x2 = src_left + src_width;
+    rect.x2 = RDPMIN(dst_width, rect.x2);
+    rect.y2 = src_top + src_height;
+    rect.y2 = RDPMIN(dst_height, rect.y2);
 
-    rect.x1 = 0;
-    rect.y1 = 0;
-    rect.x2 = min_width;
-    rect.y2 = min_height;
     rdpRegionInit(&reg, &rect, 0);
     rdpRegionIntersect(&reg, in_reg, &reg);
 
