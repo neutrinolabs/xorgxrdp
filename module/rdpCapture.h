@@ -29,6 +29,9 @@ capture
 #include <xorgVersion.h>
 #include <xf86.h>
 
+/* maximum rects in the dirty region before the extents is used */
+#define MAX_CAPTURE_RECTS 15
+
 extern _X_EXPORT Bool
 rdpCapture(rdpClientCon *clientCon,
            RegionPtr in_reg, BoxPtr *out_rects, int *num_out_rects,

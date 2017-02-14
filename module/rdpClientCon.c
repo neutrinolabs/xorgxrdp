@@ -2218,8 +2218,15 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         monitor_rect.y2 = cap_top + cap_height;
         monitor_dirty = rdpRegionCreate(&monitor_rect, 0);
         rdpRegionIntersect(monitor_dirty, monitor_dirty, clientCon->dirtyRegion);
-        if (rdpRegionNotEmpty(monitor_dirty))
+        num_rects = REGION_NUM_RECTS(monitor_dirty);
+        if (num_rects > 0)
         {
+            if (num_rects > MAX_CAPTURE_RECTS)
+            {
+                monitor_rect = *rdpRegionExtents(monitor_dirty);
+                rdpRegionDestroy(monitor_dirty);
+                monitor_dirty = rdpRegionCreate(&monitor_rect, 0);
+            }
             rects = 0;
             num_rects = 0;
             LLOGLN(10, ("rdpDeferredUpdateCallback: capture_code %d",
@@ -2270,8 +2277,15 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
             monitor_rect.y2 = cap_top + cap_height;
             monitor_dirty = rdpRegionCreate(&monitor_rect, 0);
             rdpRegionIntersect(monitor_dirty, monitor_dirty, clientCon->dirtyRegion);
-            if (rdpRegionNotEmpty(monitor_dirty))
+            num_rects = REGION_NUM_RECTS(monitor_dirty);
+            if (num_rects > 0)
             {
+                if (num_rects > MAX_CAPTURE_RECTS)
+                {
+                    monitor_rect = *rdpRegionExtents(monitor_dirty);
+                    rdpRegionDestroy(monitor_dirty);
+                    monitor_dirty = rdpRegionCreate(&monitor_rect, 0);
+                }
                 rects = 0;
                 num_rects = 0;
                 LLOGLN(10, ("rdpDeferredUpdateCallback: capture_code %d",
