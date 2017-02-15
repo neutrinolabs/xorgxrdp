@@ -2231,13 +2231,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
             num_rects = 0;
             LLOGLN(10, ("rdpDeferredUpdateCallback: capture_code %d",
                    clientCon->client_info.capture_code));
-            if (rdpCapture(clientCon, monitor_dirty, &rects, &num_rects,
-                           id.pixels, clientCon->cap_left, clientCon->cap_top,
-                           clientCon->cap_width, clientCon->cap_height,
-                           id.lineBytes, XRDP_a8r8g8b8, id.shmem_pixels,
-                           clientCon->cap_width, clientCon->cap_height,
-                           clientCon->cap_stride_bytes,
-                           clientCon->rdp_format, clientCon->client_info.capture_code))
+            if (rdpCapture(clientCon, monitor_dirty, &rects, &num_rects, &id))
             {
                 LLOGLN(10, ("rdpDeferredUpdateCallback: num_rects %d", num_rects));
                 rdpClientConSendPaintRectShmEx(clientCon->dev, clientCon, &id,
@@ -2290,13 +2284,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
                 num_rects = 0;
                 LLOGLN(10, ("rdpDeferredUpdateCallback: capture_code %d",
                        clientCon->client_info.capture_code));
-                if (rdpCapture(clientCon, monitor_dirty, &rects, &num_rects,
-                               id.pixels, clientCon->cap_left, clientCon->cap_top,
-                               clientCon->cap_width, clientCon->cap_height,
-                               id.lineBytes, XRDP_a8r8g8b8, id.shmem_pixels,
-                               clientCon->cap_width, clientCon->cap_height,
-                               clientCon->cap_stride_bytes,
-                               clientCon->rdp_format, clientCon->client_info.capture_code))
+                if (rdpCapture(clientCon, monitor_dirty, &rects, &num_rects, &id))
                 {
                     LLOGLN(10, ("rdpDeferredUpdateCallback: num_rects %d", num_rects));
                     rdpClientConSendPaintRectShmEx(clientCon->dev, clientCon, &id,
