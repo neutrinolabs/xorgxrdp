@@ -31,6 +31,7 @@ capture
 
 /* maximum rects in the dirty region before the extents is used */
 #define MAX_CAPTURE_RECTS 15
+#define MAX_CAPTURE_PIXELS 0x200000
 
 extern _X_EXPORT Bool
 rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
