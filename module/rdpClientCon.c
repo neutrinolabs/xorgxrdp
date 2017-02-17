@@ -2255,33 +2255,37 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
                dirty_extents.x2, dirty_extents.y2));
         de_width = dirty_extents.x2 - dirty_extents.x1;
         de_height = dirty_extents.y2 - dirty_extents.y1;
-        band_height = MAX_CAPTURE_PIXELS / de_width;
-        band_index = 0;
-        band_count = (de_width * de_height / MAX_CAPTURE_PIXELS) + 1;
-        LLOGLN(10, ("rdpDeferredUpdateCallback: band_index %d band_count %d",
-               band_index, band_count));
-        while (band_index < band_count)
+        if ((de_width > 0) && (de_height > 0))
         {
-            if (clientCon->rect_id > clientCon->rect_id_ack)
+            band_height = MAX_CAPTURE_PIXELS / de_width;
+            band_index = 0;
+            band_count = (de_width * de_height / MAX_CAPTURE_PIXELS) + 1;
+            LLOGLN(10, ("rdpDeferredUpdateCallback: band_index %d "
+                   "band_count %d", band_index, band_count));
+            while (band_index < band_count)
             {
-                LLOGLN(10, ("rdpDeferredUpdateCallback: reschedule rect_id %d "
-                       "rect_id_ack %d",
-                       clientCon->rect_id, clientCon->rect_id_ack));
-                break;
+                if (clientCon->rect_id > clientCon->rect_id_ack)
+                {
+                    LLOGLN(10, ("rdpDeferredUpdateCallback: reschedule "
+                           "rect_id %d rect_id_ack %d",
+                           clientCon->rect_id, clientCon->rect_id_ack));
+                    break;
+                }
+                index = (clientCon->rect_id + band_index) % band_count;
+                cap_rect.x1 = dirty_extents.x1;
+                cap_rect.y1 = dirty_extents.y1 + index * band_height;
+                cap_rect.x2 = dirty_extents.x2;
+                cap_rect.y2 = RDPMIN(cap_rect.y1 + band_height,
+                                     dirty_extents.y2);
+                rdpCapRect(clientCon, &cap_rect, &id);
+                band_index++;
             }
-            index = (clientCon->rect_id + band_index) % band_count;
-            cap_rect.x1 = dirty_extents.x1;
-            cap_rect.y1 = dirty_extents.y1 + index * band_height;
-            cap_rect.x2 = dirty_extents.x2;
-            cap_rect.y2 = RDPMIN(cap_rect.y1 + band_height, dirty_extents.y2);
-            rdpCapRect(clientCon, &cap_rect, &id);
-            band_index++;
-        }
-        if (band_index == band_count)
-        {
-            /* gone through all bands, nothing changed */
-            rdpRegionDestroy(clientCon->dirtyRegion);
-            clientCon->dirtyRegion = rdpRegionCreate(NullBox, 0);
+            if (band_index == band_count)
+            {
+                /* gone through all bands, nothing changed */
+                rdpRegionDestroy(clientCon->dirtyRegion);
+                clientCon->dirtyRegion = rdpRegionCreate(NullBox, 0);
+            }
         }
     }
     else
