@@ -2293,7 +2293,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         }
         else
         {
-            /* nothing changed in visable area */
+            /* nothing changed in visible area */
             rdpRegionDestroy(clientCon->dirtyRegion);
             clientCon->dirtyRegion = rdpRegionCreate(NullBox, 0);
         }
