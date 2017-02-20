@@ -2250,6 +2250,10 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     if (clientCon->dev->monitorCount < 1)
     {
         dirty_extents = *rdpRegionExtents(clientCon->dirtyRegion);
+        dirty_extents.x1 = RDPMAX(dirty_extents.x1, 0);
+        dirty_extents.y1 = RDPMAX(dirty_extents.y1, 0);
+        dirty_extents.x2 = RDPMIN(dirty_extents.x2, clientCon->rdp_width);
+        dirty_extents.y2 = RDPMIN(dirty_extents.y2, clientCon->rdp_height);
         LLOGLN(10, ("rdpDeferredUpdateCallback: dirty_extents %d %d %d %d",
                dirty_extents.x1, dirty_extents.y1,
                dirty_extents.x2, dirty_extents.y2));
@@ -2286,6 +2290,12 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
                 rdpRegionDestroy(clientCon->dirtyRegion);
                 clientCon->dirtyRegion = rdpRegionCreate(NullBox, 0);
             }
+        }
+        else
+        {
+            /* nothing changed in visable area */
+            rdpRegionDestroy(clientCon->dirtyRegion);
+            clientCon->dirtyRegion = rdpRegionCreate(NullBox, 0);
         }
     }
     else
