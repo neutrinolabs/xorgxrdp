@@ -14,10 +14,15 @@ addons:
     packages:
       - xserver-xorg-dev
       - nasm
+      - gcc-multilib
 
 env:
   global:
     - PKG_CONFIG_PATH=`pwd`/xrdp/pkgconfig
+  matrix:
+    - CONF_FLAGS="" DISTCHECK=1 CHECK=1
+    - CONF_FLAGS="--without-simd" CHECK=1
+    - CONF_FLAGS="--host=i686-linux" CFLAGS=-m32 LDFLAGS=-m32
 
 install:
   - git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git xrdp
@@ -25,7 +30,7 @@ install:
 
 script:
   - ./bootstrap
-  - ./configure
-  - make CFLAGS="-O2 -Wall -Wwrite-strings -Werror"
-  - make check
-  - make distcheck
+  - ./configure $CONF_FLAGS
+  - make CFLAGS="$CFLAGS -O2 -Wall -Wwrite-strings -Werror"
+  - test -z "$CHECK" || make check
+  - test -z "$DISTCHECK" || make distcheck
