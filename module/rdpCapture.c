@@ -49,7 +49,7 @@ capture
 #define LLOGLN(_level, _args) \
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
-#define RDP_MAX_TILES 1024
+#define RDP_MAX_TILES 4096
 
 /******************************************************************************/
 /* copy rects with no error checking */
