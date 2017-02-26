@@ -106,13 +106,14 @@ AC_MSG_CHECKING([whether the assembler ($NASM $NAFLAGS) works])
 cat > conftest.asm <<EOF
 [%line __oline__ "configure"
         section .text
-        global  _main,main
-_main:
-main:   xor     eax,eax
+        global  _nasmfunc, nasmfunc
+_nasmfunc:
+nasmfunc:
+        xor     eax, eax
         ret
 ]EOF
-try_nasm='$NASM $NAFLAGS -o conftest.o conftest.asm'
-if AC_TRY_EVAL(try_nasm) && test -s conftest.o; then
+try_nasm='$NASM $NAFLAGS -o conftest-nasm.o conftest.asm'
+if AC_TRY_EVAL(try_nasm) && test -s conftest-nasm.o; then
   AC_MSG_RESULT(yes)
 else
   echo "configure: failed program was:" >&AC_FD_CC
@@ -123,13 +124,19 @@ else
 fi
 
 AC_MSG_CHECKING([whether the linker accepts assembler output])
-try_nasm='${CC-cc} -o conftest${ac_exeext} $LDFLAGS conftest.o $LIBS 1>&AC_FD_CC'
-if AC_TRY_EVAL(try_nasm) && test -s conftest${ac_exeext}; then
-  rm -rf conftest*
-  AC_MSG_RESULT(yes)
-else
-  rm -rf conftest*
-  AC_MSG_RESULT(no)
+nasm_save_LIBS="$LIBS"
+LIBS="conftest-nasm.o $LIBS"
+AC_LINK_IFELSE(
+  [AC_LANG_PROGRAM([[
+    #ifdef __cplusplus
+    extern "C"
+    #endif
+    void nasmfunc(void);
+  ]], [[nasmfunc();]])], [nasm_link_ok=yes], [nasm_link_ok=no])
+LIBS="$nasm_save_LIBS"
+AC_MSG_RESULT([$nasm_link_ok])
+
+if test "x$nasm_link_ok" = "xno"; then
   AC_MSG_ERROR([configuration problem: maybe object file format mismatch.])
 fi
 
