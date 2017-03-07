@@ -318,6 +318,11 @@ rdpSpriteSetCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs,
     rdpClientCon *clientCon;
 
     LLOGLN(10, ("rdpSpriteSetCursor:"));
+    if (pDev == 0)
+    {
+        return;
+    }
+
     if (pCurs == 0)
     {
         return;
