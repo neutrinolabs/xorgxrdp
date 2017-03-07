@@ -2166,7 +2166,7 @@ rdpClientConSendPaintRectShmEx(rdpPtr dev, rdpClientCon *clientCon,
    session, this will get called for each monitor, if no monitor info
    from the client, the rect will be a band of less than MAX_CAPTURE_PIXELS
    pixels
-   after the capture, it sends the info the xrdp
+   after the capture, it sends the info to xrdp
    returns error */
 static int
 rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
@@ -2185,7 +2185,7 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
     {
         if (num_rects > MAX_CAPTURE_RECTS)
         {
-            /* the dirty region is too complex, just get a rect the
+            /* the dirty region is too complex, just get a rect that
                covers the whole region */
             rect = *rdpRegionExtents(cap_dirty);
             rdpRegionDestroy(cap_dirty);
