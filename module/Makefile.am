@@ -65,7 +65,7 @@ noinst_HEADERS = \
 
 libxorgxrdp_la_LTLIBRARIES = libxorgxrdp.la
 
-libxorgxrdp_la_LDFLAGS = -module -avoid-version
+libxorgxrdp_la_LDFLAGS = -module -avoid-version -Wl,-z,noexecstack
 
 libxorgxrdp_ladir = $(moduledir)
 
