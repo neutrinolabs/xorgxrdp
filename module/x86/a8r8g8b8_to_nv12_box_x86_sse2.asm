@@ -26,10 +26,10 @@
 ;   height should be even and > 0
 
 %ifidn __OUTPUT_FORMAT__,elf
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
+section .note.GNU-stack noalloc noexec nowrite progbits
 %endif
 
-SECTION .data
+section .data
 
     align 16
 
@@ -48,7 +48,7 @@ SECTION .data
     cw18   times 8 dw 18
     cw2    times 8 dw 2
 
-SECTION .text
+section .text
 
 %macro PROC 1
     align 16
