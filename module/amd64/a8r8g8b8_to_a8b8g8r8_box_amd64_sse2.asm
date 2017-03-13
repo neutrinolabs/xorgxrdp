@@ -22,16 +22,16 @@
 ;
 
 %ifidn __OUTPUT_FORMAT__,elf64
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
+section .note.GNU-stack noalloc noexec nowrite progbits
 %endif
 
-SECTION .data
+section .data
 align 16
 c1 times 4 dd 0xFF00FF00
 c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF
 
-SECTION .text
+section .text
 
 %macro PROC 1
     align 16

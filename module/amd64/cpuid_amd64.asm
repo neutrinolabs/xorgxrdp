@@ -22,10 +22,10 @@
 ;
 
 %ifidn __OUTPUT_FORMAT__,elf64
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
+section .note.GNU-stack noalloc noexec nowrite progbits
 %endif
 
-SECTION .text
+section .text
 
 %macro PROC 1
     align 16
