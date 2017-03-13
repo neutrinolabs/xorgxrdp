@@ -33,9 +33,7 @@
 ;   4096    -1616    -2378
 ;   4096     9324     0
 
-%ifidn __OUTPUT_FORMAT__,elf
-section .note.GNU-stack noalloc noexec nowrite progbits
-%endif
+%include "common.asm"
 
 section .data
 align 16
@@ -47,20 +45,10 @@ c9324 times 8 dw 9324
 
 section .text
 
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
-
 ;int
 ;yuy2_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
-%ifidn __OUTPUT_FORMAT__,elf
 PROC yuy2_to_rgb32_x86_sse2
-%else
-PROC _yuy2_to_rgb32_x86_sse2
-%endif
     push ebx
     push esi
     push edi

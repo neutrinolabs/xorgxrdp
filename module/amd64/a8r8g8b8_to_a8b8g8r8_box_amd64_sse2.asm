@@ -21,9 +21,7 @@
 ;amd64 SSE2
 ;
 
-%ifidn __OUTPUT_FORMAT__,elf64
-section .note.GNU-stack noalloc noexec nowrite progbits
-%endif
+%include "common.asm"
 
 section .data
 align 16
@@ -32,12 +30,6 @@ c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF
 
 section .text
-
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
 
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
@@ -49,11 +41,7 @@ section .text
 ;a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(const char *s8, int src_stride,
 ;                                    char *d8, int dst_stride,
 ;                                    int width, int height);
-%ifidn __OUTPUT_FORMAT__,elf64
 PROC a8r8g8b8_to_a8b8g8r8_box_amd64_sse2
-%else
-PROC _a8r8g8b8_to_a8b8g8r8_box_amd64_sse2
-%endif
     push rbx
     push rbp
 

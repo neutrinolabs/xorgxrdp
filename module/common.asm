@@ -1,5 +1,5 @@
 ;
-;Copyright 2016 Jay Sorg
+;Copyright 2017 Pavel Roskin
 ;
 ;Permission to use, copy, modify, distribute, and sell this software and its
 ;documentation for any purpose is hereby granted without fee, provided that
@@ -17,41 +17,35 @@
 ;AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 ;CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ;
-;cpuid
-;x86 SSE2
+;Common nasm code
 ;
 
-%include "common.asm"
+; Detect ELF formats
+%ifidn __OUTPUT_FORMAT__,elf
+%define is_elf 1
+%endif
 
-section .text
+%ifidn __OUTPUT_FORMAT__,elf32
+%define is_elf 1
+%endif
 
-;int
-;cpuid_x86(int eax_in, int ecx_in, int *eax, int *ebx, int *ecx, int *edx)
+%ifidn __OUTPUT_FORMAT__,elf64
+%define is_elf 1
+%endif
 
-PROC cpuid_x86
-    ; save registers
-    push ebx
-    push ecx
-    push edx
-    push edi
-    ; cpuid
-    mov eax, [esp + 20]
-    mov ecx, [esp + 24]
-    cpuid
-    mov edi, [esp + 28]
-    mov [edi], eax
-    mov edi, [esp + 32]
-    mov [edi], ebx
-    mov edi, [esp + 36]
-    mov [edi], ecx
-    mov edi, [esp + 40]
-    mov [edi], edx
-    mov eax, 0
-    ; restore registers
-    pop edi
-    pop edx
-    pop ecx
-    pop ebx
-    ret
+; Mark stack non-executable
+%ifdef is_elf
+section .note.GNU-stack noalloc noexec nowrite progbits
+%endif
+
+; Global function header
+%macro PROC 1
     align 16
-
+%ifdef is_elf
+    global %1:function
+    %1:
+%else
+    global _%1
+    _%1:
+%endif
+%endmacro

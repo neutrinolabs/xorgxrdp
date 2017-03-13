@@ -21,9 +21,7 @@
 ;x86 SSE2 32 bit
 ;
 
-%ifidn __OUTPUT_FORMAT__,elf
-section .note.GNU-stack noalloc noexec nowrite progbits
-%endif
+%include "common.asm"
 
 section .data
 align 16
@@ -33,21 +31,11 @@ c3 times 4 dd 0x000000FF
 
 section .text
 
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
-
 ;int
 ;a8r8g8b8_to_a8b8g8r8_box_x86_sse2(const char *s8, int src_stride,
 ;                                  char *d8, int dst_stride,
 ;                                  int width, int height);
-%ifidn __OUTPUT_FORMAT__,elf
 PROC a8r8g8b8_to_a8b8g8r8_box_x86_sse2
-%else
-PROC _a8r8g8b8_to_a8b8g8r8_box_x86_sse2
-%endif
     push ebx
     push esi
     push edi

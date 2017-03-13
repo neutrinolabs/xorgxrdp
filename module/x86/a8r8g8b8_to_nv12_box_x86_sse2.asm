@@ -25,9 +25,7 @@
 ;   width should be multiple of 8 and > 0
 ;   height should be even and > 0
 
-%ifidn __OUTPUT_FORMAT__,elf
-section .note.GNU-stack noalloc noexec nowrite progbits
-%endif
+%include "common.asm"
 
 section .data
 
@@ -50,12 +48,6 @@ section .data
 
 section .text
 
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
-
 %define LU1            [esp +  0] ; first line U, 8 bytes
 %define LV1            [esp +  8] ; first line V, 8 bytes
 %define LU2            [esp + 16] ; second line U, 8 bytes
@@ -75,11 +67,7 @@ section .text
 ;                              char *d8_y, int dst_stride_y,
 ;                              char *d8_uv, int dst_stride_uv,
 ;                              int width, int height);
-%ifidn __OUTPUT_FORMAT__,elf
 PROC a8r8g8b8_to_nv12_box_x86_sse2
-%else
-PROC _a8r8g8b8_to_nv12_box_x86_sse2
-%endif
     push ebx
     push esi
     push edi
