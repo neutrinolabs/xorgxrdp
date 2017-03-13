@@ -25,9 +25,7 @@
 ;   width should be multiple of 8 and > 0
 ;   height should be even and > 0
 
-%ifidn __OUTPUT_FORMAT__,elf64
-section .note.GNU-stack noalloc noexec nowrite progbits
-%endif
+%include "common.asm"
 
 section .data
 
@@ -49,12 +47,6 @@ section .data
     cw2    times 8 dw 2
 
 section .text
-
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
 
 %define LS8            [rsp +   0] ; s8
 %define LSRC_STRIDE    [rsp +   8] ; src_stride
@@ -78,11 +70,7 @@ section .text
 ;                                char *d8_y, int dst_stride_y,
 ;                                char *d8_uv, int dst_stride_uv,
 ;                                int width, int height);
-%ifidn __OUTPUT_FORMAT__,elf64
 PROC a8r8g8b8_to_nv12_box_amd64_sse2
-%else
-PROC _a8r8g8b8_to_nv12_box_amd64_sse2
-%endif
     push rbx
     push rbp
     sub rsp, 80                ; local vars, 80 bytes

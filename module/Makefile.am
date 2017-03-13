@@ -1,4 +1,4 @@
-EXTRA_DIST = nasm_lt.sh
+EXTRA_DIST = common.asm nasm_lt.sh
 EXTRA_FLAGS =
 SUBDIRS =
 ASMLIB =
