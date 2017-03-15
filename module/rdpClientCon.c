@@ -1173,18 +1173,20 @@ rdpClientConInit(rdpPtr dev)
 {
     int i;
     char *ptext;
+    const char *socket_dir;
 
-    if (!g_directory_exist("/tmp/.xrdp"))
+    socket_dir = g_socket_dir();
+    if (!g_directory_exist(socket_dir))
     {
-        if (!g_create_dir("/tmp/.xrdp"))
+        if (!g_create_dir(socket_dir))
         {
-            if (!g_directory_exist("/tmp/.xrdp"))
+            if (!g_directory_exist(socket_dir))
             {
-                LLOGLN(0, ("rdpup_init: g_create_dir failed"));
+                LLOGLN(0, ("rdpup_init: g_create_dir(%s) failed", socket_dir));
                 return 0;
             }
         }
-        g_chmod_hex("/tmp/.xrdp", 0x1777);
+        g_chmod_hex(socket_dir, 0x1777);
     }
     i = atoi(display);
     if (i < 1)
@@ -1192,7 +1194,7 @@ rdpClientConInit(rdpPtr dev)
         LLOGLN(0, ("rdpClientConInit: can not run at display < 1"));
         return 0;
     }
-    g_sprintf(dev->uds_data, "/tmp/.xrdp/xrdp_display_%s", display);
+    g_sprintf(dev->uds_data, "%s/xrdp_display_%s", socket_dir, display);
     if (dev->listen_sck == 0)
     {
         unlink(dev->uds_data);
