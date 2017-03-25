@@ -118,7 +118,7 @@ do8:
 
 PROC i420_to_rgb32_x86_sse2
     push ebx
-    get_GOT
+    RETRIEVE_RODATA
     push esi
     push edi
     push ebp

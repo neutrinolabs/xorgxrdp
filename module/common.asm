@@ -56,8 +56,7 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %undef lsym
 
 %ifdef ASM_ARCH_AMD64
-%macro get_GOT 0
-%endmacro
+; amd64; don't define or call RETRIEVE_RODATA
 %define lsym(name) rel name
 %endif
 
@@ -66,7 +65,7 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %ifdef PIC
 ; i386 ELF PIC
 %define use_elf_pic 1
-%macro get_GOT 0
+%macro RETRIEVE_RODATA 0
 	call ..@get_GOT
 %%getgot:
 	add ebx, _GLOBAL_OFFSET_TABLE_ + $$ - %%getgot wrt ..gotpc
@@ -85,7 +84,7 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %endif
 
 %ifndef lsym
-%macro get_GOT 0
+%macro RETRIEVE_RODATA 0
 %endmacro
 %define lsym(name) name
 %endif

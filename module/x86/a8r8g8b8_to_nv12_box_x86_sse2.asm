@@ -70,7 +70,7 @@ section .text
 ;                              int width, int height);
 PROC a8r8g8b8_to_nv12_box_x86_sse2
     push ebx
-    get_GOT
+    RETRIEVE_RODATA
     push esi
     push edi
     push ebp
