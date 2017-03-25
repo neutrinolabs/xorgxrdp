@@ -34,6 +34,19 @@
 %define is_elf 1
 %endif
 
+; Detect Mach-O formats
+%ifidn __OUTPUT_FORMAT__,macho
+%define is_macho 1
+%endif
+
+%ifidn __OUTPUT_FORMAT__,macho32
+%define is_macho 1
+%endif
+
+%ifidn __OUTPUT_FORMAT__,macho64
+%define is_macho 1
+%endif
+
 ; Mark stack non-executable
 %ifdef is_elf
 section .note.GNU-stack noalloc noexec nowrite progbits
@@ -57,12 +70,12 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %ifdef ASM_ARCH_AMD64
 ; amd64; don't define or call RETRIEVE_RODATA
 %define lsym(name) rel name
-; default case for PREPARE_RODATA
 %endif
 
 %ifdef ASM_ARCH_I386
 %ifdef PIC
 ; i386 PIC
+
 %macro END_OF_FILE 0
 %ifdef I386_PIC_NEEDED
 section .text
@@ -70,20 +83,22 @@ section .text
 	mov ebx, [esp]
 	ret
 %endif
+%ifdef is_macho
+; see below
+    align 16
+%endif
 %endmacro
-%macro PREPARE_RODATA 0
-align 16
-..@rodata_begin:
-%endmacro
+
 %macro RETRIEVE_RODATA 0
-%define I386_PIC_NEEDED
+%define I386_PIC_NEEDED 1
 	call ..@get_caller_address
 %%the_caller_address:
 	sub ebx, %%the_caller_address - ..@rodata_begin
 %endmacro
+
 %define lsym(name) ebx + name - ..@rodata_begin
 %else
-; i386 non-PIC; default case for lsym, RETRIEVE_RODATA and PREPARE_RODATA
+; i386 non-PIC; default case for lsym and RETRIEVE_RODATA
 %endif
 %endif
 
@@ -93,15 +108,18 @@ align 16
 %define lsym(name) name
 %endif
 
-%ifnmacro PREPARE_RODATA 0
 %macro PREPARE_RODATA 0
 section .text
-align 16
+    align 16
+..@rodata_begin:
 %endmacro
-%endif
 
 %ifnmacro END_OF_FILE 0
 %macro END_OF_FILE 0
+%ifdef is_macho
+; cf. https://github.com/libjpeg-turbo/libjpeg-turbo/blob/master/simd/jccolext-mmx.asm#L474-L476
+    align 16
+%endif
 %endmacro
 %endif
 
