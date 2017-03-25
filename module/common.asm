@@ -66,19 +66,19 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 ; i386 ELF PIC
 %macro PREPARE_RODATA 0
 section .text
-extern _GLOBAL_OFFSET_TABLE_
-..@get_GOT:
+..@get_caller_address:
 	mov ebx, [esp]
 	ret
 section .data
 align 16
+..@rodata_begin:
 %endmacro
 %macro RETRIEVE_RODATA 0
-	call ..@get_GOT
-%%getgot:
-	add ebx, _GLOBAL_OFFSET_TABLE_ + $$ - %%getgot wrt ..gotpc
+	call ..@get_caller_address
+%%the_caller_address:
+	sub ebx, %%the_caller_address - ..@rodata_begin
 %endmacro
-%define lsym(name) ebx + name wrt ..gotoff
+%define lsym(name) ebx + name - ..@rodata_begin
 %else
 ; i386 ELF, not PIC, default case (see below)
 %endif
