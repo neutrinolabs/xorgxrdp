@@ -26,8 +26,9 @@
 ;   width should be multiple of 8 and > 0
 ;   height should be even and > 0
 
+%include "common.asm"
+
 %ifidn __OUTPUT_FORMAT__,elf
-section .note.GNU-stack noalloc noexec nowrite progbits
 %ifdef PIC
 section .text
 extern _GLOBAL_OFFSET_TABLE_
@@ -53,7 +54,7 @@ extern _GLOBAL_OFFSET_TABLE_
 %endmacro
 %endif
 
-SECTION .data
+section .data
 
     align 16
 
@@ -72,13 +73,7 @@ SECTION .data
     cw18   times 8 dw 18
     cw2    times 8 dw 2
 
-SECTION .text
-
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
+section .text
 
 %define LU1            [esp +  0] ; first line U, 8 bytes
 %define LV1            [esp +  8] ; first line V, 8 bytes
@@ -99,11 +94,7 @@ SECTION .text
 ;                              char *d8_y, int dst_stride_y,
 ;                              char *d8_uv, int dst_stride_uv,
 ;                              int width, int height);
-%ifidn __OUTPUT_FORMAT__,elf
 PROC a8r8g8b8_to_nv12_box_x86_sse2
-%else
-PROC _a8r8g8b8_to_nv12_box_x86_sse2
-%endif
     push ebx
     get_GOT
     push esi

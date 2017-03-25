@@ -29,14 +29,13 @@ capture
 #include <xorgVersion.h>
 #include <xf86.h>
 
+/* maximum rects in the dirty region before the extents is used */
+#define MAX_CAPTURE_RECTS 15
+#define MAX_CAPTURE_PIXELS 0x800000
+
 extern _X_EXPORT Bool
-rdpCapture(rdpClientCon *clientCon,
-           RegionPtr in_reg, BoxPtr *out_rects, int *num_out_rects,
-           const char *src, int src_left, int src_top,
-           int src_width, int src_height,
-           int src_stride, int src_format,
-           char *dst, int dst_width, int dst_height,
-           int dst_stride, int dst_format, int mode);
+rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
+           int *num_out_rects, struct image_data *id);
 
 extern _X_EXPORT int
 a8r8g8b8_to_a8b8g8r8_box(const char *s8, int src_stride,

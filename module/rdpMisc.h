@@ -85,15 +85,17 @@ extern _X_EXPORT int
 g_directory_exist(const char *dirname);
 extern _X_EXPORT int
 g_chmod_hex(const char *filename, int flags);
+extern _X_EXPORT const char *
+g_socket_dir(void);
 extern _X_EXPORT void
 g_hexdump(void *p, long len);
 
 
 /* glib-style memory allocation macros */
 #define g_new(struct_type, n_structs) \
-    (struct_type *) malloc(sizeof(struct_type) * (n_structs))
+    (struct_type *) xnfalloc(sizeof(struct_type) * (n_structs))
 #define g_new0(struct_type, n_structs) \
-    (struct_type *) calloc((n_structs), sizeof(struct_type))
+    (struct_type *) xnfcalloc((n_structs), sizeof(struct_type))
 
 
 #if defined(X_BYTE_ORDER)

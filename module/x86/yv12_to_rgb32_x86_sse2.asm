@@ -34,8 +34,9 @@
 ;   4096    -1616    -2378
 ;   4096     9324     0
 
+%include "common.asm"
+
 %ifidn __OUTPUT_FORMAT__,elf
-section .note.GNU-stack noalloc noexec nowrite progbits
 %ifdef PIC
 section .text
 extern _GLOBAL_OFFSET_TABLE_
@@ -61,7 +62,7 @@ extern _GLOBAL_OFFSET_TABLE_
 %endmacro
 %endif
 
-SECTION .data
+section .data
 align 16
 c128 times 8 dw 128
 c4669 times 8 dw 4669
@@ -69,13 +70,7 @@ c1616 times 8 dw 1616
 c2378 times 8 dw 2378
 c9324 times 8 dw 9324
 
-SECTION .text
-
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
+section .text
 
 do8_uv:
 
@@ -147,11 +142,7 @@ do8:
 ;int
 ;yv12_to_rgb32_x86_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
-%ifidn __OUTPUT_FORMAT__,elf
 PROC yv12_to_rgb32_x86_sse2
-%else
-PROC _yv12_to_rgb32_x86_sse2
-%endif
     push ebx
     get_GOT
     push esi

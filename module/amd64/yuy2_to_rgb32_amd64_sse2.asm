@@ -33,11 +33,9 @@
 ;   4096    -1616    -2378
 ;   4096     9324     0
 
-%ifidn __OUTPUT_FORMAT__,elf64
-SECTION .note.GNU-stack noalloc noexec nowrite progbits
-%endif
+%include "common.asm"
 
-SECTION .data
+section .data
 align 16
 c128 times 8 dw 128
 c4669 times 8 dw 4669
@@ -45,13 +43,7 @@ c1616 times 8 dw 1616
 c2378 times 8 dw 2378
 c9324 times 8 dw 9324
 
-SECTION .text
-
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
+section .text
 
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
@@ -59,11 +51,7 @@ SECTION .text
 ;int
 ;yuy2_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
-%ifidn __OUTPUT_FORMAT__,elf64
 PROC yuy2_to_rgb32_amd64_sse2
-%else
-PROC _yuy2_to_rgb32_amd64_sse2
-%endif
     push rbx
     push rbp
 

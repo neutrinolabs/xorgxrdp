@@ -22,8 +22,9 @@
 ;x86 SSE2 32 bit
 ;
 
+%include "common.asm"
+
 %ifidn __OUTPUT_FORMAT__,elf
-section .note.GNU-stack noalloc noexec nowrite progbits
 %ifdef PIC
 section .text
 extern _GLOBAL_OFFSET_TABLE_
@@ -49,29 +50,19 @@ extern _GLOBAL_OFFSET_TABLE_
 %endmacro
 %endif
 
-SECTION .data
+section .data
 align 16
 c1 times 4 dd 0xFF00FF00
 c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF
 
-SECTION .text
-
-%macro PROC 1
-    align 16
-    global %1
-    %1:
-%endmacro
+section .text
 
 ;int
 ;a8r8g8b8_to_a8b8g8r8_box_x86_sse2(const char *s8, int src_stride,
 ;                                  char *d8, int dst_stride,
 ;                                  int width, int height);
-%ifidn __OUTPUT_FORMAT__,elf
 PROC a8r8g8b8_to_a8b8g8r8_box_x86_sse2
-%else
-PROC _a8r8g8b8_to_a8b8g8r8_box_x86_sse2
-%endif
     push ebx
     get_GOT
     push esi
