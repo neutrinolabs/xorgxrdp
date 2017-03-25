@@ -42,8 +42,6 @@ c1616 times 8 dw 1616
 c2378 times 8 dw 2378
 c9324 times 8 dw 9324
 
-section .text
-
 do8_uv:
 
     ; v

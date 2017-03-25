@@ -28,8 +28,6 @@ c1 times 4 dd 0xFF00FF00
 c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF
 
-section .text
-
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
 

@@ -44,8 +44,6 @@ PREPARE_RODATA
     cw18   times 8 dw 18
     cw2    times 8 dw 2
 
-section .text
-
 %define LU1            [esp +  0] ; first line U, 8 bytes
 %define LV1            [esp +  8] ; first line V, 8 bytes
 %define LU2            [esp + 16] ; second line U, 8 bytes

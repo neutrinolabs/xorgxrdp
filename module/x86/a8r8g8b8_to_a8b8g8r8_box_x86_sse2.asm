@@ -29,8 +29,6 @@ c1 times 4 dd 0xFF00FF00
 c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF
 
-section .text
-
 ;int
 ;a8r8g8b8_to_a8b8g8r8_box_x86_sse2(const char *s8, int src_stride,
 ;                                  char *d8, int dst_stride,

@@ -43,8 +43,6 @@ c1616 times 8 dw 1616
 c2378 times 8 dw 2378
 c9324 times 8 dw 9324
 
-section .text
-
 ;int
 ;uyvy_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 

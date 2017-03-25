@@ -43,8 +43,6 @@ PREPARE_RODATA
     cw18   times 8 dw 18
     cw2    times 8 dw 2
 
-section .text
-
 %define LS8            [rsp +   0] ; s8
 %define LSRC_STRIDE    [rsp +   8] ; src_stride
 %define LD8_Y          [rsp +  16] ; d8_y

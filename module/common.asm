@@ -68,7 +68,6 @@ section .text
 ..@get_caller_address:
 	mov ebx, [esp]
 	ret
-section .data
 align 16
 ..@rodata_begin:
 %endmacro
@@ -91,7 +90,7 @@ align 16
 
 %ifnmacro PREPARE_RODATA
 %macro PREPARE_RODATA 0
-section .data
+section .text
 align 16
 %endmacro
 %endif
