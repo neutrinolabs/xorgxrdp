@@ -143,4 +143,3 @@ loop1:
     pop rbp
     pop rbx
     ret
-    align 16

@@ -108,7 +108,7 @@ do8:
     movdqa [edi], xmm4
     lea edi, [edi + 16]
 
-    ret;
+    ret
 
 ;int
 ;yv12_to_rgb32_x86_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
@@ -238,4 +238,3 @@ loop_x:
     pop esi
     pop ebx
     ret
-    align 16

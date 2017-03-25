@@ -76,7 +76,7 @@ loop_xpre:
     mov [edi], edx
     lea edi, [edi + 4]
     dec ecx
-    jmp loop_xpre;
+    jmp loop_xpre
 done_loop_xpre:
 
     prefetchnta [esi]
@@ -122,7 +122,7 @@ loop_x8:
     lea edi, [edi + 16]
     sub ecx, 4
 
-    jmp loop_x8;
+    jmp loop_x8
 done_loop_x8:
 
 loop_x:
@@ -143,7 +143,7 @@ loop_x:
     mov [edi], edx
     lea edi, [edi + 4]
     dec ecx
-    jmp loop_x;
+    jmp loop_x
 done_loop_x:
 
     mov esi, [esp + 20]
@@ -165,4 +165,3 @@ done_loop_x:
     pop esi
     pop ebx
     ret
-    align 16

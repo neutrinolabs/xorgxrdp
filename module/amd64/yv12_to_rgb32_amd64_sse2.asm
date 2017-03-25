@@ -107,7 +107,7 @@ do8:
     movdqa [rdi], xmm4
     lea rdi, [rdi + 16]
 
-    ret;
+    ret
 
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
@@ -236,4 +236,3 @@ loop_x:
     pop rsi
     pop rbx
     ret
-    align 16

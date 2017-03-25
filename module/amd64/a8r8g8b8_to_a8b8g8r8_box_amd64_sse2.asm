@@ -94,7 +94,7 @@ loop_xpre:
     mov [rdi], edx
     lea rdi, [rdi + 4]
     dec rcx
-    jmp loop_xpre;
+    jmp loop_xpre
 done_loop_xpre:
 
 ; A R G B A R G B A R G B A R G B to
@@ -136,7 +136,7 @@ loop_x8:
     lea rdi, [rdi + 16]
     sub rcx, 4
 
-    jmp loop_x8;
+    jmp loop_x8
 done_loop_x8:
 
 loop_x:
@@ -157,7 +157,7 @@ loop_x:
     mov [rdi], edx
     lea rdi, [rdi + 4]
     dec rcx
-    jmp loop_x;
+    jmp loop_x
 done_loop_x:
 
     mov rsi, [rsp + 32] ; src
@@ -178,4 +178,3 @@ done_loop_x:
     pop rbp
     pop rbx
     ret
-    align 16

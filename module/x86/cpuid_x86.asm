@@ -51,4 +51,3 @@ PROC cpuid_x86
     pop ecx
     pop ebx
     ret
-    align 16

@@ -53,4 +53,3 @@ PROC cpuid_amd64
     ; restore registers
     pop rbx
     ret
-    align 16

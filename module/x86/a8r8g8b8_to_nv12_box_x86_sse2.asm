@@ -307,4 +307,3 @@ loop1:
     pop esi
     pop ebx
     ret
-    align 16
