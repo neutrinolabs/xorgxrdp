@@ -36,8 +36,7 @@
 
 %include "common.asm"
 
-section .data
-align 16
+PREPARE_RODATA
 c128 times 8 dw 128
 c4669 times 8 dw 4669
 c1616 times 8 dw 1616

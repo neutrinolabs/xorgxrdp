@@ -27,10 +27,7 @@
 
 %include "common.asm"
 
-section .data
-
-    align 16
-
+PREPARE_RODATA
     cd255  times 4 dd 255
 
     cw255  times 8 dw 255

@@ -24,8 +24,7 @@
 
 %include "common.asm"
 
-section .data
-align 16
+PREPARE_RODATA
 c1 times 4 dd 0xFF00FF00
 c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF

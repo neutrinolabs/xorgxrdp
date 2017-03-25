@@ -89,6 +89,13 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %define lsym(name) name
 %endif
 
+%ifnmacro PREPARE_RODATA
+%macro PREPARE_RODATA 0
+section .data
+align 16
+%endmacro
+%endif
+
 section .text
 
 ; Prerequisite code for relative access to local data
