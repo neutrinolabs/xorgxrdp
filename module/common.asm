@@ -61,9 +61,8 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %endif
 
 %ifdef ASM_ARCH_I386
-%ifdef is_elf
 %ifdef PIC
-; i386 ELF PIC
+; i386 PIC
 %macro PREPARE_RODATA 0
 section .text
 ..@get_caller_address:
@@ -80,14 +79,7 @@ align 16
 %endmacro
 %define lsym(name) ebx + name - ..@rodata_begin
 %else
-; i386 ELF, not PIC, default case (see below)
-%endif
-%else
-; i386 not ELF
-%ifdef PIC
-%error "Position-Independent Code is currently only supported for ELF"
-%endif
-; i386 not ELF, not PIC, default case (see below)
+; i386 non-PIC; default case for lsym, RETRIEVE_RODATA and PREPARE_RODATA
 %endif
 %endif
 
