@@ -28,32 +28,6 @@
 
 %include "common.asm"
 
-%ifidn __OUTPUT_FORMAT__,elf
-%ifdef PIC
-section .text
-extern _GLOBAL_OFFSET_TABLE_
-..@get_GOT:
-	mov ebx, [esp]
-	ret
-%define lsym(name) ebx + name wrt ..gotoff
-%macro get_GOT 0
-	call ..@get_GOT
-%%getgot:
-	add ebx, _GLOBAL_OFFSET_TABLE_ + $$ - %%getgot wrt ..gotpc
-%endmacro
-%endif
-%else
-; not ELF
-%ifdef PIC
-%error "Position-Independent Code is currently only supported for ELF"
-%endif
-%endif
-%ifndef lsym
-%define lsym(name) name
-%macro get_GOT 0
-%endmacro
-%endif
-
 section .data
 
     align 16

@@ -51,4 +51,48 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %endif
 %endmacro
 
+; Macros for relative access to local data
+%undef use_elf_pic
+%ifdef ASM_ARCH_I386
+%ifdef is_elf
+%ifdef PIC
+; i386 ELF PIC
+%define use_elf_pic 1
+%macro get_GOT 0
+	call ..@get_GOT
+%%getgot:
+	add ebx, _GLOBAL_OFFSET_TABLE_ + $$ - %%getgot wrt ..gotpc
+%endmacro
+%define lsym(name) ebx + name wrt ..gotoff
+%else
+; i386 ELF, not PIC
+%macro get_GOT 0
+%endmacro
+%define lsym(name) name
+%endif
+%else
+; i386 not ELF
+%ifdef PIC
+%error "Position-Independent Code is currently only supported for ELF"
+%endif
+; i386 not ELF, not PIC
+%macro get_GOT 0
+%endmacro
+%define lsym(name) name
+%endif
+%else
+; not i386
+%macro get_GOT 0
+%endmacro
+%define lsym(name) name
+%endif
+
 section .text
+
+; Prerequisite code for relative access to local data
+%ifdef use_elf_pic
+extern _GLOBAL_OFFSET_TABLE_
+..@get_GOT:
+	mov ebx, [esp]
+	ret
+%endif
