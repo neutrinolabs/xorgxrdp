@@ -51,3 +51,4 @@ PROC cpuid_x86
     pop ecx
     pop ebx
     ret
+END_OF_FILE

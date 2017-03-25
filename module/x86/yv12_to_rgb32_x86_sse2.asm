@@ -238,3 +238,4 @@ loop_x:
     pop esi
     pop ebx
     ret
+END_OF_FILE

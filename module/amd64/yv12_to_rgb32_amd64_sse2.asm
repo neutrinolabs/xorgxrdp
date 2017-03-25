@@ -236,3 +236,4 @@ loop_x:
     pop rsi
     pop rbx
     ret
+END_OF_FILE

@@ -63,15 +63,20 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %ifdef ASM_ARCH_I386
 %ifdef PIC
 ; i386 PIC
-%macro PREPARE_RODATA 0
+%macro END_OF_FILE 0
+%ifdef I386_PIC_NEEDED
 section .text
 ..@get_caller_address:
 	mov ebx, [esp]
 	ret
+%endif
+%endmacro
+%macro PREPARE_RODATA 0
 align 16
 ..@rodata_begin:
 %endmacro
 %macro RETRIEVE_RODATA 0
+%define I386_PIC_NEEDED
 	call ..@get_caller_address
 %%the_caller_address:
 	sub ebx, %%the_caller_address - ..@rodata_begin
@@ -88,10 +93,15 @@ align 16
 %define lsym(name) name
 %endif
 
-%ifnmacro PREPARE_RODATA
+%ifnmacro PREPARE_RODATA 0
 %macro PREPARE_RODATA 0
 section .text
 align 16
+%endmacro
+%endif
+
+%ifnmacro END_OF_FILE 0
+%macro END_OF_FILE 0
 %endmacro
 %endif
 

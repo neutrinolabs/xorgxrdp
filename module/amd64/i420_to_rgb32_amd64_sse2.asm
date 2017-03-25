@@ -232,3 +232,4 @@ loop_x:
     pop rbp
     pop rbx
     ret
+END_OF_FILE
