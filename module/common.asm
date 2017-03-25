@@ -52,19 +52,27 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %endmacro
 
 ; Macros for relative access to local data
-%undef use_elf_pic
 %undef lsym
 
 %ifdef ASM_ARCH_AMD64
 ; amd64; don't define or call RETRIEVE_RODATA
 %define lsym(name) rel name
+; default case for PREPARE_RODATA
 %endif
 
 %ifdef ASM_ARCH_I386
 %ifdef is_elf
 %ifdef PIC
 ; i386 ELF PIC
-%define use_elf_pic 1
+%macro PREPARE_RODATA 0
+section .text
+extern _GLOBAL_OFFSET_TABLE_
+..@get_GOT:
+	mov ebx, [esp]
+	ret
+section .data
+align 16
+%endmacro
 %macro RETRIEVE_RODATA 0
 	call ..@get_GOT
 %%getgot:
@@ -97,11 +105,3 @@ align 16
 %endif
 
 section .text
-
-; Prerequisite code for relative access to local data
-%ifdef use_elf_pic
-extern _GLOBAL_OFFSET_TABLE_
-..@get_GOT:
-	mov ebx, [esp]
-	ret
-%endif
