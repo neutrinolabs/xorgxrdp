@@ -1,3 +1,5 @@
+NAFLAGS += -DASM_ARCH_AMD64
+
 ASMSOURCES = \
   a8r8g8b8_to_a8b8g8r8_box_amd64_sse2.asm \
   a8r8g8b8_to_nv12_box_amd64_sse2.asm \
