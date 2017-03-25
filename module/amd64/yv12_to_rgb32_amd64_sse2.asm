@@ -240,5 +240,3 @@ loop_x:
     pop rbx
     ret
     align 16
-
-

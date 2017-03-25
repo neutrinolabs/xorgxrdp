@@ -198,7 +198,7 @@ loop1:
     ; _Y = (( 66 * _R + 129 * _G +  25 * _B + 128) >> 8) +  16;
     movdqa xmm4, xmm1          ; blue
     movdqa xmm5, xmm2          ; green
-    movdqa xmm6, xmm3          ; red 
+    movdqa xmm6, xmm3          ; red
     pmullw xmm4, [rel cw25]
     pmullw xmm5, [rel cw129]
     pmullw xmm6, [rel cw66]
@@ -317,4 +317,3 @@ loop1:
     pop rbx
     ret
     align 16
-

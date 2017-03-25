@@ -182,4 +182,3 @@ done_loop_x:
     pop rbx
     ret
     align 16
-

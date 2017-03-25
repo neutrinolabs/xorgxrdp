@@ -1,5 +1,6 @@
 ;
 ;Copyright 2017 Pavel Roskin
+;Copyright 2017 mirabilos
 ;
 ;Permission to use, copy, modify, distribute, and sell this software and its
 ;documentation for any purpose is hereby granted without fee, provided that
@@ -49,3 +50,5 @@ section .note.GNU-stack noalloc noexec nowrite progbits
     _%1:
 %endif
 %endmacro
+
+section .text

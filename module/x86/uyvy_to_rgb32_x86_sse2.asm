@@ -179,4 +179,3 @@ loop1:
     pop ebx
     ret
     align 16
-

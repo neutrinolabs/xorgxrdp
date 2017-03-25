@@ -268,5 +268,3 @@ loop_x:
     pop ebx
     ret
     align 16
-
-

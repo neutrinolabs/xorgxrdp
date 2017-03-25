@@ -147,4 +147,3 @@ loop1:
     pop rbx
     ret
     align 16
-
