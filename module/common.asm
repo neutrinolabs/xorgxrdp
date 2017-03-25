@@ -53,6 +53,14 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 
 ; Macros for relative access to local data
 %undef use_elf_pic
+%undef lsym
+
+%ifdef ASM_ARCH_AMD64
+%macro get_GOT 0
+%endmacro
+%define lsym(name) rel name
+%endif
+
 %ifdef ASM_ARCH_I386
 %ifdef is_elf
 %ifdef PIC
@@ -65,23 +73,18 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 %endmacro
 %define lsym(name) ebx + name wrt ..gotoff
 %else
-; i386 ELF, not PIC
-%macro get_GOT 0
-%endmacro
-%define lsym(name) name
+; i386 ELF, not PIC, default case (see below)
 %endif
 %else
 ; i386 not ELF
 %ifdef PIC
 %error "Position-Independent Code is currently only supported for ELF"
 %endif
-; i386 not ELF, not PIC
-%macro get_GOT 0
-%endmacro
-%define lsym(name) name
+; i386 not ELF, not PIC, default case (see below)
 %endif
-%else
-; not i386
+%endif
+
+%ifndef lsym
 %macro get_GOT 0
 %endmacro
 %define lsym(name) name

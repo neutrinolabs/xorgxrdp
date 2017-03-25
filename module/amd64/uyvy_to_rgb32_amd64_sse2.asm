@@ -62,7 +62,7 @@ PROC uyvy_to_rgb32_amd64_sse2
 
     mov rcx, rax
 
-    movdqa xmm7, [rel c128]
+    movdqa xmm7, [lsym(c128)]
 
 loop1:
     ; hi                                           lo
@@ -99,22 +99,22 @@ loop1:
     psllw xmm2, 4
 
     ; r = y + hiword(4669 * (v << 4))
-    movdqa xmm4, [rel c4669]
+    movdqa xmm4, [lsym(c4669)]
     pmulhw xmm4, xmm1
     movdqa xmm3, xmm0
     paddw xmm3, xmm4
 
     ; g = y - hiword(1616 * (u << 4)) - hiword(2378 * (v << 4))
-    movdqa xmm5, [rel c1616]
+    movdqa xmm5, [lsym(c1616)]
     pmulhw xmm5, xmm2
-    movdqa xmm6, [rel c2378]
+    movdqa xmm6, [lsym(c2378)]
     pmulhw xmm6, xmm1
     movdqa xmm4, xmm0
     psubw xmm4, xmm5
     psubw xmm4, xmm6
 
     ; b = y + hiword(9324 * (u << 4))
-    movdqa xmm6, [rel c9324]
+    movdqa xmm6, [lsym(c9324)]
     pmulhw xmm6, xmm2
     movdqa xmm5, xmm0
     paddw xmm5, xmm6

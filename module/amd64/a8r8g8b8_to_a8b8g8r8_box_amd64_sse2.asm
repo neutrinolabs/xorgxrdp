@@ -45,9 +45,9 @@ PROC a8r8g8b8_to_a8b8g8r8_box_amd64_sse2
     push rbx
     push rbp
 
-    movdqa xmm4, [rel c1]
-    movdqa xmm5, [rel c2]
-    movdqa xmm6, [rel c3]
+    movdqa xmm4, [lsym(c1)]
+    movdqa xmm5, [lsym(c2)]
+    movdqa xmm6, [lsym(c3)]
 
     ; local vars
     ; long src_stride
