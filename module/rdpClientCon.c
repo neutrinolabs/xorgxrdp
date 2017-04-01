@@ -340,7 +340,7 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
 /*****************************************************************************/
 /* returns error */
 static int
-rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, char *data, int len)
+rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
 {
     int sent;
 
@@ -1470,13 +1470,13 @@ rdpClientConConvertPixel(rdpPtr dev, rdpClientCon *clientCon, int in_pixel)
 /******************************************************************************/
 int
 rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
-                          void *src, void *dst, int num_pixels)
+                          const void *src, void *dst, int num_pixels)
 {
     unsigned int pixel;
     unsigned int red;
     unsigned int green;
     unsigned int blue;
-    unsigned int *src32;
+    const unsigned int *src32;
     unsigned int *dst32;
     unsigned short *dst16;
     unsigned char *dst8;
@@ -1490,7 +1490,7 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
 
     if (dev->depth == 24)
     {
-        src32 = (unsigned int *)src;
+        src32 = (const unsigned int *) src;
 
         if (clientCon->rdp_bpp == 24)
         {
@@ -1553,14 +1553,14 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
 
 /******************************************************************************/
 int
-rdpClientConAlphaPixels(void* src, void* dst, int num_pixels)
+rdpClientConAlphaPixels(const void *src, void *dst, int num_pixels)
 {
-    unsigned int* src32;
-    unsigned char* dst8;
+    const unsigned int *src32;
+    unsigned char *dst8;
     int index;
 
-    src32 = (unsigned int*)src;
-    dst8 = (unsigned char*)dst;
+    src32 = (const unsigned int *) src;
+    dst8 = (unsigned char *) dst;
     for (index = 0; index < num_pixels; index++)
     {
         *dst8 = (*src32) >> 24;
@@ -2433,7 +2433,7 @@ rdpClientConSendArea(rdpPtr dev, rdpClientCon *clientCon,
     BoxRec box;
     int ly;
     int size;
-    char *src;
+    const char *src;
     char *dst;
     struct stream *s;
 

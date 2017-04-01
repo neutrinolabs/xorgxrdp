@@ -117,12 +117,12 @@ rdpSpriteUnrealizeCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs)
 
 /******************************************************************************/
 static int
-get_pixel_safe(char *data, int x, int y, int width, int height, int bpp)
+get_pixel_safe(const char *data, int x, int y, int width, int height, int bpp)
 {
     int start;
     int shift;
     int c;
-    unsigned int *src32;
+    const unsigned int *src32;
 
     if (x < 0)
     {
@@ -158,7 +158,7 @@ get_pixel_safe(char *data, int x, int y, int width, int height, int bpp)
     }
     else if (bpp == 32)
     {
-        src32 = (unsigned int*)data;
+        src32 = (const unsigned int *) data;
         return src32[y * width + x];
     }
 

@@ -165,7 +165,7 @@ xrdpVidQueryBestSize(ScrnInfoPtr pScrn, Bool motion,
 
 /*****************************************************************************/
 int
-YV12_to_RGB32(unsigned char *yuvs, int width, int height, int *rgbs)
+YV12_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
 {
     int size_total;
     int y;
@@ -206,7 +206,7 @@ YV12_to_RGB32(unsigned char *yuvs, int width, int height, int *rgbs)
 
 /*****************************************************************************/
 int
-I420_to_RGB32(unsigned char *yuvs, int width, int height, int *rgbs)
+I420_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
 {
     int size_total;
     int y;
@@ -247,7 +247,7 @@ I420_to_RGB32(unsigned char *yuvs, int width, int height, int *rgbs)
 
 /*****************************************************************************/
 int
-YUY2_to_RGB32(unsigned char *yuvs, int width, int height, int *rgbs)
+YUY2_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
 {
     int y1;
     int y2;
@@ -301,7 +301,7 @@ YUY2_to_RGB32(unsigned char *yuvs, int width, int height, int *rgbs)
 
 /*****************************************************************************/
 int
-UYVY_to_RGB32(unsigned char *yuvs, int width, int height, int *rgbs)
+UYVY_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
 {
     int y1;
     int y2;

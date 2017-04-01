@@ -27,13 +27,13 @@ x86 asm functions
 int
 cpuid_x86(int eax_in, int ecx_in, int *eax, int *ebx, int *ecx, int *edx);
 int
-yv12_to_rgb32_x86_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
+yv12_to_rgb32_x86_sse2(const unsigned char *yuvs, int width, int height, int *rgbs);
 int
-i420_to_rgb32_x86_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
+i420_to_rgb32_x86_sse2(const unsigned char *yuvs, int width, int height, int *rgbs);
 int
-yuy2_to_rgb32_x86_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
+yuy2_to_rgb32_x86_sse2(const unsigned char *yuvs, int width, int height, int *rgbs);
 int
-uyvy_to_rgb32_x86_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
+uyvy_to_rgb32_x86_sse2(const unsigned char *yuvs, int width, int height, int *rgbs);
 int
 a8r8g8b8_to_a8b8g8r8_box_x86_sse2(const char *s8, int src_stride,
                                   char *d8, int dst_stride,
