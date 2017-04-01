@@ -208,7 +208,7 @@ struct _rdpCounts
     CARD32 callCount[64 - 23];
 };
 
-typedef int (*yuv_to_rgb32_proc)(unsigned char *yuvs, int width, int height, int *rgbs);
+typedef int (*yuv_to_rgb32_proc)(const unsigned char *yuvs, int width, int height, int *rgbs);
 
 typedef int (*copy_box_proc)(const char *s8, int src_stride,
                              char *d8, int dst_stride,
