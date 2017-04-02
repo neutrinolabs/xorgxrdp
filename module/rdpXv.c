@@ -165,7 +165,7 @@ xrdpVidQueryBestSize(ScrnInfoPtr pScrn, Bool motion,
 
 /*****************************************************************************/
 int
-YV12_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
+YV12_to_RGB32(const uint8_t *yuvs, int width, int height, int *rgbs)
 {
     int size_total;
     int y;
@@ -206,7 +206,7 @@ YV12_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
 
 /*****************************************************************************/
 int
-I420_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
+I420_to_RGB32(const uint8_t *yuvs, int width, int height, int *rgbs)
 {
     int size_total;
     int y;
@@ -247,7 +247,7 @@ I420_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
 
 /*****************************************************************************/
 int
-YUY2_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
+YUY2_to_RGB32(const uint8_t *yuvs, int width, int height, int *rgbs)
 {
     int y1;
     int y2;
@@ -301,7 +301,7 @@ YUY2_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
 
 /*****************************************************************************/
 int
-UYVY_to_RGB32(const unsigned char *yuvs, int width, int height, int *rgbs)
+UYVY_to_RGB32(const uint8_t *yuvs, int width, int height, int *rgbs)
 {
     int y1;
     int y2;
@@ -499,7 +499,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     if (index > dev->xv_data_bytes)
     {
         free(dev->xv_data);
-        dev->xv_data = g_new(char, index);
+        dev->xv_data = g_new(uint8_t, index);
         if (dev->xv_data == NULL)
         {
             LLOGLN(0, ("xrdpVidPutImage: memory alloc error"));

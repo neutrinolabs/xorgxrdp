@@ -117,7 +117,7 @@ rdpSpriteUnrealizeCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs)
 
 /******************************************************************************/
 static int
-get_pixel_safe(const char *data, int x, int y, int width, int height, int bpp)
+get_pixel_safe(const uint8_t *data, int x, int y, int width, int height, int bpp)
 {
     int start;
     int shift;
@@ -167,7 +167,7 @@ get_pixel_safe(const char *data, int x, int y, int width, int height, int bpp)
 
 /******************************************************************************/
 static void
-set_pixel_safe(char *data, int x, int y, int width, int height, int bpp,
+set_pixel_safe(uint8_t *data, int x, int y, int width, int height, int bpp,
                int pixel)
 {
     int start;
@@ -228,10 +228,10 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
                       DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs,
                       int x, int y)
 {
-    char cur_data[32 * (32 * 4)];
-    char cur_mask[32 * (32 / 8)];
-    char *mask;
-    char *data;
+    uint8_t cur_data[32 * (32 * 4)];
+    uint8_t cur_mask[32 * (32 / 8)];
+    uint8_t *mask;
+    uint8_t *data;
     int i;
     int j;
     int w;
@@ -255,7 +255,7 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
         paddedRowBytes = PixmapBytePad(w, 32);
         xhot = pCurs->bits->xhot;
         yhot = pCurs->bits->yhot;
-        data = (char *)(pCurs->bits->argb);
+        data = (uint8_t *)(pCurs->bits->argb);
         memset(cur_data, 0, sizeof(cur_data));
         memset(cur_mask, 0, sizeof(cur_mask));
 
@@ -274,8 +274,8 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
         paddedRowBytes = PixmapBytePad(w, 1);
         xhot = pCurs->bits->xhot;
         yhot = pCurs->bits->yhot;
-        data = (char *)(pCurs->bits->source);
-        mask = (char *)(pCurs->bits->mask);
+        data = (uint8_t *)(pCurs->bits->source);
+        mask = (uint8_t *)(pCurs->bits->mask);
         fgcolor = (((pCurs->foreRed >> 8) & 0xff) << 16) |
                   (((pCurs->foreGreen >> 8) & 0xff) << 8) |
                   ((pCurs->foreBlue >> 8) & 0xff);

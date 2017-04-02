@@ -448,8 +448,8 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     dev->bitsPerPixel = rdpBitsPerPixel(dev->depth);
     dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
     LLOGLN(0, ("rdpScreenInit: pfbMemory bytes %d", dev->sizeInBytes));
-    dev->pfbMemory_alloc = g_new0(char, dev->sizeInBytes + 16);
-    dev->pfbMemory = (char *) RDPALIGN(dev->pfbMemory_alloc, 16);
+    dev->pfbMemory_alloc = g_new0(uint8_t, dev->sizeInBytes + 16);
+    dev->pfbMemory = (uint8_t *) RDPALIGN(dev->pfbMemory_alloc, 16);
     LLOGLN(0, ("rdpScreenInit: pfbMemory %p", dev->pfbMemory));
     if (!fbScreenInit(pScreen, dev->pfbMemory,
                       pScrn->virtualX, pScrn->virtualY,

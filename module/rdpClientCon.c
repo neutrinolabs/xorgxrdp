@@ -1669,7 +1669,7 @@ rdpClientConDrawLine(rdpPtr dev, rdpClientCon *clientCon,
 /******************************************************************************/
 int
 rdpClientConSetCursor(rdpPtr dev, rdpClientCon *clientCon,
-                      short x, short y, char *cur_data, char *cur_mask)
+                      short x, short y, uint8_t *cur_data, uint8_t *cur_mask)
 {
     int size;
 
@@ -1697,8 +1697,8 @@ rdpClientConSetCursor(rdpPtr dev, rdpClientCon *clientCon,
 /******************************************************************************/
 int
 rdpClientConSetCursorEx(rdpPtr dev, rdpClientCon *clientCon,
-                        short x, short y, char *cur_data,
-                        char *cur_mask, int bpp)
+                        short x, short y, uint8_t *cur_data,
+                        uint8_t *cur_mask, int bpp)
 {
     int size;
     int Bpp;
@@ -2417,7 +2417,7 @@ rdpClientConGetPixmapImageRect(rdpPtr dev, rdpClientCon *clientCon,
     id->bpp = clientCon->rdp_bpp;
     id->Bpp = clientCon->rdp_Bpp;
     id->lineBytes = pPixmap->devKind;
-    id->pixels = (char *)(pPixmap->devPrivate.ptr);
+    id->pixels = (uint8_t *)(pPixmap->devPrivate.ptr);
     id->shmem_pixels = 0;
     id->shmem_id = 0;
     id->shmem_offset = 0;
@@ -2433,8 +2433,8 @@ rdpClientConSendArea(rdpPtr dev, rdpClientCon *clientCon,
     BoxRec box;
     int ly;
     int size;
-    const char *src;
-    char *dst;
+    const uint8_t *src;
+    uint8_t *dst;
     struct stream *s;
 
     LLOGLN(10, ("rdpClientConSendArea: id %p x %d y %d w %d h %d", id, x, y, w, h));
