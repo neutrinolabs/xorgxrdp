@@ -57,7 +57,7 @@ cursor
 
 #if (X_BYTE_ORDER == X_LITTLE_ENDIAN)
 /* Copied from Xvnc/lib/font/util/utilbitmap.c */
-static unsigned char g_reverse_byte[0x100] =
+static uint8_t g_reverse_byte[0x100] =
 {
     0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
     0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
@@ -122,7 +122,7 @@ get_pixel_safe(const uint8_t *data, int x, int y, int width, int height, int bpp
     int start;
     int shift;
     int c;
-    const unsigned int *src32;
+    const uint32_t *src32;
 
     if (x < 0)
     {
@@ -149,7 +149,7 @@ get_pixel_safe(const uint8_t *data, int x, int y, int width, int height, int bpp
         width = (width + 7) / 8;
         start = (y * width) + x / 8;
         shift = x % 8;
-        c = (unsigned char)(data[start]);
+        c = (uint8_t) (data[start]);
 #if (X_BYTE_ORDER == X_LITTLE_ENDIAN)
         return (g_reverse_byte[c] & (0x80 >> shift)) != 0;
 #else
@@ -158,7 +158,7 @@ get_pixel_safe(const uint8_t *data, int x, int y, int width, int height, int bpp
     }
     else if (bpp == 32)
     {
-        src32 = (const unsigned int *) data;
+        src32 = (const uint32_t *) data;
         return src32[y * width + x];
     }
 
@@ -172,7 +172,7 @@ set_pixel_safe(uint8_t *data, int x, int y, int width, int height, int bpp,
 {
     int start;
     int shift;
-    unsigned int *dst32;
+    uint32_t *dst32;
 
     if (x < 0)
     {
@@ -217,7 +217,7 @@ set_pixel_safe(uint8_t *data, int x, int y, int width, int height, int bpp,
     }
     else if (bpp == 32)
     {
-        dst32 = (unsigned int*)data;
+        dst32 = (uint32_t *) data;
         dst32[y * width + x] = pixel;
     }
 }

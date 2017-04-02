@@ -122,14 +122,14 @@ rdpCopyBox_a8r8g8b8_to_yuvalp(int ax, int ay,
     uint8_t *uptr;
     uint8_t *vptr;
     uint8_t *aptr;
-    int *s32;
+    const uint32_t *s32;
     int index;
     int jndex;
     int kndex;
     int width;
     int height;
-    int pixel;
-    int a;
+    uint32_t pixel;
+    uint8_t a;
     int r;
     int g;
     int b;
@@ -150,7 +150,7 @@ rdpCopyBox_a8r8g8b8_to_yuvalp(int ax, int ay,
         height = box->y2 - box->y1;
         for (jndex = 0; jndex < height; jndex++)
         {
-            s32 = (int *) s8;
+            s32 = (const uint32_t *) s8;
             yptr = d8;
             uptr = yptr + 64 * 64;
             vptr = uptr + 64 * 64;
@@ -195,13 +195,13 @@ a8r8g8b8_to_a8b8g8r8_box(const uint8_t *s8, int src_stride,
     int red;
     int green;
     int blue;
-    unsigned int *s32;
-    unsigned int *d32;
+    const uint32_t *s32;
+    uint32_t *d32;
 
     for (index = 0; index < height; index++)
     {
-        s32 = (unsigned int *) s8;
-        d32 = (unsigned int *) d8;
+        s32 = (const uint32_t *) s8;
+        d32 = (uint32_t *) d8;
         for (jndex = 0; jndex < width; jndex++)
         {
             SPLITCOLOR32(red, green, blue, *s32);
@@ -257,13 +257,13 @@ a8r8g8b8_to_r5g6b5_box(const uint8_t *s8, int src_stride,
     int red;
     int green;
     int blue;
-    unsigned int *s32;
-    unsigned short *d16;
+    const uint32_t *s32;
+    uint16_t *d16;
 
     for (index = 0; index < height; index++)
     {
-        s32 = (unsigned int *) s8;
-        d16 = (unsigned short *) d8;
+        s32 = (const uint32_t *) s8;
+        d16 = (uint16_t *) d8;
         for (jndex = 0; jndex < width; jndex++)
         {
             SPLITCOLOR32(red, green, blue, *s32);
@@ -319,13 +319,13 @@ a8r8g8b8_to_a1r5g5b5_box(const uint8_t *s8, int src_stride,
     int red;
     int green;
     int blue;
-    const unsigned int *s32;
-    unsigned short *d16;
+    const uint32_t *s32;
+    uint16_t *d16;
 
     for (index = 0; index < height; index++)
     {
-        s32 = (const unsigned int *) s8;
-        d16 = (unsigned short *) d8;
+        s32 = (const uint32_t *) s8;
+        d16 = (uint16_t *) d8;
         for (jndex = 0; jndex < width; jndex++)
         {
             SPLITCOLOR32(red, green, blue, *s32);
@@ -381,12 +381,12 @@ a8r8g8b8_to_r3g3b2_box(const uint8_t *s8, int src_stride,
     int red;
     int green;
     int blue;
-    unsigned int *s32;
+    const uint32_t *s32;
     uint8_t *ld8;
 
     for (index = 0; index < height; index++)
     {
-        s32 = (unsigned int *) s8;
+        s32 = (const uint32_t *) s8;
         ld8 = (uint8_t *) d8;
         for (jndex = 0; jndex < width; jndex++)
         {
@@ -450,16 +450,16 @@ a8r8g8b8_to_nv12_box(const uint8_t *s8, int src_stride,
     int U_sum;
     int V_sum;
     int pixel;
-    const int *s32a;
-    const int *s32b;
+    const uint32_t *s32a;
+    const uint32_t *s32b;
     uint8_t *d8ya;
     uint8_t *d8yb;
     uint8_t *d8uv;
 
     for (jndex = 0; jndex < height; jndex += 2)
     {
-        s32a = (const int *) (s8 + src_stride * jndex);
-        s32b = (const int *) (s8 + src_stride * (jndex + 1));
+        s32a = (const uint32_t *) (s8 + src_stride * jndex);
+        s32b = (const uint32_t *) (s8 + src_stride * (jndex + 1));
         d8ya = d8_y + dst_stride_y * jndex;
         d8yb = d8_y + dst_stride_y * (jndex + 1);
         d8uv = d8_uv + dst_stride_uv * (jndex / 2);
@@ -679,8 +679,8 @@ rdpCapture1(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int ex;
     int ey;
     Bool rv;
-    const unsigned int *s32;
-    unsigned int *d32;
+    const uint32_t *s32;
+    uint32_t *d32;
     const uint8_t *src;
     uint8_t *dst;
     int src_stride;
@@ -774,8 +774,8 @@ rdpCapture1(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             /* copy one line at a time */
             for (jndex = 0; jndex < height; jndex++)
             {
-                s32 = (const unsigned int *) src_rect;
-                d32 = (unsigned int *) dst_rect;
+                s32 = (const uint32_t *) src_rect;
+                d32 = (uint32_t *) dst_rect;
                 for (kndex = 0; kndex < width; kndex++)
                 {
                     SPLITCOLOR32(red, green, blue, *s32);
