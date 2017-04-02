@@ -1472,14 +1472,14 @@ int
 rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
                           const void *src, void *dst, int num_pixels)
 {
-    unsigned int pixel;
-    unsigned int red;
-    unsigned int green;
-    unsigned int blue;
-    const unsigned int *src32;
-    unsigned int *dst32;
-    unsigned short *dst16;
-    unsigned char *dst8;
+    uint32_t pixel;
+    uint32_t red;
+    uint32_t green;
+    uint32_t blue;
+    const uint32_t *src32;
+    uint32_t *dst32;
+    uint16_t *dst16;
+    uint8_t *dst8;
     int index;
 
     if (dev->depth == clientCon->rdp_bpp)
@@ -1490,11 +1490,11 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
 
     if (dev->depth == 24)
     {
-        src32 = (const unsigned int *) src;
+        src32 = (const uint32_t *) src;
 
         if (clientCon->rdp_bpp == 24)
         {
-            dst32 = (unsigned int *)dst;
+            dst32 = (uint32_t *) dst;
 
             for (index = 0; index < num_pixels; index++)
             {
@@ -1506,7 +1506,7 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
         }
         else if (clientCon->rdp_bpp == 16)
         {
-            dst16 = (unsigned short *)dst;
+            dst16 = (uint16_t *) dst;
 
             for (index = 0; index < num_pixels; index++)
             {
@@ -1520,7 +1520,7 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
         }
         else if (clientCon->rdp_bpp == 15)
         {
-            dst16 = (unsigned short *)dst;
+            dst16 = (uint16_t *) dst;
 
             for (index = 0; index < num_pixels; index++)
             {
@@ -1534,7 +1534,7 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
         }
         else if (clientCon->rdp_bpp == 8)
         {
-            dst8 = (unsigned char *)dst;
+            dst8 = (uint8_t *) dst;
 
             for (index = 0; index < num_pixels; index++)
             {
@@ -1555,12 +1555,12 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
 int
 rdpClientConAlphaPixels(const void *src, void *dst, int num_pixels)
 {
-    const unsigned int *src32;
-    unsigned char *dst8;
+    const uint32_t *src32;
+    uint8_t *dst8;
     int index;
 
-    src32 = (const unsigned int *) src;
-    dst8 = (unsigned char *) dst;
+    src32 = (const uint32_t *) src;
+    dst8 = (uint8_t *) dst;
     for (index = 0; index < num_pixels; index++)
     {
         *dst8 = (*src32) >> 24;
