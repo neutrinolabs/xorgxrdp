@@ -38,13 +38,13 @@ rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
            int *num_out_rects, struct image_data *id);
 
 extern _X_EXPORT int
-a8r8g8b8_to_a8b8g8r8_box(const char *s8, int src_stride,
-                         char *d8, int dst_stride,
+a8r8g8b8_to_a8b8g8r8_box(const uint8_t *s8, int src_stride,
+                         uint8_t *d8, int dst_stride,
                          int width, int height);
 extern _X_EXPORT int
-a8r8g8b8_to_nv12_box(const char *s8, int src_stride,
-                     char *d8_y, int dst_stride_y,
-                     char *d8_uv, int dst_stride_uv,
+a8r8g8b8_to_nv12_box(const uint8_t *s8, int src_stride,
+                     uint8_t *d8_y, int dst_stride_y,
+                     uint8_t *d8_uv, int dst_stride_uv,
                      int width, int height);
 
 #endif
