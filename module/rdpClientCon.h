@@ -110,6 +110,7 @@ struct _rdpClientCon
 
     RegionPtr dirtyRegion;
 
+    int num_rfx_crcs_alloc;
     int *rfx_crcs;
 
     struct _rdpClientCon *next;
