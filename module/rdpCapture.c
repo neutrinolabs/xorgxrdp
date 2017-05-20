@@ -884,6 +884,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int crc_offset;
     int crc_stride;
     int crc;
+    int num_crcs;
 
     LLOGLN(10, ("rdpCapture2:"));
 
@@ -900,6 +901,14 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     dst_stride = clientCon->cap_stride_bytes;
 
     crc_stride = (clientCon->dev->width + 63) / 64;
+    num_crcs = crc_stride * ((clientCon->dev->height + 63) / 64);
+    if (num_crcs != clientCon->num_rfx_crcs_alloc)
+    {
+        /* resize the crc list */
+        clientCon->num_rfx_crcs_alloc = num_crcs;
+        free(clientCon->rfx_crcs);
+        clientCon->rfx_crcs = g_new0(int, num_crcs);
+    }
 
     extents_rect = *rdpRegionExtents(in_reg);
     y = extents_rect.y1 & ~63;
