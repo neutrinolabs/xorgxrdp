@@ -607,7 +607,6 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
     int mmwidth;
     int mmheight;
     int bytes;
-    int num_crcs;
     Bool ok;
 
     LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: set width %d height %d "
@@ -617,10 +616,6 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
     clientCon->rdp_bpp = bpp;
     clientCon->cap_width = width;
     clientCon->cap_height = height;
-
-    num_crcs = ((dev->width + 63) / 64) * ((dev->height + 63) / 64);
-    free(clientCon->rfx_crcs);
-    clientCon->rfx_crcs = g_new0(int, num_crcs);
 
     if (bpp < 15)
     {
