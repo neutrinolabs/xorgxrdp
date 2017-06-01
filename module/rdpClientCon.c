@@ -2110,7 +2110,7 @@ rdpClientConSendPaintRectShmEx(rdpPtr dev, rdpClientCon *clientCon,
     num_rects_c = numCopyRects;
     if ((num_rects_c < 1) || (num_rects_d < 1))
     {
-        LLOGLN(0, ("rdpClientConSendPaintRectShmEx: nothing to send"));
+        LLOGLN(10, ("rdpClientConSendPaintRectShmEx: nothing to send"));
         return 0;
     }
     size = 2 + 2 + 2 + num_rects_d * 8 + 2 + num_rects_c * 8;
