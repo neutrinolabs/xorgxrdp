@@ -6,14 +6,18 @@ AC_DEFUN([AC_PROG_NASM],[
 AC_CHECK_PROGS(NASM, [nasm nasmw yasm])
 test -z "$NASM" && AC_MSG_ERROR([no nasm (Netwide Assembler) found])
 
+AC_CHECK_SIZEOF([int *])
+ptr_size="$ac_cv_sizeof_int_p"
+
 AC_MSG_CHECKING([for object file format of host system])
+objfmt="unknown"
 case "$host_os" in
   cygwin* | mingw* | pw32* | interix*)
-    case "$host_cpu" in
-      x86_64)
+    case "$ptr_size" in
+      8)
         objfmt='Win64-COFF'
         ;;
-      *)
+      4)
         objfmt='Win32-COFF'
         ;;
     esac
@@ -31,11 +35,11 @@ case "$host_os" in
     objfmt='a.out'
   ;;
   linux*)
-    case "$host_cpu" in
-      x86_64)
+    case "$ptr_size" in
+      8)
         objfmt='ELF64'
         ;;
-      *)
+      4)
         objfmt='ELF'
         ;;
     esac
@@ -44,43 +48,40 @@ case "$host_os" in
     if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
       objfmt='BSD-a.out'
     else
-      case "$host_cpu" in
-        x86_64 | amd64)
+      case "$ptr_size" in
+        8)
           objfmt='ELF64'
           ;;
-        *)
+        4)
           objfmt='ELF'
           ;;
       esac
     fi
   ;;
   solaris* | sunos* | sysv* | sco*)
-    case "$host_cpu" in
-      x86_64)
+    case "$ptr_size" in
+      8)
         objfmt='ELF64'
         ;;
-      *)
+      4)
         objfmt='ELF'
         ;;
     esac
   ;;
   darwin* | rhapsody* | nextstep* | openstep* | macos*)
-    case "$host_cpu" in
-      x86_64)
+    case "$ptr_size" in
+      8)
         objfmt='Mach-O64'
         ;;
-      *)
+      4)
         objfmt='Mach-O'
         ;;
     esac
   ;;
-  *)
-    objfmt='ELF ?'
-  ;;
 esac
 
 AC_MSG_RESULT([$objfmt])
-if test "$objfmt" = 'ELF ?'; then
+if test "$objfmt" = 'unknown'; then
   objfmt='ELF'
   AC_MSG_WARN([unexpected host system. assumed that the format is $objfmt.])
 fi
