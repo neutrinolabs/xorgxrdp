@@ -277,7 +277,6 @@ struct _rdpRec
     int sendUpdateScheduled; /* boolean */
     OsTimerPtr sendUpdateTimer;
 
-    int do_dirty_os; /* boolean */
     int do_dirty_ons; /* boolean */
     int disconnect_scheduled; /* boolean */
     int do_kill_disconnected; /* boolean */
