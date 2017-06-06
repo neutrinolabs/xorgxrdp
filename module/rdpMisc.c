@@ -136,7 +136,7 @@ g_sleep(int msecs)
 
 /*****************************************************************************/
 int
-g_sck_send(int sck, void *ptr, int len, int flags)
+g_sck_send(int sck, const void *ptr, int len, int flags)
 {
     return send(sck, ptr, len, flags);
 }
@@ -397,15 +397,15 @@ g_socket_dir(void)
 /*****************************************************************************/
 /* produce a hex dump */
 void
-g_hexdump(void *p, long len)
+g_hexdump(const void *p, long len)
 {
-    unsigned char *line;
+    const unsigned char *line;
     int i;
     int thisline;
     int offset;
 
     offset = 0;
-    line = (unsigned char *) p;
+    line = (const unsigned char *) p;
 
     while (offset < (int) len)
     {

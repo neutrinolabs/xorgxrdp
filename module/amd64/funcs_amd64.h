@@ -27,21 +27,21 @@ amd64 asm functions
 int
 cpuid_amd64(int eax_in, int ecx_in, int *eax, int *ebx, int *ecx, int *edx);
 int
-yv12_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
+yv12_to_rgb32_amd64_sse2(const uint8_t *yuvs, int width, int height, int *rgbs);
 int
-i420_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
+i420_to_rgb32_amd64_sse2(const uint8_t *yuvs, int width, int height, int *rgbs);
 int
-yuy2_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
+yuy2_to_rgb32_amd64_sse2(const uint8_t *yuvs, int width, int height, int *rgbs);
 int
-uyvy_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs);
+uyvy_to_rgb32_amd64_sse2(const uint8_t *yuvs, int width, int height, int *rgbs);
 int
-a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(const char *s8, int src_stride,
-                                    char *d8, int dst_stride,
+a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(const uint8_t *s8, int src_stride,
+                                    uint8_t *d8, int dst_stride,
                                     int width, int height);
 int
-a8r8g8b8_to_nv12_box_amd64_sse2(const char *s8, int src_stride,
-                                char *d8_y, int dst_stride_y,
-                                char *d8_uv, int dst_stride_uv,
+a8r8g8b8_to_nv12_box_amd64_sse2(const uint8_t *s8, int src_stride,
+                                uint8_t *d8_y, int dst_stride_y,
+                                uint8_t *d8_uv, int dst_stride_uv,
                                 int width, int height);
 
 #endif

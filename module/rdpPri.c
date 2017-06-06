@@ -56,8 +56,8 @@ to deal with privates changing in xorg versions
 #define XRDP_PRI 3
 #endif
 
-#define PTR2INT(_ptr) ((int)    ((long) ((void*) (_ptr))))
-#define INT2PTR(_int) ((void *) ((long) ((int)   (_int))))
+#define PTR2INT(_ptr) ((int)    ((uintptr_t) ((void*) (_ptr))))
+#define INT2PTR(_int) ((void *) ((uintptr_t) ((int)   (_int))))
 
 #if XRDP_PRI == 3
 static DevPrivateKeyRec g_privateKeyRecGC;

@@ -88,8 +88,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RDPMIN(_val1, _val2) ((_val1) < (_val2) ? (_val1) : (_val2))
 #define RDPMAX(_val1, _val2) ((_val1) < (_val2) ? (_val2) : (_val1))
 #define RDPCLAMP(_val, _lo, _hi) \
-    (_val) < (_lo) ? (_lo) : (_val) > (_hi) ? (_hi) : (_val)
-#define RDPALIGN(_val, _al) ((((long)(_val)) + ((_al) - 1)) & ~((_al) - 1))
+    ((_val) < (_lo) ? (_lo) : (_val) > (_hi) ? (_hi) : (_val))
+#define RDPALIGN(_val, _al) ((((uintptr_t)(_val)) + ((_al) - 1)) & ~((_al) - 1))
 
 #define XRDP_CD_NODRAW 0
 #define XRDP_CD_NOCLIP 1
@@ -122,8 +122,8 @@ struct image_data
     int bpp;
     int Bpp;
     int lineBytes;
-    char *pixels;
-    char *shmem_pixels;
+    uint8_t *pixels;
+    uint8_t *shmem_pixels;
     int shmem_id;
     int shmem_offset;
     int shmem_lineBytes;
@@ -208,15 +208,15 @@ struct _rdpCounts
     CARD32 callCount[64 - 23];
 };
 
-typedef int (*yuv_to_rgb32_proc)(unsigned char *yuvs, int width, int height, int *rgbs);
+typedef int (*yuv_to_rgb32_proc)(const uint8_t *yuvs, int width, int height, int *rgbs);
 
-typedef int (*copy_box_proc)(const char *s8, int src_stride,
-                             char *d8, int dst_stride,
+typedef int (*copy_box_proc)(const uint8_t *s8, int src_stride,
+                             uint8_t *d8, int dst_stride,
                              int width, int height);
 /* copy_box_proc but 2 dest */
-typedef int (*copy_box_dst2_proc)(const char *s8, int src_stride,
-                                  char *d8_y, int dst_stride_y,
-                                  char *d8_uv, int dst_stride_uv,
+typedef int (*copy_box_dst2_proc)(const uint8_t *s8, int src_stride,
+                                  uint8_t *d8_y, int dst_stride_y,
+                                  uint8_t *d8_uv, int dst_stride_uv,
                                   int width, int height);
 
 /* move this to common header */
@@ -231,8 +231,8 @@ struct _rdpRec
     int bitsPerPixel;
     int Bpp;
     int Bpp_mask;
-    char *pfbMemory_alloc;
-    char *pfbMemory;
+    uint8_t *pfbMemory_alloc;
+    uint8_t *pfbMemory;
     ScreenPtr pScreen;
     rdpDevPrivateKey privateKeyRecGC;
     rdpDevPrivateKey privateKeyRecPixmap;
@@ -294,7 +294,7 @@ struct _rdpRec
     yuv_to_rgb32_proc yv12_to_rgb32;
     yuv_to_rgb32_proc yuy2_to_rgb32;
     yuv_to_rgb32_proc uyvy_to_rgb32;
-    char *xv_data;
+    uint8_t *xv_data;
     int xv_data_bytes;
     int xv_timer_scheduled;
     OsTimerPtr xv_timer;

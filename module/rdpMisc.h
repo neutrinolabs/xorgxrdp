@@ -52,7 +52,7 @@ g_sck_last_error_would_block(int sck);
 extern _X_EXPORT void
 g_sleep(int msecs);
 extern _X_EXPORT int
-g_sck_send(int sck, void *ptr, int len, int flags);
+g_sck_send(int sck, const void *ptr, int len, int flags);
 extern _X_EXPORT void
 g_sprintf(char *dest, const char *format, ...);
 extern _X_EXPORT int
@@ -88,7 +88,7 @@ g_chmod_hex(const char *filename, int flags);
 extern _X_EXPORT const char *
 g_socket_dir(void);
 extern _X_EXPORT void
-g_hexdump(void *p, long len);
+g_hexdump(const void *p, long len);
 
 
 /* glib-style memory allocation macros */

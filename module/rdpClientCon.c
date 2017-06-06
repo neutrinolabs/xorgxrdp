@@ -340,7 +340,7 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
 /*****************************************************************************/
 /* returns error */
 static int
-rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, char *data, int len)
+rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
 {
     int sent;
 
@@ -1470,16 +1470,16 @@ rdpClientConConvertPixel(rdpPtr dev, rdpClientCon *clientCon, int in_pixel)
 /******************************************************************************/
 int
 rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
-                          void *src, void *dst, int num_pixels)
+                          const void *src, void *dst, int num_pixels)
 {
-    unsigned int pixel;
-    unsigned int red;
-    unsigned int green;
-    unsigned int blue;
-    unsigned int *src32;
-    unsigned int *dst32;
-    unsigned short *dst16;
-    unsigned char *dst8;
+    uint32_t pixel;
+    uint32_t red;
+    uint32_t green;
+    uint32_t blue;
+    const uint32_t *src32;
+    uint32_t *dst32;
+    uint16_t *dst16;
+    uint8_t *dst8;
     int index;
 
     if (dev->depth == clientCon->rdp_bpp)
@@ -1490,11 +1490,11 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
 
     if (dev->depth == 24)
     {
-        src32 = (unsigned int *)src;
+        src32 = (const uint32_t *) src;
 
         if (clientCon->rdp_bpp == 24)
         {
-            dst32 = (unsigned int *)dst;
+            dst32 = (uint32_t *) dst;
 
             for (index = 0; index < num_pixels; index++)
             {
@@ -1506,7 +1506,7 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
         }
         else if (clientCon->rdp_bpp == 16)
         {
-            dst16 = (unsigned short *)dst;
+            dst16 = (uint16_t *) dst;
 
             for (index = 0; index < num_pixels; index++)
             {
@@ -1520,7 +1520,7 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
         }
         else if (clientCon->rdp_bpp == 15)
         {
-            dst16 = (unsigned short *)dst;
+            dst16 = (uint16_t *) dst;
 
             for (index = 0; index < num_pixels; index++)
             {
@@ -1534,7 +1534,7 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
         }
         else if (clientCon->rdp_bpp == 8)
         {
-            dst8 = (unsigned char *)dst;
+            dst8 = (uint8_t *) dst;
 
             for (index = 0; index < num_pixels; index++)
             {
@@ -1553,14 +1553,14 @@ rdpClientConConvertPixels(rdpPtr dev, rdpClientCon *clientCon,
 
 /******************************************************************************/
 int
-rdpClientConAlphaPixels(void* src, void* dst, int num_pixels)
+rdpClientConAlphaPixels(const void *src, void *dst, int num_pixels)
 {
-    unsigned int* src32;
-    unsigned char* dst8;
+    const uint32_t *src32;
+    uint8_t *dst8;
     int index;
 
-    src32 = (unsigned int*)src;
-    dst8 = (unsigned char*)dst;
+    src32 = (const uint32_t *) src;
+    dst8 = (uint8_t *) dst;
     for (index = 0; index < num_pixels; index++)
     {
         *dst8 = (*src32) >> 24;
@@ -1669,7 +1669,7 @@ rdpClientConDrawLine(rdpPtr dev, rdpClientCon *clientCon,
 /******************************************************************************/
 int
 rdpClientConSetCursor(rdpPtr dev, rdpClientCon *clientCon,
-                      short x, short y, char *cur_data, char *cur_mask)
+                      short x, short y, uint8_t *cur_data, uint8_t *cur_mask)
 {
     int size;
 
@@ -1697,8 +1697,8 @@ rdpClientConSetCursor(rdpPtr dev, rdpClientCon *clientCon,
 /******************************************************************************/
 int
 rdpClientConSetCursorEx(rdpPtr dev, rdpClientCon *clientCon,
-                        short x, short y, char *cur_data,
-                        char *cur_mask, int bpp)
+                        short x, short y, uint8_t *cur_data,
+                        uint8_t *cur_mask, int bpp)
 {
     int size;
     int Bpp;
@@ -2417,7 +2417,7 @@ rdpClientConGetPixmapImageRect(rdpPtr dev, rdpClientCon *clientCon,
     id->bpp = clientCon->rdp_bpp;
     id->Bpp = clientCon->rdp_Bpp;
     id->lineBytes = pPixmap->devKind;
-    id->pixels = (char *)(pPixmap->devPrivate.ptr);
+    id->pixels = (uint8_t *)(pPixmap->devPrivate.ptr);
     id->shmem_pixels = 0;
     id->shmem_id = 0;
     id->shmem_offset = 0;
@@ -2433,8 +2433,8 @@ rdpClientConSendArea(rdpPtr dev, rdpClientCon *clientCon,
     BoxRec box;
     int ly;
     int size;
-    char *src;
-    char *dst;
+    const uint8_t *src;
+    uint8_t *dst;
     struct stream *s;
 
     LLOGLN(10, ("rdpClientConSendArea: id %p x %d y %d w %d h %d", id, x, y, w, h));
