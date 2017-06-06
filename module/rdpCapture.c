@@ -849,7 +849,7 @@ rdpCapture1(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
 /******************************************************************************/
 static int
-rdpCaptureCrcMem(const char *in_mem, int in_num_bytes, int in_crc)
+rdpCaptureCrcMem(const uint8_t *in_mem, int in_num_bytes, int in_crc)
 {
     int index;
 
@@ -935,7 +935,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     rdpRegionIntersect(&tile_reg, in_reg, &tile_reg);
                     rects = REGION_RECTS(&tile_reg);
                     num_rects = REGION_NUM_RECTS(&tile_reg);
-                    crc = rdpCaptureCrcMem((char *) rects,
+                    crc = rdpCaptureCrcMem((uint8_t *) rects,
                                            num_rects * sizeof(BoxRec),
                                            crc);
                     rdpCopyBox_a8r8g8b8_to_yuvalp(x, y,
