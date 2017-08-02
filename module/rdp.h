@@ -270,6 +270,8 @@ struct _rdpRec
 
     int listen_sck;
     char uds_data[256];
+    int disconnect_sck;
+    char disconnect_uds[256];
     rdpClientCon *clientConHead;
     rdpClientCon *clientConTail;
 
