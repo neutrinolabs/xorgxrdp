@@ -1066,6 +1066,7 @@ rdpClientConCheck(ScreenPtr pScreen)
     int max;
     int sel;
     int count;
+    char buf[8];
 
     LLOGLN(10, ("rdpClientConCheck:"));
     dev = rdpGetDevFromScreen(pScreen);
@@ -1074,6 +1075,14 @@ rdpClientConCheck(ScreenPtr pScreen)
     FD_ZERO(&rfds);
     count = 0;
     max = 0;
+
+    if (dev->disconnect_sck > 0)
+    {
+        count++;
+        FD_SET(LTOUI32(dev->disconnect_sck), &rfds);
+        max = RDPMAX(dev->disconnect_sck, max);
+    }
+
     if (dev->listen_sck > 0)
     {
         count++;
@@ -1116,6 +1125,7 @@ rdpClientConCheck(ScreenPtr pScreen)
         LLOGLN(10, ("rdpClientConCheck: no select"));
         return 0;
     }
+
     if (dev->listen_sck > 0)
     {
         if (FD_ISSET(LTOUI32(dev->listen_sck), &rfds))
@@ -1123,6 +1133,27 @@ rdpClientConCheck(ScreenPtr pScreen)
             rdpClientConGotConnection(pScreen, dev);
         }
     }
+
+    if (dev->disconnect_sck > 0)
+    {
+        if (FD_ISSET(LTOUI32(dev->disconnect_sck), &rfds))
+        {
+
+            if (g_sck_recv(dev->disconnect_sck, buf, sizeof(buf), 0))
+            {
+                LLOGLN(0, ("rdpClientConCheck: got disconnection request"));
+
+                /* disconnect all clients */
+                clientCon = dev->clientConHead;
+                while (clientCon != NULL)
+                {
+                    rdpClientConDisconnect(dev, clientCon);
+                    clientCon = clientCon->next;
+                }
+            }
+        }
+    }
+
     clientCon = dev->clientConHead;
     while (clientCon != NULL)
     {
@@ -1208,6 +1239,22 @@ rdpClientConInit(rdpPtr dev)
         rdpClientConAddEnabledDevice(dev->pScreen, dev->listen_sck);
     }
 
+
+    /* disconnect socket */
+    g_sprintf(dev->disconnect_uds, "%s/xrdp_disconnect_display_%s", socket_dir, display);
+    if (dev->disconnect_sck == 0)
+    {
+        unlink(dev->disconnect_uds);
+        dev->disconnect_sck = g_sck_local_socket_dgram();
+        if (g_sck_local_bind(dev->disconnect_sck, dev->disconnect_uds) != 0)
+        {
+            LLOGLN(0, ("rdpClientConInit: g_tcp_local_bind failed at %s:%d", __FILE__, __LINE__));
+            return 1;
+        }
+        g_sck_listen(dev->disconnect_sck);
+        rdpClientConAddEnabledDevice(dev->pScreen, dev->disconnect_sck);
+    }
+
     ptext = getenv("XRDP_SESMAN_MAX_DISC_TIME");
     if (ptext != 0)
     {
@@ -1261,6 +1308,15 @@ rdpClientConDeinit(rdpPtr dev)
         LLOGLN(0, ("rdpClientConDeinit: deleting file %s", dev->uds_data));
         unlink(dev->uds_data);
     }
+
+    if (dev->disconnect_sck != 0)
+    {
+        rdpClientConRemoveEnabledDevice(dev->disconnect_sck);
+        g_sck_close(dev->disconnect_sck);
+        LLOGLN(0, ("rdpClientConDeinit: deleting file %s", dev->disconnect_uds));
+        unlink(dev->disconnect_uds);
+    }
+
     return 0;
 }
 
