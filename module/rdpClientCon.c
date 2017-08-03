@@ -1213,7 +1213,7 @@ rdpClientConInit(rdpPtr dev)
         {
             if (!g_directory_exist(socket_dir))
             {
-                LLOGLN(0, ("rdpup_init: g_create_dir(%s) failed", socket_dir));
+                LLOGLN(0, ("rdpClientConInit: g_create_dir(%s) failed", socket_dir));
                 return 0;
             }
         }
