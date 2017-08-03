@@ -1225,6 +1225,8 @@ rdpClientConInit(rdpPtr dev)
         LLOGLN(0, ("rdpClientConInit: can not run at display < 1"));
         return 0;
     }
+
+    /* TODO: don't hardcode socket name */
     g_sprintf(dev->uds_data, "%s/xrdp_display_%s", socket_dir, display);
     if (dev->listen_sck == 0)
     {
@@ -1239,8 +1241,7 @@ rdpClientConInit(rdpPtr dev)
         rdpClientConAddEnabledDevice(dev->pScreen, dev->listen_sck);
     }
 
-
-    /* disconnect socket */
+    /* disconnect socket */ /* TODO: don't hardcode socket name */
     g_sprintf(dev->disconnect_uds, "%s/xrdp_disconnect_display_%s", socket_dir, display);
     if (dev->disconnect_sck == 0)
     {
