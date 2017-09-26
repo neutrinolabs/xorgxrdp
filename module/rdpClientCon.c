@@ -25,6 +25,7 @@ Client connection to xrdp
 #include "config_ac.h"
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1204,6 +1205,7 @@ rdpClientConInit(rdpPtr dev)
 {
     int i;
     char *ptext;
+    char *endptr = NULL;
     const char *socket_dir;
 
     socket_dir = g_socket_dir();
@@ -1219,10 +1221,12 @@ rdpClientConInit(rdpPtr dev)
         }
         g_chmod_hex(socket_dir, 0x1777);
     }
-    i = atoi(display);
-    if (i < 1)
+
+    errno = 0;
+    i = (int)strtol(display, &endptr, 10);
+    if (errno != 0 || display == endptr || *endptr != 0)
     {
-        LLOGLN(0, ("rdpClientConInit: can not run at display < 1"));
+        LLOGLN(0, ("rdpClientConInit: can not run at non-interger display"));
         return 0;
     }
 
