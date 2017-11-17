@@ -23,13 +23,10 @@
 
 %include "common.asm"
 
-section .data
-align 16
+PREPARE_RODATA
 c1 times 4 dd 0xFF00FF00
 c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF
-
-section .text
 
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
@@ -45,9 +42,9 @@ PROC a8r8g8b8_to_a8b8g8r8_box_amd64_sse2
     push rbx
     push rbp
 
-    movdqa xmm4, [rel c1]
-    movdqa xmm5, [rel c2]
-    movdqa xmm6, [rel c3]
+    movdqa xmm4, [lsym(c1)]
+    movdqa xmm5, [lsym(c2)]
+    movdqa xmm6, [lsym(c3)]
 
     ; local vars
     ; long src_stride
@@ -97,7 +94,7 @@ loop_xpre:
     mov [rdi], edx
     lea rdi, [rdi + 4]
     dec rcx
-    jmp loop_xpre;
+    jmp loop_xpre
 done_loop_xpre:
 
 ; A R G B A R G B A R G B A R G B to
@@ -139,7 +136,7 @@ loop_x8:
     lea rdi, [rdi + 16]
     sub rcx, 4
 
-    jmp loop_x8;
+    jmp loop_x8
 done_loop_x8:
 
 loop_x:
@@ -160,7 +157,7 @@ loop_x:
     mov [rdi], edx
     lea rdi, [rdi + 4]
     dec rcx
-    jmp loop_x;
+    jmp loop_x
 done_loop_x:
 
     mov rsi, [rsp + 32] ; src
@@ -181,5 +178,4 @@ done_loop_x:
     pop rbp
     pop rbx
     ret
-    align 16
-
+END_OF_FILE

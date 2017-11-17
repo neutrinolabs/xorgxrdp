@@ -23,8 +23,6 @@
 
 %include "common.asm"
 
-section .text
-
 ;The first six integer or pointer arguments are passed in registers
 ;RDI, RSI, RDX, RCX, R8, and R9
 
@@ -55,5 +53,4 @@ PROC cpuid_amd64
     ; restore registers
     pop rbx
     ret
-    align 16
-
+END_OF_FILE
