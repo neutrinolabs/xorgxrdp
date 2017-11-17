@@ -23,8 +23,6 @@
 
 %include "common.asm"
 
-section .text
-
 ;int
 ;cpuid_x86(int eax_in, int ecx_in, int *eax, int *ebx, int *ecx, int *edx)
 
@@ -53,5 +51,4 @@ PROC cpuid_x86
     pop ecx
     pop ebx
     ret
-    align 16
-
+END_OF_FILE

@@ -1,5 +1,6 @@
 ;
 ;Copyright 2014 Jay Sorg
+;Copyright 2017 mirabilos
 ;
 ;Permission to use, copy, modify, distribute, and sell this software and its
 ;documentation for any purpose is hereby granted without fee, provided that
@@ -23,13 +24,10 @@
 
 %include "common.asm"
 
-section .data
-align 16
+PREPARE_RODATA
 c1 times 4 dd 0xFF00FF00
 c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF
-
-section .text
 
 ;int
 ;a8r8g8b8_to_a8b8g8r8_box_x86_sse2(const char *s8, int src_stride,
@@ -37,13 +35,14 @@ section .text
 ;                                  int width, int height);
 PROC a8r8g8b8_to_a8b8g8r8_box_x86_sse2
     push ebx
+    RETRIEVE_RODATA
     push esi
     push edi
     push ebp
 
-    movdqa xmm4, [c1]
-    movdqa xmm5, [c2]
-    movdqa xmm6, [c3]
+    movdqa xmm4, [lsym(c1)]
+    movdqa xmm5, [lsym(c2)]
+    movdqa xmm6, [lsym(c3)]
 
     mov esi, [esp + 20]  ; src
     mov edi, [esp + 28]  ; dst
@@ -54,10 +53,10 @@ loop_y:
 loop_xpre:
     mov eax, esi         ; look for aligned
     and eax, 0x0F        ; we can jump to next
-    mov ebx, eax
+    mov ebp, eax
     mov eax, edi
     and eax, 0x0F
-    or eax, ebx
+    or eax, ebp
     cmp eax, 0
     je done_loop_xpre
     cmp ecx, 1
@@ -66,18 +65,18 @@ loop_xpre:
     lea esi, [esi + 4]
     mov edx, eax         ; a and g
     and edx, 0xFF00FF00
-    mov ebx, eax         ; r
-    and ebx, 0x00FF0000
-    shr ebx, 16
-    or edx, ebx
-    mov ebx, eax         ; b
-    and ebx, 0x000000FF
-    shl ebx, 16
-    or edx, ebx
+    mov ebp, eax         ; r
+    and ebp, 0x00FF0000
+    shr ebp, 16
+    or edx, ebp
+    mov ebp, eax         ; b
+    and ebp, 0x000000FF
+    shl ebp, 16
+    or edx, ebp
     mov [edi], edx
     lea edi, [edi + 4]
     dec ecx
-    jmp loop_xpre;
+    jmp loop_xpre
 done_loop_xpre:
 
     prefetchnta [esi]
@@ -123,7 +122,7 @@ loop_x8:
     lea edi, [edi + 16]
     sub ecx, 4
 
-    jmp loop_x8;
+    jmp loop_x8
 done_loop_x8:
 
 loop_x:
@@ -133,18 +132,18 @@ loop_x:
     lea esi, [esi + 4]
     mov edx, eax         ; a and g
     and edx, 0xFF00FF00
-    mov ebx, eax         ; r
-    and ebx, 0x00FF0000
-    shr ebx, 16
-    or edx, ebx
-    mov ebx, eax         ; b
-    and ebx, 0x000000FF
-    shl ebx, 16
-    or edx, ebx
+    mov ebp, eax         ; r
+    and ebp, 0x00FF0000
+    shr ebp, 16
+    or edx, ebp
+    mov ebp, eax         ; b
+    and ebp, 0x000000FF
+    shl ebp, 16
+    or edx, ebp
     mov [edi], edx
     lea edi, [edi + 4]
     dec ecx
-    jmp loop_x;
+    jmp loop_x
 done_loop_x:
 
     mov esi, [esp + 20]
@@ -166,5 +165,4 @@ done_loop_x:
     pop esi
     pop ebx
     ret
-    align 16
-
+END_OF_FILE

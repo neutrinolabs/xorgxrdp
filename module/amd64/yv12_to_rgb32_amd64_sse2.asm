@@ -35,15 +35,12 @@
 
 %include "common.asm"
 
-section .data
-align 16
+PREPARE_RODATA
 c128 times 8 dw 128
 c4669 times 8 dw 4669
 c1616 times 8 dw 1616
 c2378 times 8 dw 2378
 c9324 times 8 dw 9324
-
-section .text
 
 do8_uv:
 
@@ -53,7 +50,7 @@ do8_uv:
     punpcklbw xmm1, xmm1
     pxor xmm6, xmm6
     punpcklbw xmm1, xmm6
-    movdqa xmm7, [rel c128]
+    movdqa xmm7, [lsym(c128)]
     psubw xmm1, xmm7
     psllw xmm1, 4
 
@@ -74,22 +71,22 @@ do8:
     punpcklbw xmm0, xmm6
 
     ; r = y + hiword(4669 * (v << 4))
-    movdqa xmm4, [rel c4669]
+    movdqa xmm4, [lsym(c4669)]
     pmulhw xmm4, xmm2
     movdqa xmm3, xmm0
     paddw xmm3, xmm4
 
     ; g = y - hiword(1616 * (u << 4)) - hiword(2378 * (v << 4))
-    movdqa xmm5, [rel c1616]
+    movdqa xmm5, [lsym(c1616)]
     pmulhw xmm5, xmm1
-    movdqa xmm6, [rel c2378]
+    movdqa xmm6, [lsym(c2378)]
     pmulhw xmm6, xmm2
     movdqa xmm4, xmm0
     psubw xmm4, xmm5
     psubw xmm4, xmm6
 
     ; b = y + hiword(9324 * (u << 4))
-    movdqa xmm6, [rel c9324]
+    movdqa xmm6, [lsym(c9324)]
     pmulhw xmm6, xmm1
     movdqa xmm5, xmm0
     paddw xmm5, xmm6
@@ -110,7 +107,7 @@ do8:
     movdqa [rdi], xmm4
     lea rdi, [rdi + 16]
 
-    ret;
+    ret
 
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
@@ -239,6 +236,4 @@ loop_x:
     pop rsi
     pop rbx
     ret
-    align 16
-
-
+END_OF_FILE

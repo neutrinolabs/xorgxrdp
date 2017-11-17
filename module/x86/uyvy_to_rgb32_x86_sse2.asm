@@ -1,5 +1,6 @@
 ;
 ;Copyright 2014 Jay Sorg
+;Copyright 2017 mirabilos
 ;
 ;Permission to use, copy, modify, distribute, and sell this software and its
 ;documentation for any purpose is hereby granted without fee, provided that
@@ -35,21 +36,19 @@
 
 %include "common.asm"
 
-section .data
-align 16
+PREPARE_RODATA
 c128 times 8 dw 128
 c4669 times 8 dw 4669
 c1616 times 8 dw 1616
 c2378 times 8 dw 2378
 c9324 times 8 dw 9324
 
-section .text
-
 ;int
 ;uyvy_to_rgb32_amd64_sse2(unsigned char *yuvs, int width, int height, int *rgbs)
 
 PROC uyvy_to_rgb32_x86_sse2
     push ebx
+    RETRIEVE_RODATA
     push esi
     push edi
     push ebp
@@ -64,7 +63,7 @@ PROC uyvy_to_rgb32_x86_sse2
 
     mov ecx, eax
 
-    movdqa xmm7, [c128]
+    movdqa xmm7, [lsym(c128)]
 
 loop1:
     ; hi                                           lo
@@ -101,22 +100,22 @@ loop1:
     psllw xmm2, 4
 
     ; r = y + hiword(4669 * (v << 4))
-    movdqa xmm4, [c4669]
+    movdqa xmm4, [lsym(c4669)]
     pmulhw xmm4, xmm1
     movdqa xmm3, xmm0
     paddw xmm3, xmm4
 
     ; g = y - hiword(1616 * (u << 4)) - hiword(2378 * (v << 4))
-    movdqa xmm5, [c1616]
+    movdqa xmm5, [lsym(c1616)]
     pmulhw xmm5, xmm2
-    movdqa xmm6, [c2378]
+    movdqa xmm6, [lsym(c2378)]
     pmulhw xmm6, xmm1
     movdqa xmm4, xmm0
     psubw xmm4, xmm5
     psubw xmm4, xmm6
 
     ; b = y + hiword(9324 * (u << 4))
-    movdqa xmm6, [c9324]
+    movdqa xmm6, [lsym(c9324)]
     pmulhw xmm6, xmm2
     movdqa xmm5, xmm0
     paddw xmm5, xmm6
@@ -150,5 +149,4 @@ loop1:
     pop esi
     pop ebx
     ret
-    align 16
-
+END_OF_FILE
