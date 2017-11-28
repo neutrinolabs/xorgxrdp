@@ -1242,6 +1242,7 @@ rdpClientConInit(rdpPtr dev)
             return 1;
         }
         g_sck_listen(dev->listen_sck);
+        g_chmod_hex(dev->uds_data, 0x0660);
         rdpClientConAddEnabledDevice(dev->pScreen, dev->listen_sck);
     }
 
