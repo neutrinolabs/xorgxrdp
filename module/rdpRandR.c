@@ -178,19 +178,6 @@ rdpRRCrtcGetGamma(ScreenPtr pScreen, RRCrtcPtr crtc)
 {
     LLOGLN(0, ("rdpRRCrtcGetGamma: %p %p %p %p", crtc, crtc->gammaRed,
            crtc->gammaBlue, crtc->gammaGreen));
-    crtc->gammaSize = 1;
-    if (crtc->gammaRed == NULL)
-    {
-        crtc->gammaRed = g_new0(CARD16, 16);
-    }
-    if (crtc->gammaBlue == NULL)
-    {
-        crtc->gammaBlue = g_new0(CARD16, 16);
-    }
-    if (crtc->gammaGreen == NULL)
-    {
-        crtc->gammaGreen = g_new0(CARD16, 16);
-    }
     return TRUE;
 }
 
@@ -332,6 +319,7 @@ rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int heigh
     xRRModeInfo modeInfo;
     char name[64];
     const int vfreq = 50;
+    int i;
 
     sprintf (name, "%dx%d", width, height);
     memset (&modeInfo, 0, sizeof(modeInfo));
@@ -355,6 +343,16 @@ rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int heigh
         RRModeDestroy(mode);
         return 0;
     }
+    /* Create and initialise (unused) gamma ramps */
+    RRCrtcGammaSetSize (crtc, 256);
+    for (i = 0 ; i < crtc->gammaSize; ++i)
+    {
+        unsigned short val = (0xffff * i) / (crtc->gammaSize - 1);
+        crtc->gammaRed[i] = val;
+        crtc->gammaGreen[i] = val;
+        crtc->gammaBlue[i] = val;
+    }
+
     output = RROutputCreate(dev->pScreen, aname, strlen(aname), NULL);
     if (output == 0)
     {
