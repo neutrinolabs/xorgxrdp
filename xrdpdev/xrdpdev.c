@@ -33,6 +33,9 @@ This is the main driver file
 #include <xorg-server.h>
 #include <xorgVersion.h>
 
+#define GLAMOR_FOR_XORG 1
+#define XORGXRDP_GLAMOR 1
+
 /* all driver need this */
 #include <xf86.h>
 #include <xf86_OSproc.h>
@@ -59,6 +62,14 @@ This is the main driver file
 #include "rdpClientCon.h"
 #include "rdpXv.h"
 #include "rdpSimd.h"
+
+#if defined(XORGXRDP_GLAMOR)
+#include <glamor.h>
+#include <dri3.h>
+static dri3_screen_info_rec g_rdp_dri3_info;
+/* use environment variable XORGXRDP_DRM_DEVICE to override */
+static char g_drm_device[128] = "/dev/dri/renderD128";
+#endif
 
 #define LLOG_LEVEL 1
 #define LLOGLN(_level, _args) \
@@ -154,6 +165,26 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
 
     rdpAllocRec(pScrn);
     dev = XRDPPTR(pScrn);
+
+    dev->glamor = FALSE;
+
+#if defined(XORGXRDP_GLAMOR)
+    if (getenv("XORGXRDP_DRM_DEVICE") != NULL)
+    {
+        strncpy(g_drm_device, getenv("XORGXRDP_DRM_DEVICE"), 127);
+        g_drm_device[127] = 0;
+    }
+    dev->fd = open(g_drm_device, O_RDWR, 0);
+    if (dev->fd == -1)
+    {
+        LLOGLN(0, ("rdpPreInit: %s open failed", g_drm_device));
+    }
+    else
+    {
+        LLOGLN(0, ("rdpPreInit: %s open ok, fd %d", g_drm_device, dev->fd));
+        dev->glamor = TRUE;
+    }
+#endif
 
     dev->width = 800;
     dev->height = 600;
@@ -261,6 +292,29 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
                dev->width, dev->height));
         return FALSE;
     }
+#if defined(XORGXRDP_GLAMOR)
+    if (dev->glamor)
+    {
+        if (xf86LoadSubModule(pScrn, GLAMOR_EGL_MODULE_NAME))
+        {
+            LLOGLN(0, ("rdpPreInit: glamor module load ok"));
+            if (glamor_egl_init(pScrn, dev->fd))
+            {
+                LLOGLN(0, ("rdpPreInit: glamor init ok"));
+            }
+            else
+            {
+                LLOGLN(0, ("rdpPreInit: glamor init failed"));
+                dev->glamor = FALSE;
+            }
+        }
+        else
+        {
+            LLOGLN(0, ("rdpPreInit: glamor module load failed"));
+            dev->glamor = FALSE;
+        }
+    }
+#endif
     return TRUE;
 }
 
@@ -417,6 +471,53 @@ rdpWakeupHandler1(void *blockData, int result)
     rdpClientConCheck((ScreenPtr)blockData);
 }
 
+#if defined(XORGXRDP_GLAMOR)
+/*****************************************************************************/
+static PixmapPtr
+rdpDri3PixmapFromFd(ScreenPtr screen, int fd,
+                    CARD16 width, CARD16 height, CARD16 stride,
+                    CARD8 depth, CARD8 bpp)
+{
+    PixmapPtr rv;
+
+    LLOGLN(0, ("rdpDri3PixmapFromFd:"));
+    rv = glamor_pixmap_from_fd(screen, fd, width, height, stride, depth, bpp);
+    LLOGLN(0, ("rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv));
+    return rv;
+}
+
+/*****************************************************************************/
+static int
+rdpDri3FdFromPixmap(ScreenPtr screen, PixmapPtr pixmap,
+                    CARD16 *stride, CARD32 *size)
+{
+    int rv;
+
+    LLOGLN(0, ("rdpDri3FdFromPixmap:"));
+    rv = glamor_fd_from_pixmap(screen, pixmap, stride, size);
+    LLOGLN(0, ("rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap));
+    return rv;
+}
+
+/*****************************************************************************/
+static int
+rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
+                  RRProviderPtr provider, int *pfd)
+{
+    int fd;
+
+    LLOGLN(0, ("rdpDri3OpenClient:"));
+    fd = open(g_drm_device, O_RDWR | O_CLOEXEC);
+    LLOGLN(0, ("rdpDri3OpenClient: fd %d", fd));
+    if (fd < 0)
+    {
+        return BadAlloc;
+    }
+    *pfd = fd;
+    return Success;
+}
+#endif
+
 /*****************************************************************************/
 static Bool
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 13, 0, 0, 0)
@@ -459,7 +560,6 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         LLOGLN(0, ("rdpScreenInit: fbScreenInit failed"));
         return FALSE;
     }
-
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 14, 0, 0, 0)
     /* 1.13 has this function, 1.14 and up does not */
     miInitializeBackingStore(pScreen);
@@ -467,14 +567,6 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
     /* try to init simd functions */
     rdpSimdInit(pScreen, pScrn);
-
-#if defined(XvExtension) && XvExtension
-    /* XVideo */
-    if (!rdpXvInit(pScreen, pScrn))
-    {
-        LLOGLN(0, ("rdpScreenInit: rdpXvInit failed"));
-    }
-#endif
 
     vis = pScreen->visuals + (pScreen->numVisuals - 1);
     while (vis >= pScreen->visuals)
@@ -491,6 +583,29 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         vis--;
     }
     fbPictureInit(pScreen, 0, 0);
+#if defined(XORGXRDP_GLAMOR)
+    if (dev->glamor)
+    {
+        /* it's not that we don't want dri3, we just want to init it ourself */
+        if (glamor_init(pScreen, GLAMOR_USE_EGL_SCREEN | GLAMOR_NO_DRI3))
+        {
+            LLOGLN(0, ("rdpScreenInit: glamor_init ok"));
+        }
+        else
+        {
+            LLOGLN(0, ("rdpScreenInit: glamor_init failed"));
+        }
+        memset(&g_rdp_dri3_info, 0, sizeof(g_rdp_dri3_info));
+        g_rdp_dri3_info.version = 1;
+        g_rdp_dri3_info.pixmap_from_fd = rdpDri3PixmapFromFd;
+        g_rdp_dri3_info.fd_from_pixmap = rdpDri3FdFromPixmap;
+        g_rdp_dri3_info.open_client = rdpDri3OpenClient;
+        if (!dri3_screen_init(pScreen, &g_rdp_dri3_info))
+        {
+            LLOGLN(0, ("rdpScreenInit: dri3_screen_init failed"));
+        }
+    }
+#endif
     xf86SetBlackWhitePixels(pScreen);
     xf86SetBackingStore(pScreen);
 
@@ -573,6 +688,33 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     dev->Bpp_mask = 0x00FFFFFF;
     dev->Bpp = 4;
     dev->bitsPerPixel = 32;
+
+#if defined(XvExtension) && XvExtension
+    /* XVideo */
+    if (dev->glamor)
+    {
+#if defined(XORGXRDP_GLAMOR)
+        XF86VideoAdaptorPtr glamor_adaptor;
+        glamor_adaptor = glamor_xv_init(pScreen, 16);
+        if (glamor_adaptor != NULL)
+        {
+            xf86XVScreenInit(pScreen, &glamor_adaptor, 1);
+        }
+        else
+        {
+            xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
+                       "Failed to initialize XV support.\n");
+        }
+#endif
+    }
+    else
+    {
+        if (!rdpXvInit(pScreen, pScrn))
+        {
+            LLOGLN(0, ("rdpScreenInit: rdpXvInit failed"));
+        }
+    }
+#endif
 
     LLOGLN(0, ("rdpScreenInit: out"));
     return TRUE;
