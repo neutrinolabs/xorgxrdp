@@ -311,7 +311,10 @@ struct _rdpRec
     struct monitor_info minfo[16]; /* client monitor data */
     int doMultimon;
     int monitorCount;
-
+    /* glamor */
+    Bool glamor;
+    /* dri */
+    int fd;
 };
 typedef struct _rdpRec rdpRec;
 typedef struct _rdpRec * rdpPtr;
