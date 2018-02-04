@@ -519,6 +519,67 @@ rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
 #endif
 
 /*****************************************************************************/
+static int
+rdpSetPixmapVisitWindow(WindowPtr window, void *data)
+{
+    ScreenPtr screen;
+
+    LLOGLN(0, ("rdpSetPixmapVisitWindow:"));
+    screen = window->drawable.pScreen;
+    if (screen->GetWindowPixmap(window) == data)
+    {
+        screen->SetWindowPixmap(window, screen->GetScreenPixmap(screen));
+        return WT_WALKCHILDREN;
+    }
+    return WT_DONTWALKCHILDREN;
+}
+
+/*****************************************************************************/
+static Bool
+rdpCreateScreenResources(ScreenPtr pScreen)
+{
+    Bool ret;
+    rdpPtr dev;
+    PixmapPtr old_screen_pixmap;
+    PixmapPtr screen_pixmap;
+
+    LLOGLN(0, ("rdpCreateScreenResources:"));
+    dev = rdpGetDevFromScreen(pScreen);
+    pScreen->CreateScreenResources = dev->CreateScreenResources;
+    ret = pScreen->CreateScreenResources(pScreen);
+    pScreen->CreateScreenResources = rdpCreateScreenResources;
+    if (!ret)
+    {
+        return FALSE;
+    }
+
+    dev->screenSwPixmap = pScreen->GetScreenPixmap(pScreen);
+    if (dev->glamor)
+    {
+        old_screen_pixmap = dev->screenSwPixmap;
+        LLOGLN(0, ("rdpCreateScreenResources: create screen pixmap w %d h %d",
+               pScreen->width, pScreen->height));
+        screen_pixmap = pScreen->CreatePixmap(pScreen,
+                                              pScreen->width,
+                                              pScreen->height,
+                                              pScreen->rootDepth,
+                                              GLAMOR_CREATE_NO_LARGE);
+        if (screen_pixmap == NULL)
+        {
+            return FALSE;
+        }
+
+        pScreen->SetScreenPixmap(screen_pixmap);
+        if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
+        {
+            TraverseTree(pScreen->root, rdpSetPixmapVisitWindow, old_screen_pixmap);
+        }
+    }
+
+    return TRUE;
+}
+
+/*****************************************************************************/
 static Bool
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 13, 0, 0, 0)
 rdpScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
@@ -675,6 +736,9 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         dev->Trapezoids = ps->Trapezoids;
         ps->Trapezoids = rdpTrapezoids;
     }
+
+    dev->CreateScreenResources = pScreen->CreateScreenResources;
+    pScreen->CreateScreenResources = rdpCreateScreenResources;
 
     RegisterBlockAndWakeupHandlers(rdpBlockHandler1, rdpWakeupHandler1, pScreen);
 

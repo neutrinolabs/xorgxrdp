@@ -1072,8 +1072,54 @@ rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
            int *num_out_rects, struct image_data *id)
 {
     int mode;
+    rdpPtr dev;
+    PixmapPtr hwPixmap;
+    PixmapPtr swPixmap;
+    BoxPtr pbox;
+    ScreenPtr pScreen;
+    GCPtr copyGC;
+    ChangeGCVal tmpval[1];
+    int count;
+    int index;
+    int left;
+    int top;
+    int width;
+    int height;
 
     LLOGLN(10, ("rdpCapture:"));
+    if (clientCon->dev->glamor)
+    {
+        /* copy the dirty area from the screen hw pixmap to a sw pixmap
+           this should do a dma */
+        dev = clientCon->dev;
+        pScreen = dev->pScreen;
+        hwPixmap = pScreen->GetScreenPixmap(pScreen);
+        swPixmap = dev->screenSwPixmap;
+        copyGC = GetScratchGC(dev->depth, pScreen);
+        if (copyGC != NULL)
+        {
+            tmpval[0].val = GXcopy;
+            ChangeGC(NullClient, copyGC, GCFunction, tmpval);
+            ValidateGC(&(hwPixmap->drawable), copyGC);
+            count = REGION_NUM_RECTS(in_reg);
+            pbox = REGION_RECTS(in_reg);
+            for (index = 0; index < count; index++)
+            {
+                left = pbox[index].x1;
+                top = pbox[index].y1;
+                width = pbox[index].x2 - pbox[index].x1;
+                height = pbox[index].y2 - pbox[index].y1;
+                if ((width > 0) && (height > 0))
+                {
+                     copyGC->ops->CopyArea(&(hwPixmap->drawable),
+                                           &(swPixmap->drawable),
+                                           copyGC, left,
+                                           top, width, height, left, top);
+                }
+            }
+            FreeScratchGC(copyGC);
+        }
+    }
     mode = clientCon->client_info.capture_code;
     switch (mode)
     {

@@ -246,6 +246,7 @@ struct _rdpRec
     CompositeProcPtr Composite;
     GlyphsProcPtr Glyphs;
     TrapezoidsProcPtr Trapezoids;
+    CreateScreenResourcesProcPtr CreateScreenResources;
 
     /* keyboard and mouse */
     miPointerScreenFuncPtr pCursorFuncs;
@@ -313,6 +314,7 @@ struct _rdpRec
     int monitorCount;
     /* glamor */
     Bool glamor;
+    PixmapPtr screenSwPixmap;
     /* dri */
     int fd;
 };

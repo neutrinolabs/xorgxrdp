@@ -92,6 +92,22 @@ rdpRRGetInfo(ScreenPtr pScreen, Rotation *pRotations)
     return TRUE;
 }
 
+/*****************************************************************************/
+static int
+rdpRRSetPixmapVisitWindow(WindowPtr window, void *data)
+{
+    ScreenPtr screen;
+
+    LLOGLN(0, ("rdpRRSetPixmapVisitWindow:"));
+    screen = window->drawable.pScreen;
+    if (screen->GetWindowPixmap(window) == data)
+    {
+        screen->SetWindowPixmap(window, screen->GetScreenPixmap(screen));
+        return WT_WALKCHILDREN;
+    }
+    return WT_DONTWALKCHILDREN;
+}
+
 /******************************************************************************/
 Bool
 rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
@@ -99,6 +115,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
 {
     WindowPtr root;
     PixmapPtr screenPixmap;
+    PixmapPtr old_screen_pixmap;
     BoxRec box;
     rdpPtr dev;
 
@@ -119,16 +136,32 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     pScreen->height = height;
     pScreen->mmWidth = mmWidth;
     pScreen->mmHeight = mmHeight;
-    screenPixmap = pScreen->GetScreenPixmap(pScreen);
+    screenPixmap = dev->screenSwPixmap;
     free(dev->pfbMemory_alloc);
     dev->pfbMemory_alloc = g_new0(uint8_t, dev->sizeInBytes + 16);
     dev->pfbMemory = (uint8_t *) RDPALIGN(dev->pfbMemory_alloc, 16);
-    if (screenPixmap != 0)
+    pScreen->ModifyPixmapHeader(screenPixmap, width, height,
+                                -1, -1,
+                                dev->paddedWidthInBytes,
+                                dev->pfbMemory);
+    if (dev->glamor)
     {
-        pScreen->ModifyPixmapHeader(screenPixmap, width, height,
-                                    -1, -1,
-                                    dev->paddedWidthInBytes,
-                                    dev->pfbMemory);
+        old_screen_pixmap = pScreen->GetScreenPixmap(pScreen);
+        screenPixmap = pScreen->CreatePixmap(pScreen,
+                                             pScreen->width,
+                                             pScreen->height,
+                                             pScreen->rootDepth,
+                                             0x105); /* GLAMOR_CREATE_NO_LARGE */
+        if (screenPixmap == NULL)
+        {
+            return FALSE;
+        }
+        pScreen->SetScreenPixmap(screenPixmap);
+        if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
+        {
+            TraverseTree(pScreen->root, rdpRRSetPixmapVisitWindow, old_screen_pixmap);
+        }
+        pScreen->DestroyPixmap(old_screen_pixmap);
     }
     box.x1 = 0;
     box.y1 = 0;
