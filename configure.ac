@@ -1,6 +1,7 @@
 # Process this file with autoconf to produce a configure script
 
 AC_PREREQ(2.65)
+# don't forget to also change version in module/rdp.h
 AC_INIT([xorgxrdp], [0.2.5], [xrdp-devel@googlegroups.com])
 AC_CONFIG_HEADERS(config_ac.h:config_ac-h.in)
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests])
