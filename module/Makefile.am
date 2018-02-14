@@ -18,6 +18,9 @@ endif
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
   $(XRDP_CFLAGS) \
+  -DPACKAGE_VERSION_MAJOR=@package_version_major@ \
+  -DPACKAGE_VERSION_MINOR=@package_version_minor@ \
+  -DPACKAGE_VERSION_PATCHLEVEL=@package_version_patchlevel@ \
   -I$(top_srcdir)/module \
   $(EXTRA_FLAGS)
 
