@@ -33,6 +33,9 @@ RandR draw calls
 #include <xorg-server.h>
 #include <xorgVersion.h>
 
+#define GLAMOR_FOR_XORG 1
+#define XORGXRDP_GLAMOR 1
+
 /* all driver need this */
 #include <xf86.h>
 #include <xf86_OSproc.h>
@@ -47,6 +50,10 @@ RandR draw calls
 #include "rdpReg.h"
 #include "rdpMisc.h"
 #include "rdpRandR.h"
+
+#if defined(XORGXRDP_GLAMOR)
+#include <glamor.h>
+#endif
 
 static int g_panning = 0;
 
@@ -151,7 +158,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
                                              pScreen->width,
                                              pScreen->height,
                                              pScreen->rootDepth,
-                                             0x105); /* GLAMOR_CREATE_NO_LARGE */
+                                             GLAMOR_CREATE_NO_LARGE);
         if (screenPixmap == NULL)
         {
             return FALSE;
@@ -254,28 +261,28 @@ get_rect(rdpPtr dev, const char *name, BoxPtr rect)
 {
     if (strcmp(name, "rdp0") == 0)
     {
-        rect->x1 = dev->minfo[0].left; 
+        rect->x1 = dev->minfo[0].left;
         rect->y1 = dev->minfo[0].top;
         rect->x2 = dev->minfo[0].right + 1;
         rect->y2 = dev->minfo[0].bottom + 1;
     }
     else if (strcmp(name, "rdp1") == 0)
     {
-        rect->x1 = dev->minfo[1].left; 
+        rect->x1 = dev->minfo[1].left;
         rect->y1 = dev->minfo[1].top;
         rect->x2 = dev->minfo[1].right + 1;
         rect->y2 = dev->minfo[1].bottom + 1;
     }
     else if (strcmp(name, "rdp2") == 0)
     {
-        rect->x1 = dev->minfo[2].left; 
+        rect->x1 = dev->minfo[2].left;
         rect->y1 = dev->minfo[2].top;
         rect->x2 = dev->minfo[2].right + 1;
         rect->y2 = dev->minfo[2].bottom + 1;
     }
     else if (strcmp(name, "rdp3") == 0)
     {
-        rect->x1 = dev->minfo[3].left; 
+        rect->x1 = dev->minfo[3].left;
         rect->y1 = dev->minfo[3].top;
         rect->x2 = dev->minfo[3].right + 1;
         rect->y2 = dev->minfo[3].bottom + 1;

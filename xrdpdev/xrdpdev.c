@@ -755,28 +755,9 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 #if defined(XvExtension) && XvExtension
     /* XVideo */
-    if (dev->glamor)
+    if (!rdpXvInit(pScreen, pScrn))
     {
-#if defined(XORGXRDP_GLAMOR)
-        XF86VideoAdaptorPtr glamor_adaptor;
-        glamor_adaptor = glamor_xv_init(pScreen, 16);
-        if (glamor_adaptor != NULL)
-        {
-            xf86XVScreenInit(pScreen, &glamor_adaptor, 1);
-        }
-        else
-        {
-            xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                       "Failed to initialize XV support.\n");
-        }
-#endif
-    }
-    else
-    {
-        if (!rdpXvInit(pScreen, pScrn))
-        {
-            LLOGLN(0, ("rdpScreenInit: rdpXvInit failed"));
-        }
+        LLOGLN(0, ("rdpScreenInit: rdpXvInit failed"));
     }
 #endif
 

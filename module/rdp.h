@@ -315,6 +315,7 @@ struct _rdpRec
     /* glamor */
     Bool glamor;
     PixmapPtr screenSwPixmap;
+    void *xvPutImage;
     /* dri */
     int fd;
 };
