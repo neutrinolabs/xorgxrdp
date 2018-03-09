@@ -99,13 +99,14 @@ rdpRRGetInfo(ScreenPtr pScreen, Rotation *pRotations)
     return TRUE;
 }
 
+#if defined(XORGXRDP_GLAMOR)
 /*****************************************************************************/
 static int
 rdpRRSetPixmapVisitWindow(WindowPtr window, void *data)
 {
     ScreenPtr screen;
 
-    LLOGLN(0, ("rdpRRSetPixmapVisitWindow:"));
+    LLOGLN(10, ("rdpRRSetPixmapVisitWindow:"));
     screen = window->drawable.pScreen;
     if (screen->GetWindowPixmap(window) == data)
     {
@@ -114,6 +115,7 @@ rdpRRSetPixmapVisitWindow(WindowPtr window, void *data)
     }
     return WT_DONTWALKCHILDREN;
 }
+#endif
 
 /******************************************************************************/
 Bool
@@ -122,7 +124,6 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
 {
     WindowPtr root;
     PixmapPtr screenPixmap;
-    PixmapPtr old_screen_pixmap;
     BoxRec box;
     rdpPtr dev;
 
@@ -153,6 +154,9 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
                                 dev->pfbMemory);
     if (dev->glamor)
     {
+#if defined(XORGXRDP_GLAMOR)
+        PixmapPtr old_screen_pixmap;
+        uint32_t screen_tex;
         old_screen_pixmap = pScreen->GetScreenPixmap(pScreen);
         screenPixmap = pScreen->CreatePixmap(pScreen,
                                              pScreen->width,
@@ -163,12 +167,15 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
         {
             return FALSE;
         }
+        screen_tex = glamor_get_pixmap_texture(screenPixmap);
+        LLOGLN(0, ("rdpRRScreenSetSize: screen_tex 0x%8.8x", screen_tex));
         pScreen->SetScreenPixmap(screenPixmap);
         if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
         {
             TraverseTree(pScreen->root, rdpRRSetPixmapVisitWindow, old_screen_pixmap);
         }
         pScreen->DestroyPixmap(old_screen_pixmap);
+#endif
     }
     box.x1 = 0;
     box.y1 = 0;

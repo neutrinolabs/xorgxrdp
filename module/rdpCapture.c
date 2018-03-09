@@ -34,6 +34,9 @@ capture
 #include <xorg-server.h>
 #include <xorgVersion.h>
 
+#define GLAMOR_FOR_XORG 1
+#define XORGXRDP_GLAMOR 1
+
 /* all driver need this */
 #include <xf86.h>
 #include <xf86_OSproc.h>
@@ -44,6 +47,10 @@ capture
 #include "rdpReg.h"
 #include "rdpMisc.h"
 #include "rdpCapture.h"
+
+#if defined(XORGXRDP_GLAMOR)
+#include <glamor.h>
+#endif
 
 #define LOG_LEVEL 1
 #define LLOGLN(_level, _args) \
@@ -1064,15 +1071,11 @@ rdpCapture3(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     return rv;
 }
 
-/**
- * Copy an array of rectangles from one memory area to another
- *****************************************************************************/
-Bool
-rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
-           int *num_out_rects, struct image_data *id)
+#if defined(XORGXRDP_GLAMOR)
+/******************************************************************************/
+static int
+copy_vmem(rdpPtr dev, RegionPtr in_reg)
 {
-    int mode;
-    rdpPtr dev;
     PixmapPtr hwPixmap;
     PixmapPtr swPixmap;
     BoxPtr pbox;
@@ -1086,39 +1089,62 @@ rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int width;
     int height;
 
+    /* copy the dirty area from the screen hw pixmap to a sw pixmap
+       this should do a dma */
+    pScreen = dev->pScreen;
+    hwPixmap = pScreen->GetScreenPixmap(pScreen);
+    swPixmap = dev->screenSwPixmap;
+    copyGC = GetScratchGC(dev->depth, pScreen);
+    if (copyGC != NULL)
+    {
+        tmpval[0].val = GXcopy;
+        ChangeGC(NullClient, copyGC, GCFunction, tmpval);
+        ValidateGC(&(hwPixmap->drawable), copyGC);
+        count = REGION_NUM_RECTS(in_reg);
+        pbox = REGION_RECTS(in_reg);
+        for (index = 0; index < count; index++)
+        {
+            left = pbox[index].x1;
+            top = pbox[index].y1;
+            width = pbox[index].x2 - pbox[index].x1;
+            height = pbox[index].y2 - pbox[index].y1;
+            if ((width > 0) && (height > 0))
+            {
+                LLOGLN(10, ("copy_vmem: hwPixmap tex 0x%8.8x "
+                       "swPixmap tex 0x%8.8x",
+                       glamor_get_pixmap_texture(hwPixmap),
+                       glamor_get_pixmap_texture(swPixmap)));
+                 copyGC->ops->CopyArea(&(hwPixmap->drawable),
+                                       &(swPixmap->drawable),
+                                       copyGC, left, top,
+                                       width, height, left, top);
+            }
+        }
+        FreeScratchGC(copyGC);
+    }
+    else
+    {
+        return 1;
+    }
+    return 0;
+}
+#endif
+
+/**
+ * Copy an array of rectangles from one memory area to another
+ *****************************************************************************/
+Bool
+rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
+           int *num_out_rects, struct image_data *id)
+{
+    int mode;
+
     LLOGLN(10, ("rdpCapture:"));
     if (clientCon->dev->glamor)
     {
-        /* copy the dirty area from the screen hw pixmap to a sw pixmap
-           this should do a dma */
-        dev = clientCon->dev;
-        pScreen = dev->pScreen;
-        hwPixmap = pScreen->GetScreenPixmap(pScreen);
-        swPixmap = dev->screenSwPixmap;
-        copyGC = GetScratchGC(dev->depth, pScreen);
-        if (copyGC != NULL)
-        {
-            tmpval[0].val = GXcopy;
-            ChangeGC(NullClient, copyGC, GCFunction, tmpval);
-            ValidateGC(&(hwPixmap->drawable), copyGC);
-            count = REGION_NUM_RECTS(in_reg);
-            pbox = REGION_RECTS(in_reg);
-            for (index = 0; index < count; index++)
-            {
-                left = pbox[index].x1;
-                top = pbox[index].y1;
-                width = pbox[index].x2 - pbox[index].x1;
-                height = pbox[index].y2 - pbox[index].y1;
-                if ((width > 0) && (height > 0))
-                {
-                     copyGC->ops->CopyArea(&(hwPixmap->drawable),
-                                           &(swPixmap->drawable),
-                                           copyGC, left,
-                                           top, width, height, left, top);
-                }
-            }
-            FreeScratchGC(copyGC);
-        }
+#if defined(XORGXRDP_GLAMOR)
+        copy_vmem(clientCon->dev, in_reg);
+#endif
     }
     mode = clientCon->client_info.capture_code;
     switch (mode)

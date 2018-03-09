@@ -292,9 +292,9 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
                dev->width, dev->height));
         return FALSE;
     }
-#if defined(XORGXRDP_GLAMOR)
     if (dev->glamor)
     {
+#if defined(XORGXRDP_GLAMOR)
         if (xf86LoadSubModule(pScrn, GLAMOR_EGL_MODULE_NAME))
         {
             LLOGLN(0, ("rdpPreInit: glamor module load ok"));
@@ -313,8 +313,8 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
             LLOGLN(0, ("rdpPreInit: glamor module load failed"));
             dev->glamor = FALSE;
         }
-    }
 #endif
+    }
     return TRUE;
 }
 
@@ -480,9 +480,9 @@ rdpDri3PixmapFromFd(ScreenPtr screen, int fd,
 {
     PixmapPtr rv;
 
-    LLOGLN(0, ("rdpDri3PixmapFromFd:"));
+    LLOGLN(10, ("rdpDri3PixmapFromFd:"));
     rv = glamor_pixmap_from_fd(screen, fd, width, height, stride, depth, bpp);
-    LLOGLN(0, ("rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv));
+    LLOGLN(10, ("rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv));
     return rv;
 }
 
@@ -493,9 +493,9 @@ rdpDri3FdFromPixmap(ScreenPtr screen, PixmapPtr pixmap,
 {
     int rv;
 
-    LLOGLN(0, ("rdpDri3FdFromPixmap:"));
+    LLOGLN(10, ("rdpDri3FdFromPixmap:"));
     rv = glamor_fd_from_pixmap(screen, pixmap, stride, size);
-    LLOGLN(0, ("rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap));
+    LLOGLN(10, ("rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap));
     return rv;
 }
 
@@ -506,9 +506,9 @@ rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
 {
     int fd;
 
-    LLOGLN(0, ("rdpDri3OpenClient:"));
+    LLOGLN(10, ("rdpDri3OpenClient:"));
     fd = open(g_drm_device, O_RDWR | O_CLOEXEC);
-    LLOGLN(0, ("rdpDri3OpenClient: fd %d", fd));
+    LLOGLN(10, ("rdpDri3OpenClient: fd %d", fd));
     if (fd < 0)
     {
         return BadAlloc;
@@ -518,13 +518,14 @@ rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
 }
 #endif
 
+#if defined(XORGXRDP_GLAMOR)
 /*****************************************************************************/
 static int
 rdpSetPixmapVisitWindow(WindowPtr window, void *data)
 {
     ScreenPtr screen;
 
-    LLOGLN(0, ("rdpSetPixmapVisitWindow:"));
+    LLOGLN(10, ("rdpSetPixmapVisitWindow:"));
     screen = window->drawable.pScreen;
     if (screen->GetWindowPixmap(window) == data)
     {
@@ -533,6 +534,7 @@ rdpSetPixmapVisitWindow(WindowPtr window, void *data)
     }
     return WT_DONTWALKCHILDREN;
 }
+#endif
 
 /*****************************************************************************/
 static Bool
@@ -540,8 +542,6 @@ rdpCreateScreenResources(ScreenPtr pScreen)
 {
     Bool ret;
     rdpPtr dev;
-    PixmapPtr old_screen_pixmap;
-    PixmapPtr screen_pixmap;
 
     LLOGLN(0, ("rdpCreateScreenResources:"));
     dev = rdpGetDevFromScreen(pScreen);
@@ -552,10 +552,13 @@ rdpCreateScreenResources(ScreenPtr pScreen)
     {
         return FALSE;
     }
-
     dev->screenSwPixmap = pScreen->GetScreenPixmap(pScreen);
     if (dev->glamor)
     {
+#if defined(XORGXRDP_GLAMOR)
+        PixmapPtr old_screen_pixmap;
+        PixmapPtr screen_pixmap;
+        uint32_t screen_tex;
         old_screen_pixmap = dev->screenSwPixmap;
         LLOGLN(0, ("rdpCreateScreenResources: create screen pixmap w %d h %d",
                pScreen->width, pScreen->height));
@@ -568,12 +571,14 @@ rdpCreateScreenResources(ScreenPtr pScreen)
         {
             return FALSE;
         }
-
+        screen_tex = glamor_get_pixmap_texture(screen_pixmap);
+        LLOGLN(0, ("rdpCreateScreenResources: screen_tex 0x%8.8x", screen_tex));
         pScreen->SetScreenPixmap(screen_pixmap);
         if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
         {
             TraverseTree(pScreen->root, rdpSetPixmapVisitWindow, old_screen_pixmap);
         }
+#endif
     }
 
     return TRUE;
@@ -644,9 +649,9 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         vis--;
     }
     fbPictureInit(pScreen, 0, 0);
-#if defined(XORGXRDP_GLAMOR)
     if (dev->glamor)
     {
+#if defined(XORGXRDP_GLAMOR)
         /* it's not that we don't want dri3, we just want to init it ourself */
         if (glamor_init(pScreen, GLAMOR_USE_EGL_SCREEN | GLAMOR_NO_DRI3))
         {
@@ -665,8 +670,8 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         {
             LLOGLN(0, ("rdpScreenInit: dri3_screen_init failed"));
         }
-    }
 #endif
+    }
     xf86SetBlackWhitePixels(pScreen);
     xf86SetBackingStore(pScreen);
 

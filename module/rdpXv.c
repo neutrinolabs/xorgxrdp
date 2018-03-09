@@ -652,6 +652,7 @@ xrdpVidQueryImageAttributes(ScrnInfoPtr pScrn, int id,
     return size;
 }
 
+#if defined(XORGXRDP_GLAMOR)
 /*****************************************************************************/
 static int
 xrdpXvPutImageWrap(ScrnInfoPtr pScrn,
@@ -682,6 +683,7 @@ xrdpXvPutImageWrap(ScrnInfoPtr pScrn,
     rdpRegionDestroy(reg);
     return rv;
 }
+#endif
 
 /*****************************************************************************/
 Bool
@@ -695,6 +697,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
     dev = XRDPPTR(pScrn);
     if (dev->glamor)
     {
+#if defined(XORGXRDP_GLAMOR)
         adaptor = glamor_xv_init(pScreen, 16);
         if (adaptor == 0)
         {
@@ -708,6 +711,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
             LLOGLN(0, ("rdpXvInit: xf86XVScreenInit failed"));
             return 0;
         }
+#endif
     }
     else
     {
