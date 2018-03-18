@@ -849,6 +849,7 @@ rdpProbe(DriverPtr drv, int flags)
     GDevPtr *dev_sections;
     Bool found_screen;
     ScrnInfoPtr pscrn;
+    const char *val;
 
     LLOGLN(0, ("rdpProbe:"));
     if (flags & PROBE_DETECT)
@@ -873,6 +874,13 @@ rdpProbe(DriverPtr drv, int flags)
     found_screen = FALSE;
     for (i = 0; i < num_dev_sections; i++)
     {
+        val = xf86FindOptionValue(dev_sections[i]->options, "DRMDevice");
+        if (val != NULL)
+        {
+            strncpy(g_drm_device, val, 127);
+            g_drm_device[127] = 0;
+            LLOGLN(0, ("rdpProbe: found DRMDevice xorg.conf value [%s]", val));
+        }
         entity = xf86ClaimFbSlot(drv, 0, dev_sections[i], 1);
         pscrn = xf86ConfigFbEntity(pscrn, 0, entity, 0, 0, 0, 0);
         if (pscrn)
