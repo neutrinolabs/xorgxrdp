@@ -41,10 +41,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XRDP_KEYB_NAME "XRDPKEYB"
 #define XRDP_VERSION 1000
 
-#define PACKAGE_VERSION_MAJOR 1
-#define PACKAGE_VERSION_MINOR 0
-#define PACKAGE_VERSION_PATCHLEVEL 0
-
 #define COLOR8(r, g, b) \
     ((((r) >> 5) << 0)  | (((g) >> 5) << 3) | (((b) >> 6) << 6))
 #define COLOR15(r, g, b) \

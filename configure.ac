@@ -1,7 +1,14 @@
 # Process this file with autoconf to produce a configure script
 
 AC_PREREQ(2.65)
-AC_INIT([xorgxrdp], [0.2.5], [xrdp-devel@googlegroups.com])
+# package version must be x.y.z
+AC_INIT([xorgxrdp], [0.2.6], [xrdp-devel@googlegroups.com])
+package_version_major=$(echo ${PACKAGE_VERSION}|cut -d. -f1)
+package_version_minor=$(echo ${PACKAGE_VERSION}|cut -d. -f2)
+package_version_patchlevel=$(echo ${PACKAGE_VERSION}|cut -d. -f3)
+AC_SUBST([package_version_major], [${package_version_major}])
+AC_SUBST([package_version_minor], [${package_version_minor}])
+AC_SUBST([package_version_patchlevel], [${package_version_patchlevel}])
 AC_CONFIG_HEADERS(config_ac.h:config_ac-h.in)
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
