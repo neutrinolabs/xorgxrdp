@@ -1,5 +1,5 @@
 /*
-Copyright 2014-2017 Jay Sorg
+Copyright 2018 Jay Sorg
 
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -42,7 +42,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
 #include "rdpReg.h"
-#include "rdpTrapezoids.h"
+#include "rdpCompositeRects.h"
 
 /******************************************************************************/
 #define LOG_LEVEL 1
@@ -51,46 +51,38 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /******************************************************************************/
 static void
-rdpTrapezoidsOrg(PictureScreenPtr ps, rdpPtr dev,
-                 CARD8 op, PicturePtr pSrc, PicturePtr pDst,
-                 PictFormatPtr maskFormat, INT16 xSrc, INT16 ySrc,
-                 int ntrap, xTrapezoid *traps)
+rdpCompositeRectsOrg(PictureScreenPtr ps, rdpPtr dev, CARD8 op,
+                     PicturePtr dst, xRenderColor * color,
+                     int num_rects, xRectangle *rects)
 {
-    ps->Trapezoids = dev->Trapezoids;
-    ps->Trapezoids(op, pSrc, pDst, maskFormat, xSrc, ySrc, ntrap, traps);
-    ps->Trapezoids = rdpTrapezoids;
+    ps->CompositeRects = dev->CompositeRects;
+    ps->CompositeRects(op, dst, color, num_rects, rects);
+    ps->CompositeRects = rdpCompositeRects;
 }
 
 /******************************************************************************/
 void
-rdpTrapezoids(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
-              PictFormatPtr maskFormat, INT16 xSrc, INT16 ySrc,
-              int ntrap, xTrapezoid *traps)
+rdpCompositeRects(CARD8 op, PicturePtr dst, xRenderColor * color,
+                  int num_rects, xRectangle *rects)
 {
     ScreenPtr pScreen;
     rdpPtr dev;
     PictureScreenPtr ps;
-    BoxRec box;
-    RegionRec reg;
+    RegionPtr reg;
 
-    LLOGLN(10, ("rdpTrapezoids:"));
-    pScreen = pDst->pDrawable->pScreen;
+    LLOGLN(10, ("rdpCompositeRects:"));
+    pScreen = dst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
-    dev->counts.rdpTrapezoidsCallCount++;
-    miTrapezoidBounds(ntrap, traps, &box);
-    box.x1 += pDst->pDrawable->x;
-    box.y1 += pDst->pDrawable->y;
-    box.x2 += pDst->pDrawable->x;
-    box.y2 += pDst->pDrawable->y;
-    rdpRegionInit(&reg, &box, 0);
-    if (pDst->pCompositeClip != NULL)
+    dev->counts.rdpCompositeRectsCallCount++;
+    reg = rdpRegionFromRects(num_rects, rects, CT_NONE);
+    rdpRegionTranslate(reg, dst->pDrawable->x, dst->pDrawable->y);
+    if (dst->pCompositeClip != NULL)
     {
-        rdpRegionIntersect(&reg, pDst->pCompositeClip, &reg);
+        rdpRegionIntersect(reg, dst->pCompositeClip, reg);
     }
     ps = GetPictureScreen(pScreen);
     /* do original call */
-    rdpTrapezoidsOrg(ps, dev, op, pSrc, pDst, maskFormat, xSrc, ySrc,
-                     ntrap, traps);
-    rdpClientConAddAllReg(dev, &reg, pDst->pDrawable);
-    rdpRegionUninit(&reg);
+    rdpCompositeRectsOrg(ps, dev, op, dst, color, num_rects, rects);
+    rdpClientConAddAllReg(dev, reg, dst->pDrawable);
+    rdpRegionDestroy(reg);
 }

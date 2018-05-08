@@ -57,6 +57,8 @@ This is the main driver file
 #include "rdpMisc.h"
 #include "rdpComposite.h"
 #include "rdpTrapezoids.h"
+#include "rdpTriangles.h"
+#include "rdpCompositeRects.h"
 #include "rdpGlyphs.h"
 #include "rdpPixmap.h"
 #include "rdpClientCon.h"
@@ -334,7 +336,7 @@ static miPointerSpriteFuncRec g_rdpSpritePointerFuncs =
 static Bool
 rdpSaveScreen(ScreenPtr pScreen, int on)
 {
-    LLOGLN(0, ("rdpSaveScreen:"));
+    LLOGLN(10, ("rdpSaveScreen:"));
     return TRUE;
 }
 
@@ -422,7 +424,6 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
     pRRScrPriv->rrOutputGetProperty  = rdpRROutputGetProperty;
     pRRScrPriv->rrGetPanning         = rdpRRGetPanning;
     pRRScrPriv->rrSetPanning         = rdpRRSetPanning;
-
 
     rdpResizeSession(dev, 1024, 768);
 
@@ -740,6 +741,12 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         /* trapezoids */
         dev->Trapezoids = ps->Trapezoids;
         ps->Trapezoids = rdpTrapezoids;
+        /* triangles */
+        dev->Triangles = ps->Triangles;
+        ps->Triangles = rdpTriangles;
+        /* composite rects */
+        dev->CompositeRects = ps->CompositeRects;
+        ps->CompositeRects = rdpCompositeRects;
     }
 
     dev->CreateScreenResources = pScreen->CreateScreenResources;

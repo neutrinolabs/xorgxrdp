@@ -62,6 +62,8 @@ noinst_HEADERS = \
   rdpSetSpans.h \
   rdpSimd.h \
   rdpTrapezoids.h \
+  rdpTriangles.h \
+  rdpCompositeRects.h \
   rdpXv.h \
   amd64/funcs_amd64.h \
   x86/funcs_x86.h
@@ -79,6 +81,7 @@ rdpFillPolygon.c rdpPolyFillRect.c rdpPolyFillArc.c rdpPolyText8.c \
 rdpPolyText16.c rdpImageText8.c rdpImageText16.c rdpImageGlyphBlt.c \
 rdpPolyGlyphBlt.c rdpPushPixels.c rdpCursor.c rdpMain.c rdpRandR.c \
 rdpMisc.c rdpReg.c rdpComposite.c rdpGlyphs.c rdpPixmap.c rdpInput.c \
-rdpClientCon.c rdpCapture.c rdpTrapezoids.c rdpXv.c rdpSimd.c
+rdpClientCon.c rdpCapture.c rdpTrapezoids.c rdpTriangles.c \
+rdpCompositeRects.c rdpXv.c rdpSimd.c
 
 libxorgxrdp_la_LIBADD = $(ASMLIB)

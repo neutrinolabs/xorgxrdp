@@ -201,7 +201,9 @@ struct _rdpCounts
     CARD32 rdpCompositeCallCount;
     CARD32 rdpCopyWindowCallCount; /* 22 */
     CARD32 rdpTrapezoidsCallCount;
-    CARD32 callCount[64 - 23];
+    CARD32 rdpTrianglesCallCount;
+    CARD32 rdpCompositeRectsCallCount;
+    CARD32 callCount[64 - 25];
 };
 
 typedef int (*yuv_to_rgb32_proc)(const uint8_t *yuvs, int width, int height, int *rgbs);
@@ -243,6 +245,8 @@ struct _rdpRec
     GlyphsProcPtr Glyphs;
     TrapezoidsProcPtr Trapezoids;
     CreateScreenResourcesProcPtr CreateScreenResources;
+    TrianglesProcPtr Triangles;
+    CompositeRectsProcPtr CompositeRects;
 
     /* keyboard and mouse */
     miPointerScreenFuncPtr pCursorFuncs;
