@@ -68,6 +68,11 @@ if test "x${with_simd}" != "xno"; then
   fi
 fi
 
+AC_ARG_ENABLE(glamor, AS_HELP_STRING([--enable-glamor],
+              [Use glamor (default: no)]),
+              [], [enable_glamor=no])
+AM_CONDITIONAL(WITH_GLAMOR, [test x$enable_glamor = xyes])
+
 AM_CONDITIONAL(WITH_SIMD_AMD64, [test x$simd_arch = xx86_64])
 AM_CONDITIONAL(WITH_SIMD_X86, [test x$simd_arch = xi386])
 

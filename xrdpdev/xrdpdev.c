@@ -33,9 +33,6 @@ This is the main driver file
 #include <xorg-server.h>
 #include <xorgVersion.h>
 
-#define GLAMOR_FOR_XORG 1
-#define XORGXRDP_GLAMOR 1
-
 /* all driver need this */
 #include <xf86.h>
 #include <xf86_OSproc.h>
@@ -884,9 +881,11 @@ rdpProbe(DriverPtr drv, int flags)
         val = xf86FindOptionValue(dev_sections[i]->options, "DRMDevice");
         if (val != NULL)
         {
+#if defined(XORGXRDP_GLAMOR)
             strncpy(g_drm_device, val, 127);
             g_drm_device[127] = 0;
             LLOGLN(0, ("rdpProbe: found DRMDevice xorg.conf value [%s]", val));
+#endif
         }
         entity = xf86ClaimFbSlot(drv, 0, dev_sections[i], 1);
         pscrn = xf86ConfigFbEntity(pscrn, 0, entity, 0, 0, 0, 0);

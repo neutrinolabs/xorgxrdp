@@ -15,6 +15,10 @@ SUBDIRS += x86
 ASMLIB += x86/libxorgxrdp-asm.la
 endif
 
+if WITH_GLAMOR
+EXTRA_FLAGS += -DXORGXRDP_GLAMOR -DGLAMOR_FOR_XORG
+endif
+
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
   $(XRDP_CFLAGS) \

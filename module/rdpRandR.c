@@ -33,9 +33,6 @@ RandR draw calls
 #include <xorg-server.h>
 #include <xorgVersion.h>
 
-#define GLAMOR_FOR_XORG 1
-#define XORGXRDP_GLAMOR 1
-
 /* all driver need this */
 #include <xf86.h>
 #include <xf86_OSproc.h>
