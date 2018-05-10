@@ -1,8 +1,10 @@
 EXTRA_DIST =
 EXTRA_FLAGS =
+EXTRA_FILES =
 
 if WITH_GLAMOR
 EXTRA_FLAGS += -DXORGXRDP_GLAMOR -DGLAMOR_FOR_XORG
+EXTRA_FILES += xrdpdri2.c xrdpdri3.c
 endif
 
 AM_CFLAGS = \
@@ -20,7 +22,7 @@ xrdpdev_drv_la_LDFLAGS = -module -avoid-version
 
 xrdpdev_drv_ladir = $(moduledir)/drivers
 
-xrdpdev_drv_la_SOURCES = xrdpdev.c
+xrdpdev_drv_la_SOURCES = xrdpdev.c $(EXTRA_FILES)
 
 xrdpdev_drv_la_LIBADD =
 

@@ -62,12 +62,14 @@ This is the main driver file
 #include "rdpXv.h"
 #include "rdpSimd.h"
 
+#include "xrdpdri2.h"
+#include "xrdpdri3.h"
+
 #if defined(XORGXRDP_GLAMOR)
 #include <glamor.h>
-#include <dri3.h>
-static dri3_screen_info_rec g_rdp_dri3_info;
-/* use environment variable XORGXRDP_DRM_DEVICE to override */
-static char g_drm_device[128] = "/dev/dri/renderD128";
+/* use environment variable XORGXRDP_DRM_DEVICE to override
+ * also read from xorg.conf file */
+char g_drm_device[128] = "/dev/dri/renderD128";
 #endif
 
 #define LLOG_LEVEL 1
@@ -471,53 +473,6 @@ rdpWakeupHandler1(void *blockData, int result)
 
 #if defined(XORGXRDP_GLAMOR)
 /*****************************************************************************/
-static PixmapPtr
-rdpDri3PixmapFromFd(ScreenPtr screen, int fd,
-                    CARD16 width, CARD16 height, CARD16 stride,
-                    CARD8 depth, CARD8 bpp)
-{
-    PixmapPtr rv;
-
-    LLOGLN(10, ("rdpDri3PixmapFromFd:"));
-    rv = glamor_pixmap_from_fd(screen, fd, width, height, stride, depth, bpp);
-    LLOGLN(10, ("rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv));
-    return rv;
-}
-
-/*****************************************************************************/
-static int
-rdpDri3FdFromPixmap(ScreenPtr screen, PixmapPtr pixmap,
-                    CARD16 *stride, CARD32 *size)
-{
-    int rv;
-
-    LLOGLN(10, ("rdpDri3FdFromPixmap:"));
-    rv = glamor_fd_from_pixmap(screen, pixmap, stride, size);
-    LLOGLN(10, ("rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap));
-    return rv;
-}
-
-/*****************************************************************************/
-static int
-rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
-                  RRProviderPtr provider, int *pfd)
-{
-    int fd;
-
-    LLOGLN(10, ("rdpDri3OpenClient:"));
-    fd = open(g_drm_device, O_RDWR | O_CLOEXEC);
-    LLOGLN(10, ("rdpDri3OpenClient: fd %d", fd));
-    if (fd < 0)
-    {
-        return BadAlloc;
-    }
-    *pfd = fd;
-    return Success;
-}
-#endif
-
-#if defined(XORGXRDP_GLAMOR)
-/*****************************************************************************/
 static int
 rdpSetPixmapVisitWindow(WindowPtr window, void *data)
 {
@@ -659,14 +614,13 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         {
             LLOGLN(0, ("rdpScreenInit: glamor_init failed"));
         }
-        memset(&g_rdp_dri3_info, 0, sizeof(g_rdp_dri3_info));
-        g_rdp_dri3_info.version = 1;
-        g_rdp_dri3_info.pixmap_from_fd = rdpDri3PixmapFromFd;
-        g_rdp_dri3_info.fd_from_pixmap = rdpDri3FdFromPixmap;
-        g_rdp_dri3_info.open_client = rdpDri3OpenClient;
-        if (!dri3_screen_init(pScreen, &g_rdp_dri3_info))
+        if (rdpDri2Init(pScreen) != 0)
         {
-            LLOGLN(0, ("rdpScreenInit: dri3_screen_init failed"));
+            LLOGLN(0, ("rdpScreenInit: rdpDri2Init failed"));
+        }
+        if (rdpDri3Init(pScreen) != 0)
+        {
+            LLOGLN(0, ("rdpScreenInit: rdpDri3Init failed"));
         }
 #endif
     }
