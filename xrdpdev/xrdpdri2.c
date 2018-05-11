@@ -45,11 +45,13 @@ dri2
 #include <micmap.h>
 #include <mi.h>
 #include <randrstr.h>
+#include <dri2.h>
 
 #include <xf86Modes.h>
 
 #include "rdp.h"
 #include "rdpPri.h"
+#include "rdpDraw.h"
 
 #define LLOG_LEVEL 1
 #define LLOGLN(_level, _args) \
@@ -67,5 +69,16 @@ dri2
 int
 rdpDri2Init(ScreenPtr pScreen)
 {
+    rdpPtr dev;
+    DRI2InfoRec info;
+
+    dev = rdpGetDevFromScreen(pScreen);
+    memset(&info, 0, sizeof(info));
+    info.fd = dev->fd;
+    info.version = 9;
+    if (!DRI2ScreenInit(pScreen, &info))
+    {
+        return 1;
+    }
     return 0;
 }

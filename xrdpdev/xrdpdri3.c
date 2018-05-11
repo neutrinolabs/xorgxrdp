@@ -54,8 +54,6 @@ dri3
 #include <glamor.h>
 #include <dri3.h>
 
-static dri3_screen_info_rec g_rdp_dri3_info;
-
 extern char g_drm_device[]; /* in xrdpdev.c */
 
 #define LLOG_LEVEL 1
@@ -119,12 +117,14 @@ rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
 int
 rdpDri3Init(ScreenPtr pScreen)
 {
-    memset(&g_rdp_dri3_info, 0, sizeof(g_rdp_dri3_info));
-    g_rdp_dri3_info.version = 1;
-    g_rdp_dri3_info.pixmap_from_fd = rdpDri3PixmapFromFd;
-    g_rdp_dri3_info.fd_from_pixmap = rdpDri3FdFromPixmap;
-    g_rdp_dri3_info.open_client = rdpDri3OpenClient;
-    if (!dri3_screen_init(pScreen, &g_rdp_dri3_info))
+    static dri3_screen_info_rec rdp_dri3_info;
+
+    memset(&rdp_dri3_info, 0, sizeof(rdp_dri3_info));
+    rdp_dri3_info.version = 1;
+    rdp_dri3_info.pixmap_from_fd = rdpDri3PixmapFromFd;
+    rdp_dri3_info.fd_from_pixmap = rdpDri3FdFromPixmap;
+    rdp_dri3_info.open_client = rdpDri3OpenClient;
+    if (!dri3_screen_init(pScreen, &rdp_dri3_info))
     {
         LLOGLN(0, ("rdpScreenInit: dri3_screen_init failed"));
         return 1;

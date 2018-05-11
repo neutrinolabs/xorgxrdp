@@ -618,9 +618,17 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         {
             LLOGLN(0, ("rdpScreenInit: rdpDri2Init failed"));
         }
+        else
+        {
+            LLOGLN(0, ("rdpScreenInit: rdpDri2Init ok"));
+        }
         if (rdpDri3Init(pScreen) != 0)
         {
             LLOGLN(0, ("rdpScreenInit: rdpDri3Init failed"));
+        }
+        else
+        {
+            LLOGLN(0, ("rdpScreenInit: rdpDri3Init ok"));
         }
 #endif
     }
