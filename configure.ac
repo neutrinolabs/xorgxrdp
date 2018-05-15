@@ -23,6 +23,9 @@ AX_GCC_FUNC_ATTRIBUTE([format])
 
 PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
   [AC_MSG_ERROR([please install xserver-xorg-dev, xorg-x11-server-sdk or xorg-x11-server-devel])])
+if test "x${enable_glamor}" != "xno"; then
+  PKG_CHECK_MODULES([XORG_SERVER_GLAMOR], [xorg-server >= 1.19.0])
+fi
 
 if test "x$XRDP_CFLAGS" = "x"; then
   PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.0])

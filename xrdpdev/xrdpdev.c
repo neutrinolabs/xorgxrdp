@@ -70,6 +70,7 @@ This is the main driver file
 /* use environment variable XORGXRDP_DRM_DEVICE to override
  * also read from xorg.conf file */
 char g_drm_device[128] = "/dev/dri/renderD128";
+Bool g_use_dri3 = TRUE;
 #endif
 
 #define LLOG_LEVEL 1
@@ -622,13 +623,16 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         {
             LLOGLN(0, ("rdpScreenInit: rdpDri2Init ok"));
         }
-        if (rdpDri3Init(pScreen) != 0)
+        if (g_use_dri3)
         {
-            LLOGLN(0, ("rdpScreenInit: rdpDri3Init failed"));
-        }
-        else
-        {
-            LLOGLN(0, ("rdpScreenInit: rdpDri3Init ok"));
+            if (rdpDri3Init(pScreen) != 0)
+            {
+                LLOGLN(0, ("rdpScreenInit: rdpDri3Init failed"));
+            }
+            else
+            {
+                LLOGLN(0, ("rdpScreenInit: rdpDri3Init ok"));
+            }
         }
 #endif
     }
@@ -846,6 +850,19 @@ rdpProbe(DriverPtr drv, int flags)
 #if defined(XORGXRDP_GLAMOR)
             strncpy(g_drm_device, val, 127);
             g_drm_device[127] = 0;
+            LLOGLN(0, ("rdpProbe: found DRMDevice xorg.conf value [%s]", val));
+#endif
+        }
+        val = xf86FindOptionValue(dev_sections[i]->options, "DRI3");
+        if (val != NULL)
+        {
+#if defined(XORGXRDP_GLAMOR)
+            if ((strcmp(val, "0") == 0) ||
+                (strcmp(val, "no") == 0) ||
+                (strcmp(val, "false") == 0))
+            {
+               g_use_dri3 = 0;
+            }
             LLOGLN(0, ("rdpProbe: found DRMDevice xorg.conf value [%s]", val));
 #endif
         }
