@@ -70,6 +70,7 @@ This is the main driver file
 /* use environment variable XORGXRDP_DRM_DEVICE to override
  * also read from xorg.conf file */
 char g_drm_device[128] = "/dev/dri/renderD128";
+Bool g_use_dri2 = TRUE;
 Bool g_use_dri3 = TRUE;
 #endif
 
@@ -615,13 +616,16 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         {
             LLOGLN(0, ("rdpScreenInit: glamor_init failed"));
         }
-        if (rdpDri2Init(pScreen) != 0)
+        if (g_use_dri2)
         {
-            LLOGLN(0, ("rdpScreenInit: rdpDri2Init failed"));
-        }
-        else
-        {
-            LLOGLN(0, ("rdpScreenInit: rdpDri2Init ok"));
+            if (rdpDri2Init(pScreen) != 0)
+            {
+                LLOGLN(0, ("rdpScreenInit: rdpDri2Init failed"));
+            }
+            else
+            {
+                LLOGLN(0, ("rdpScreenInit: rdpDri2Init ok"));
+            }
         }
         if (g_use_dri3)
         {
@@ -853,6 +857,19 @@ rdpProbe(DriverPtr drv, int flags)
             LLOGLN(0, ("rdpProbe: found DRMDevice xorg.conf value [%s]", val));
 #endif
         }
+        val = xf86FindOptionValue(dev_sections[i]->options, "DRI2");
+        if (val != NULL)
+        {
+#if defined(XORGXRDP_GLAMOR)
+            if ((strcmp(val, "0") == 0) ||
+                (strcmp(val, "no") == 0) ||
+                (strcmp(val, "false") == 0))
+            {
+               g_use_dri2 = 0;
+            }
+            LLOGLN(0, ("rdpProbe: found DRI2 xorg.conf value [%s]", val));
+#endif
+        }
         val = xf86FindOptionValue(dev_sections[i]->options, "DRI3");
         if (val != NULL)
         {
@@ -863,7 +880,7 @@ rdpProbe(DriverPtr drv, int flags)
             {
                g_use_dri3 = 0;
             }
-            LLOGLN(0, ("rdpProbe: found DRMDevice xorg.conf value [%s]", val));
+            LLOGLN(0, ("rdpProbe: found DRI3 xorg.conf value [%s]", val));
 #endif
         }
         entity = xf86ClaimFbSlot(drv, 0, dev_sections[i], 1);
