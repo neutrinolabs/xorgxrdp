@@ -468,7 +468,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     /* try to init simd functions */
     rdpSimdInit(pScreen, pScrn);
 
-#if defined(XvExtension) && XvExtension
+#if defined(XvExtension)
     /* XVideo */
     if (!rdpXvInit(pScreen, pScrn))
     {
