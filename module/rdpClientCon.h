@@ -62,10 +62,9 @@ struct _rdpClientCon
 
     int rectIdAck;
     int rectId;
-    int connected; /* boolean */
+    int connected; /* boolean. Set to False when I/O fails */
     int begin; /* boolean */
     int count;
-    int sckClosed; /* boolean */
     struct rdpup_os_bitmap *osBitmaps;
     int maxOsBitmaps;
     int osBitmapStamp;
@@ -114,6 +113,7 @@ struct _rdpClientCon
     int *rfx_crcs;
 
     struct _rdpClientCon *next;
+    struct _rdpClientCon *prev;
 };
 
 extern _X_EXPORT int

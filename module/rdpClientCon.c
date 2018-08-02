@@ -149,6 +149,56 @@ rdpClientConRemoveEnabledDevice(int fd)
 #endif
 
 /******************************************************************************/
+static void
+rdpAddClientConToDev(rdpPtr dev, rdpClientCon *clientCon)
+{
+    clientCon->next = NULL;
+    clientCon->prev = dev->clientConTail;
+
+    if (dev->clientConTail == NULL)
+    {
+        LLOGLN(0, ("rdpAddClientConToDev: adding first clientCon %p",
+                   clientCon));
+        dev->clientConHead = clientCon;
+    }
+    else
+    {
+        LLOGLN(0, ("rdpAddClientConToDev: adding clientCon %p",
+                   clientCon));
+        dev->clientConTail->next = clientCon;
+    }
+    dev->clientConTail = clientCon;
+}
+
+/******************************************************************************/
+static void
+rdpRemoveClientConFromDev(rdpPtr dev, rdpClientCon *clientCon)
+{
+    LLOGLN(0, ("rdpRemoveClientConFromDev: removing clientCon %p",
+               clientCon));
+
+    if (clientCon->prev == NULL)
+    {
+        /* first in list */
+        dev->clientConHead = clientCon->next;
+    }
+    else
+    {
+        clientCon->prev->next = clientCon->next;
+    }
+
+    if (clientCon->next == NULL)
+    {
+        /* last in list */
+        dev->clientConTail = clientCon->prev;
+    }
+    else
+    {
+        clientCon->next->prev = clientCon->prev;
+    }
+}
+
+/******************************************************************************/
 static int
 rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
 {
@@ -178,7 +228,6 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
         g_sck_set_non_blocking(clientCon->sck);
         g_sck_tcp_set_no_delay(clientCon->sck); /* only works if TCP */
         clientCon->connected = TRUE;
-        clientCon->sckClosed = FALSE;
         clientCon->begin = FALSE;
         dev->conNumber++;
         clientCon->conNumber = dev->conNumber;
@@ -188,25 +237,15 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
 #if 1
     if (dev->clientConTail != NULL)
     {
-        LLOGLN(0, ("rdpClientConGotConnection: disconnecting only clientCon"));
-        rdpClientConDisconnect(dev, dev->clientConTail);
-        dev->clientConHead = NULL;
-        dev->clientConTail = NULL;
+        /* Only allow one client at a time */
+        LLOGLN(0, ("rdpClientConGotConnection: "
+                   "marking only clientCon %p for disconnect",
+                   dev->clientConTail));
+        dev->clientConTail->connected = FALSE;
     }
 #endif
 
-    if (dev->clientConTail == NULL)
-    {
-        LLOGLN(0, ("rdpClientConGotConnection: adding only clientCon"));
-        dev->clientConHead = clientCon;
-        dev->clientConTail = clientCon;
-    }
-    else
-    {
-        LLOGLN(0, ("rdpClientConGotConnection: adding clientCon"));
-        dev->clientConTail->next = clientCon;
-        dev->clientConTail = clientCon;
-    }
+    rdpAddClientConToDev(dev, clientCon);
 
     clientCon->dirtyRegion = rdpRegionCreate(NullBox, 0);
     clientCon->shmRegion = rdpRegionCreate(NullBox, 0);
@@ -259,8 +298,6 @@ static int
 rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
 {
     int index;
-    rdpClientCon *pcli;
-    rdpClientCon *plcli;
 
     LLOGLN(0, ("rdpClientConDisconnect:"));
     if (dev->do_kill_disconnected)
@@ -293,38 +330,8 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     }
     free(clientCon->osBitmaps);
 
-    plcli = NULL;
-    pcli = dev->clientConHead;
-    while (pcli != NULL)
-    {
-        if (pcli == clientCon)
-        {
-            if (plcli == NULL)
-            {
-                /* removing first item */
-                dev->clientConHead = pcli->next;
-                if (dev->clientConHead == NULL)
-                {
-                    /* removed only */
-                    dev->clientConTail = NULL;
-                }
-            }
-            else
-            {
-                plcli->next = pcli->next;
-                if (pcli == dev->clientConTail)
-                {
-                    /* removed last */
-                    dev->clientConTail = plcli;
-                }
-            }
-            LLOGLN(0, ("rdpClientConDisconnect: clientCon removed from "
-                   "dev list"));
-            break;
-        }
-        plcli = pcli;
-        pcli = pcli->next;
-    }
+    rdpRemoveClientConFromDev(dev, clientCon);
+
     rdpRegionDestroy(clientCon->dirtyRegion);
     rdpRegionDestroy(clientCon->shmRegion);
     if (clientCon->updateTimer != NULL)
@@ -347,7 +354,7 @@ rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
 
     LLOGLN(10, ("rdpClientConSend - sending %d bytes", len));
 
-    if (clientCon->sckClosed)
+    if (!clientCon->connected)
     {
         return 1;
     }
@@ -365,14 +372,14 @@ rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
             else
             {
                 LLOGLN(0, ("rdpClientConSend: g_tcp_send failed(returned -1)"));
-                rdpClientConDisconnect(dev, clientCon);
+                clientCon->connected = FALSE;
                 return 1;
             }
         }
         else if (sent == 0)
         {
             LLOGLN(0, ("rdpClientConSend: g_tcp_send failed(returned zero)"));
-            rdpClientConDisconnect(dev, clientCon);
+            clientCon->connected = FALSE;
             return 1;
         }
         else
@@ -452,7 +459,7 @@ rdpClientConRecv(rdpPtr dev, rdpClientCon *clientCon, char *data, int len)
 {
     int rcvd;
 
-    if (clientCon->sckClosed)
+    if (!clientCon->connected)
     {
         return 1;
     }
@@ -470,14 +477,14 @@ rdpClientConRecv(rdpPtr dev, rdpClientCon *clientCon, char *data, int len)
             else
             {
                 LLOGLN(0, ("rdpClientConRecv: g_sck_recv failed(returned -1)"));
-                rdpClientConDisconnect(dev, clientCon);
+                clientCon->connected = FALSE;
                 return 1;
             }
         }
         else if (rcvd == 0)
         {
             LLOGLN(0, ("rdpClientConRecv: g_sck_recv failed(returned 0)"));
-            rdpClientConDisconnect(dev, clientCon);
+            clientCon->connected = FALSE;
             return 1;
         }
         else
@@ -1062,6 +1069,7 @@ rdpClientConCheck(ScreenPtr pScreen)
 {
     rdpPtr dev;
     rdpClientCon *clientCon;
+    rdpClientCon *nextCon;
     fd_set rfds;
     struct timeval time;
     int max;
@@ -1093,6 +1101,15 @@ rdpClientConCheck(ScreenPtr pScreen)
     clientCon = dev->clientConHead;
     while (clientCon != NULL)
     {
+        if (!clientCon->connected)
+        {
+            /* I/O error on this client - remove it */
+            nextCon = clientCon->next;
+            rdpClientConDisconnect(dev, clientCon);
+            clientCon = nextCon;
+            continue;
+        }
+
         if (clientCon->sck > 0)
         {
             count++;
@@ -1145,18 +1162,17 @@ rdpClientConCheck(ScreenPtr pScreen)
                 LLOGLN(0, ("rdpClientConCheck: got disconnection request"));
 
                 /* disconnect all clients */
-                clientCon = dev->clientConHead;
-                while (clientCon != NULL)
+                while (dev->clientConHead != NULL)
                 {
-                    rdpClientConDisconnect(dev, clientCon);
-                    clientCon = clientCon->next;
+                    rdpClientConDisconnect(dev, dev->clientConHead);
                 }
             }
         }
     }
 
-    clientCon = dev->clientConHead;
-    while (clientCon != NULL)
+    for (clientCon = dev->clientConHead;
+            clientCon != NULL;
+            clientCon = clientCon->next)
     {
         if (clientCon->sck > 0)
         {
@@ -1165,8 +1181,7 @@ rdpClientConCheck(ScreenPtr pScreen)
                 if (rdpClientConGotData(pScreen, dev, clientCon) != 0)
                 {
                     LLOGLN(0, ("rdpClientConCheck: rdpClientConGotData failed"));
-                    clientCon = dev->clientConHead;
-                    continue;
+                    continue; /* skip other socket checks for this clientCon */
                 }
             }
         }
@@ -1177,7 +1192,6 @@ rdpClientConCheck(ScreenPtr pScreen)
                 if (rdpClientConGotControlConnection(pScreen, dev, clientCon) != 0)
                 {
                     LLOGLN(0, ("rdpClientConCheck: rdpClientConGotControlConnection failed"));
-                    clientCon = dev->clientConHead;
                     continue;
                 }
             }
@@ -1189,12 +1203,10 @@ rdpClientConCheck(ScreenPtr pScreen)
                 if (rdpClientConGotControlData(pScreen, dev, clientCon) != 0)
                 {
                     LLOGLN(0, ("rdpClientConCheck: rdpClientConGotControlData failed"));
-                    clientCon = dev->clientConHead;
                     continue;
                 }
             }
         }
-        clientCon = clientCon->next;
     }
     return 0;
 }
@@ -1299,12 +1311,10 @@ rdpClientConDeinit(rdpPtr dev)
 {
     LLOGLN(0, ("rdpClientConDeinit:"));
 
-    if (dev->clientConTail != NULL)
+    while (dev->clientConTail != NULL)
     {
-        LLOGLN(0, ("rdpClientConDeinit: disconnecting only clientCon"));
+        LLOGLN(0, ("rdpClientConDeinit: disconnecting clientCon"));
         rdpClientConDisconnect(dev, dev->clientConTail);
-        dev->clientConHead = NULL;
-        dev->clientConTail = NULL;
     }
 
     if (dev->listen_sck != 0)
@@ -1332,19 +1342,16 @@ rdpClientConBeginUpdate(rdpPtr dev, rdpClientCon *clientCon)
 {
     LLOGLN(10, ("rdpClientConBeginUpdate:"));
 
-    if (clientCon->connected)
+    if (clientCon->begin)
     {
-        if (clientCon->begin)
-        {
-            return 0;
-        }
-        init_stream(clientCon->out_s, 0);
-        s_push_layer(clientCon->out_s, iso_hdr, 8);
-        out_uint16_le(clientCon->out_s, 1); /* begin update */
-        out_uint16_le(clientCon->out_s, 4); /* size */
-        clientCon->begin = TRUE;
-        clientCon->count = 1;
+        return 0;
     }
+    init_stream(clientCon->out_s, 0);
+    s_push_layer(clientCon->out_s, iso_hdr, 8);
+    out_uint16_le(clientCon->out_s, 1); /* begin update */
+    out_uint16_le(clientCon->out_s, 4); /* size */
+    clientCon->begin = TRUE;
+    clientCon->count = 1;
 
     return 0;
 }
