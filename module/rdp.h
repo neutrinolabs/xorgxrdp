@@ -284,6 +284,10 @@ struct _rdpRec
     int disconnect_timeout_s;
     int disconnect_time_ms;
 
+    OsTimerPtr idleDisconnectTimer;
+    int idle_disconnect_timeout_s;
+    time_t last_event_time;
+
     int conNumber;
 
     struct _rdpCounts counts;

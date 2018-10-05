@@ -101,6 +101,8 @@ static int g_rdp_opcodes[16] =
 
 static int
 rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon);
+static CARD32
+rdpDeferredIdleDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg);
 
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
 
@@ -208,6 +210,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     LLOGLN(0, ("rdpClientConGotConnection:"));
     clientCon = g_new0(rdpClientCon, 1);
     clientCon->dev = dev;
+    dev->last_event_time = time(0);
     dev->do_dirty_ons = 1;
 
     make_stream(clientCon->in_s);
@@ -244,6 +247,20 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
         dev->clientConTail->connected = FALSE;
     }
 #endif
+
+    /* set idle timer to disconnect */
+    if (dev->idle_disconnect_timeout_s > 0)
+    {
+        LLOGLN(0, ("rdpClientConGetConnection: "
+                   "engaging idle timer, timeout [%d] sec", dev->idle_disconnect_timeout_s));
+        dev->idleDisconnectTimer = TimerSet(dev->idleDisconnectTimer, 0, 1000 * 1,
+                                            rdpDeferredIdleDisconnectCallback, dev);
+    }
+    else
+    {
+        LLOGLN(0, ("rdpClientConGetConnection: "
+                   "idle_disconnect_timeout set to non-positive value, idle timer turned off"));
+    }
 
     rdpAddClientConToDev(dev, clientCon);
 
@@ -294,12 +311,74 @@ rdpDeferredDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
 }
 
 /*****************************************************************************/
+static CARD32
+rdpDeferredIdleDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
+{
+    LLOGLN(10, ("rdpDeferredIdleDisconnectCallback:"));
+
+    rdpPtr dev;
+    time_t current_time;
+
+    dev = (rdpPtr) arg;
+    current_time = time(0);
+
+    if (dev->idle_disconnect_timeout_s <= 0)
+    {
+        /* should not reach here */
+        LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: timeout set to non-positive value, disengaging timer"));
+        goto cancel_timer;
+    }
+
+    if (dev->last_event_time > now)
+    {
+        LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: time has gone backwards, resetting"));
+        dev->last_event_time = current_time;
+        goto next_timer;
+    }
+
+    if (current_time - dev->last_event_time > dev->idle_disconnect_timeout_s)
+    {
+        LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: session has been idle for %d seconds, disconnecting",
+                    dev->idle_disconnect_timeout_s));
+
+        /* disconnect all clients */
+        while (dev->clientConHead != NULL)
+        {
+            rdpClientConDisconnect(dev, dev->clientConHead);
+        }
+
+        LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: disconnected idle session"));
+        goto cancel_timer;
+    }
+
+next_timer:
+    dev->idleDisconnectTimer = TimerSet(dev->idleDisconnectTimer, 0, 1000 * 1,
+                                        rdpDeferredIdleDisconnectCallback, dev);
+    return 0;
+
+cancel_timer:
+    TimerCancel(dev->idleDisconnectTimer);
+    TimerFree(dev->idleDisconnectTimer);
+    dev->idleDisconnectTimer = NULL;
+    LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: idle timer disengaged"));
+    return 0;
+}
+/*****************************************************************************/
 static int
 rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
 {
     int index;
 
     LLOGLN(0, ("rdpClientConDisconnect:"));
+
+    if (dev->idleDisconnectTimer != NULL && dev->idle_disconnect_timeout_s > 0)
+    {
+        LLOGLN(0, ("rdpClientConDisconnect: disconnected, idle timer disengaged"));
+        TimerCancel(dev->idleDisconnectTimer);
+        TimerFree(dev->idleDisconnectTimer);
+        dev->idleDisconnectTimer = NULL;
+    }
+
     if (dev->do_kill_disconnected)
     {
         if (dev->disconnect_scheduled == FALSE)
@@ -1273,6 +1352,21 @@ rdpClientConInit(rdpPtr dev)
         rdpClientConAddEnabledDevice(dev->pScreen, dev->disconnect_sck);
     }
 
+    /* disconnect idle */
+    ptext = getenv("XRDP_SESMAN_MAX_IDLE_TIME");
+    if (ptext != 0)
+    {
+        i = atoi(ptext);
+        if (i > 0)
+        {
+            dev->idle_disconnect_timeout_s = i;
+        }
+
+    }
+    LLOGLN(0, ("rdpClientConInit: disconnect idle session after [%d] sec",
+               dev->idle_disconnect_timeout_s));
+
+    /* kill disconnected */
     ptext = getenv("XRDP_SESMAN_MAX_DISC_TIME");
     if (ptext != 0)
     {
@@ -1298,7 +1392,7 @@ rdpClientConInit(rdpPtr dev)
         dev->disconnect_timeout_s = 60;
     }
 
-    LLOGLN(0, ("rdpClientConInit: kill disconnected [%d] timeout [%d] sec\n",
+    LLOGLN(0, ("rdpClientConInit: kill disconnected [%d] timeout [%d] sec",
                dev->do_kill_disconnected, dev->disconnect_timeout_s));
 
 
