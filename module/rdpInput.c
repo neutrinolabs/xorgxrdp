@@ -98,6 +98,8 @@ rdpInputKeyboardEvent(rdpPtr dev, int msg,
                       long param1, long param2,
                       long param3, long param4)
 {
+    dev->last_event_time = time(0);
+
     if (g_input_proc[0].proc != 0)
     {
         return g_input_proc[0].proc(dev, msg, param1, param2, param3, param4);
@@ -111,6 +113,8 @@ rdpInputMouseEvent(rdpPtr dev, int msg,
                    long param1, long param2,
                    long param3, long param4)
 {
+    dev->last_event_time = time(0);
+
     if (g_input_proc[1].proc != 0)
     {
         return g_input_proc[1].proc(dev, msg, param1, param2, param3, param4);
