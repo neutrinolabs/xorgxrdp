@@ -38,7 +38,6 @@ script:
   - ./configure
   - make
   - sudo checkinstall --install=no -y 
-  - ls
   - wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
   - bash upload.sh *.deb
 
