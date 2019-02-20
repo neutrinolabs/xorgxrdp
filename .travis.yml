@@ -1,4 +1,4 @@
-sudo: false
+sudo: true
 
 language: c
 
@@ -33,6 +33,14 @@ script:
   - make CFLAGS="$CFLAGS -O2 -Wall -Wwrite-strings -Werror"
   - make check
   - test -z "$DISTCHECK" || make distcheck
+  - sudo apt-get install git autoconf libtool pkg-config gcc g++ make  libssl-dev libpam0g-dev libjpeg-dev libx11-dev libxfixes-dev libxrandr-dev  flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev libmp3lame-dev nasm libpixman-1-dev xserver-xorg-dev checkinstall -y
+  - ./bootstrap
+  - ./configure
+  - make
+  - sudo checkinstall --install=no -y 
+  - ls
+  - wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
+  - bash upload.sh *.deb
 
 after_script:
  - for f in tests/*.log; do echo $f; cat -n $f; done
