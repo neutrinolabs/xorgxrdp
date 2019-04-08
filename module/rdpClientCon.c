@@ -1063,6 +1063,35 @@ rdpClientConProcessMsgClientRegionEx(rdpPtr dev, rdpClientCon *clientCon)
 
 /******************************************************************************/
 static int
+rdpClientConProcessMsgClientSuppressOutput(rdpPtr dev, rdpClientCon *clientCon)
+{
+    int suppress;
+    int left;
+    int top;
+    int right;
+    int bottom;
+    struct stream *s;
+
+    s = clientCon->in_s;
+    in_uint32_le(s, suppress);
+    in_uint32_le(s, left);
+    in_uint32_le(s, top);
+    in_uint32_le(s, right);
+    in_uint32_le(s, bottom);
+    LLOGLN(10, ("rdpClientConProcessMsgClientSuppressOutput: "
+           "suppress %d left %d top %d right %d bottom %d",
+           suppress, left, top, right, bottom));
+    clientCon->suppress_output = suppress;
+    if (suppress == 0)
+    {
+        rdpClientConAddDirtyScreen(dev, clientCon, left, top,
+                                   right - left, bottom - top);
+    }
+    return 0;
+}
+
+/******************************************************************************/
+static int
 rdpClientConProcessMsg(rdpPtr dev, rdpClientCon *clientCon)
 {
     int msg_type;
@@ -1086,7 +1115,12 @@ rdpClientConProcessMsg(rdpPtr dev, rdpClientCon *clientCon)
         case 106: /* client region ex */
             rdpClientConProcessMsgClientRegionEx(dev, clientCon);
             break;
+        case 108: /* client suppress output */
+            rdpClientConProcessMsgClientSuppressOutput(dev, clientCon);
+            break;
         default:
+            LLOGLN(0, ("rdpClientConProcessMsg: unknown msg_type %d",
+                   msg_type));
             break;
     }
 
@@ -2383,7 +2417,12 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
 
     LLOGLN(10, ("rdpDeferredUpdateCallback:"));
     clientCon = (rdpClientCon *) arg;
-
+    clientCon->updateScheduled = FALSE;
+    if (clientCon->suppress_output)
+    {
+        LLOGLN(10, ("rdpDeferredUpdateCallback: suppress_output set"));
+        return 0;
+    }
     if ((clientCon->rect_id > clientCon->rect_id_ack) ||
         /* do not allow captures until we have the client_info */
         clientCon->client_info.size == 0)
@@ -2394,6 +2433,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, 40,
                                           rdpDeferredUpdateCallback,
                                           clientCon);
+        clientCon->updateScheduled = TRUE;
         return 0;
     }
     else
@@ -2405,7 +2445,6 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
            "rdp_Bpp %d screen width %d screen height %d",
            clientCon->rdp_width, clientCon->rdp_height, clientCon->rdp_Bpp,
            id.width, id.height));
-    clientCon->updateScheduled = FALSE;
     if (clientCon->dev->monitorCount < 1)
     {
         dirty_extents = *rdpRegionExtents(clientCon->dirtyRegion);
