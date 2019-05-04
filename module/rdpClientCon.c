@@ -210,7 +210,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     LLOGLN(0, ("rdpClientConGotConnection:"));
     clientCon = g_new0(rdpClientCon, 1);
     clientCon->dev = dev;
-    dev->last_event_time = time(0);
+    dev->last_event_time_ms = GetTimeInMillis();
     dev->do_dirty_ons = 1;
 
     make_stream(clientCon->in_s);
@@ -253,7 +253,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     {
         LLOGLN(0, ("rdpClientConGetConnection: "
                    "engaging idle timer, timeout [%d] sec", dev->idle_disconnect_timeout_s));
-        dev->idleDisconnectTimer = TimerSet(dev->idleDisconnectTimer, 0, 1000 * 1,
+        dev->idleDisconnectTimer = TimerSet(dev->idleDisconnectTimer, 0, dev->idle_disconnect_timeout_s * 1000,
                                             rdpDeferredIdleDisconnectCallback, dev);
     }
     else
@@ -274,7 +274,6 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
 static CARD32
 rdpDeferredDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
 {
-    CARD32 lnow_ms;
     rdpPtr dev;
 
     dev = (rdpPtr) arg;
@@ -297,8 +296,7 @@ rdpDeferredDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     {
         LLOGLN(10, ("rdpDeferredDisconnectCallback: not connected"));
     }
-    lnow_ms = GetTimeInMillis();
-    if (lnow_ms - dev->disconnect_time_ms > dev->disconnect_timeout_s * 1000)
+    if (now - dev->disconnect_time_ms > dev->disconnect_timeout_s * 1000)
     {
         LLOGLN(0, ("rdpDeferredDisconnectCallback: "
                    "disconnect timeout exceeded, exiting"));
@@ -317,26 +315,16 @@ rdpDeferredIdleDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     LLOGLN(10, ("rdpDeferredIdleDisconnectCallback:"));
 
     rdpPtr dev;
-    time_t current_time;
 
     dev = (rdpPtr) arg;
-    current_time = time(0);
 
-    if (dev->idle_disconnect_timeout_s <= 0)
-    {
-        /* should not reach here */
-        LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: timeout set to non-positive value, disengaging timer"));
-        goto cancel_timer;
-    }
+    CARD32 millis_since_last_event;
 
-    if (dev->last_event_time > now)
-    {
-        LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: time has gone backwards, resetting"));
-        dev->last_event_time = current_time;
-        goto next_timer;
-    }
+    /* how many millis was the last event ago? */
+    millis_since_last_event = now - dev->last_event_time_ms;
 
-    if (current_time - dev->last_event_time > dev->idle_disconnect_timeout_s)
+    /* we MUST compare to equal otherwise we could restart the idle timer with 0! */
+    if (millis_since_last_event >= (dev->idle_disconnect_timeout_s * 1000))
     {
         LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: session has been idle for %d seconds, disconnecting",
                     dev->idle_disconnect_timeout_s));
@@ -348,19 +336,17 @@ rdpDeferredIdleDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         }
 
         LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: disconnected idle session"));
-        goto cancel_timer;
+
+        TimerCancel(dev->idleDisconnectTimer);
+        TimerFree(dev->idleDisconnectTimer);
+        dev->idleDisconnectTimer = NULL;
+        LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: idle timer disengaged"));
+        return 0;
     }
 
-next_timer:
-    dev->idleDisconnectTimer = TimerSet(dev->idleDisconnectTimer, 0, 1000 * 1,
+    /* restart the idle timer with last_event + idle timeout */
+    dev->idleDisconnectTimer = TimerSet(dev->idleDisconnectTimer, 0, (dev->idle_disconnect_timeout_s * 1000) - millis_since_last_event,
                                         rdpDeferredIdleDisconnectCallback, dev);
-    return 0;
-
-cancel_timer:
-    TimerCancel(dev->idleDisconnectTimer);
-    TimerFree(dev->idleDisconnectTimer);
-    dev->idleDisconnectTimer = NULL;
-    LLOGLN(0, ("rdpDeferredIdleDisconnectCallback: idle timer disengaged"));
     return 0;
 }
 /*****************************************************************************/
