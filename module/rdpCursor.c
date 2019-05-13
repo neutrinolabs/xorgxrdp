@@ -245,7 +245,11 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
     int bpp;
 
     LLOGLN(10, ("rdpSpriteSetCursorCon:"));
-
+    if (clientCon->suppress_output)
+    {
+        LLOGLN(10, ("rdpSpriteSetCursorCon: suppress_output set"));
+        return;
+    }
     w = pCurs->bits->width;
     h = pCurs->bits->height;
     if ((pCurs->bits->argb != 0) &&
