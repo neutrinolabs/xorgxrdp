@@ -282,11 +282,11 @@ struct _rdpRec
 
     OsTimerPtr disconnectTimer;
     int disconnect_timeout_s;
-    int disconnect_time_ms;
+    CARD32 disconnect_time_ms;
 
     OsTimerPtr idleDisconnectTimer;
     int idle_disconnect_timeout_s;
-    time_t last_event_time;
+    CARD32 last_event_time_ms;
 
     int conNumber;
 
