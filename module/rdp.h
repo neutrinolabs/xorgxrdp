@@ -305,9 +305,6 @@ struct _rdpRec
     copy_box_dst2_proc a8r8g8b8_to_nv12_box;
 
     /* multimon */
-    int extra_outputs;
-    RRCrtcPtr crtc[16];
-    RROutputPtr output[16];
     struct monitor_info minfo[16]; /* client monitor data */
     int doMultimon;
     int monitorCount;
