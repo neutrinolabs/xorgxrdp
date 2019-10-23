@@ -234,11 +234,13 @@ rdpInputMouse(rdpPtr dev, int msg,
 static int
 rdpmouseControl(DeviceIntPtr device, int what)
 {
-    BYTE map[9];
+#define NBUTTONS 9
+    BYTE map[NBUTTONS + 1]; /* Indexed from 1 */
     DevicePtr pDev;
-    Atom btn_labels[9];
+    Atom btn_labels[NBUTTONS];
     Atom axes_labels[2];
     rdpPtr dev;
+    int i;
 
     LLOGLN(0, ("rdpmouseControl: what %d", what));
     pDev = (DevicePtr)device;
@@ -247,15 +249,10 @@ rdpmouseControl(DeviceIntPtr device, int what)
     {
         case DEVICE_INIT:
             rdpmouseDeviceInit();
-            map[0] = 0;
-            map[1] = 1;
-            map[2] = 2;
-            map[3] = 3;
-            map[4] = 4;
-            map[5] = 5;
-            map[6] = 6;
-            map[7] = 7;
-            map[8] = 8;
+            for (i = 0 ; i <= NBUTTONS; ++i) /* element 0 not used */
+            {
+                map[i] = i;
+            }
 
             btn_labels[0] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_LEFT);
             btn_labels[1] = XIGetKnownProperty(BTN_LABEL_PROP_BTN_MIDDLE);
@@ -270,7 +267,7 @@ rdpmouseControl(DeviceIntPtr device, int what)
             axes_labels[0] = XIGetKnownProperty(AXIS_LABEL_PROP_REL_X);
             axes_labels[1] = XIGetKnownProperty(AXIS_LABEL_PROP_REL_Y);
 
-            InitPointerDeviceStruct(pDev, map, 9, btn_labels, rdpmouseCtrl,
+            InitPointerDeviceStruct(pDev, map, NBUTTONS, btn_labels, rdpmouseCtrl,
                                     GetMotionHistorySize(), 2, axes_labels);
             dev = rdpGetDevFromScreen(NULL);
             dev->pointer.device = device;
@@ -295,6 +292,7 @@ rdpmouseControl(DeviceIntPtr device, int what)
     }
 
     return Success;
+#undef NBUTTONS
 }
 
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 9, 0, 1, 0)

@@ -287,7 +287,11 @@ struct _rdpRec
 
     OsTimerPtr disconnectTimer;
     int disconnect_timeout_s;
-    int disconnect_time_ms;
+    CARD32 disconnect_time_ms;
+
+    OsTimerPtr idleDisconnectTimer;
+    int idle_disconnect_timeout_s;
+    CARD32 last_event_time_ms;
 
     int conNumber;
 
@@ -306,9 +310,6 @@ struct _rdpRec
     copy_box_dst2_proc a8r8g8b8_to_nv12_box;
 
     /* multimon */
-    int extra_outputs;
-    RRCrtcPtr crtc[16];
-    RROutputPtr output[16];
     struct monitor_info minfo[16]; /* client monitor data */
     int doMultimon;
     int monitorCount;

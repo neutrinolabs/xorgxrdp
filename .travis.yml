@@ -33,3 +33,6 @@ script:
   - make CFLAGS="$CFLAGS -O2 -Wall -Wwrite-strings -Werror"
   - make check
   - test -z "$DISTCHECK" || make distcheck
+
+after_script:
+ - for f in tests/*.log; do echo $f; cat -n $f; done
