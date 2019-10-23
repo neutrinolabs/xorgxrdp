@@ -319,6 +319,8 @@ struct _rdpRec
     void *xvPutImage;
     /* dri */
     int fd;
+    /* egl */
+    void *egl;
 };
 typedef struct _rdpRec rdpRec;
 typedef struct _rdpRec * rdpPtr;

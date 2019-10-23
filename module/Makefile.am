@@ -1,5 +1,6 @@
 EXTRA_DIST = common.asm nasm_lt.sh
 EXTRA_FLAGS =
+EXTRA_FILES =
 SUBDIRS =
 ASMLIB =
 
@@ -17,6 +18,7 @@ endif
 
 if WITH_GLAMOR
 EXTRA_FLAGS += -DXORGXRDP_GLAMOR -DGLAMOR_FOR_XORG
+EXTRA_FILES += rdpEgl.c rdpEgl.h
 endif
 
 AM_CFLAGS = \
@@ -86,6 +88,6 @@ rdpPolyText16.c rdpImageText8.c rdpImageText16.c rdpImageGlyphBlt.c \
 rdpPolyGlyphBlt.c rdpPushPixels.c rdpCursor.c rdpMain.c rdpRandR.c \
 rdpMisc.c rdpReg.c rdpComposite.c rdpGlyphs.c rdpPixmap.c rdpInput.c \
 rdpClientCon.c rdpCapture.c rdpTrapezoids.c rdpTriangles.c \
-rdpCompositeRects.c rdpXv.c rdpSimd.c
+rdpCompositeRects.c rdpXv.c rdpSimd.c $(EXTRA_FILES)
 
 libxorgxrdp_la_LIBADD = $(ASMLIB)

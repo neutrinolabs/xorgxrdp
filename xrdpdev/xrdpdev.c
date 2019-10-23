@@ -66,6 +66,7 @@ This is the main driver file
 #include "xrdpdri3.h"
 
 #if defined(XORGXRDP_GLAMOR)
+#include "rdpEgl.h"
 #include <glamor.h>
 /* use environment variable XORGXRDP_DRM_DEVICE to override
  * also read from xorg.conf file */
@@ -732,13 +733,20 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     dev->Bpp = 4;
     dev->bitsPerPixel = 32;
 
-#if defined(XvExtension) && XvExtension
+#if defined(XvExtension)
     /* XVideo */
     if (!rdpXvInit(pScreen, pScrn))
     {
         LLOGLN(0, ("rdpScreenInit: rdpXvInit failed"));
     }
 #endif
+
+    if (dev->glamor)
+    {
+#if defined(XORGXRDP_GLAMOR)
+        dev->egl = rdpEglCreate(pScreen);
+#endif
+    }
 
     LLOGLN(0, ("rdpScreenInit: out"));
     return TRUE;
