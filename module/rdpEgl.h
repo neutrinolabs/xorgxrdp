@@ -28,5 +28,8 @@ extern _X_EXPORT void *
 rdpEglCreate(ScreenPtr screen);
 extern _X_EXPORT int
 rdpEglDestroy(void *eglptr);
+extern _X_EXPORT Bool
+rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
+                 int *num_out_rects, struct image_data *id);
 
 #endif

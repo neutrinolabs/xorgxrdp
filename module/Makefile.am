@@ -3,6 +3,7 @@ EXTRA_FLAGS =
 EXTRA_FILES =
 SUBDIRS =
 ASMLIB =
+EGLLIB =
 
 if WITH_SIMD_AMD64
 EXTRA_FLAGS += -DSIMD_USE_ACCEL=1
@@ -19,6 +20,7 @@ endif
 if WITH_GLAMOR
 EXTRA_FLAGS += -DXORGXRDP_GLAMOR -DGLAMOR_FOR_XORG
 EXTRA_FILES += rdpEgl.c rdpEgl.h
+EGLLIB += -lepoxy
 endif
 
 AM_CFLAGS = \
@@ -90,4 +92,4 @@ rdpMisc.c rdpReg.c rdpComposite.c rdpGlyphs.c rdpPixmap.c rdpInput.c \
 rdpClientCon.c rdpCapture.c rdpTrapezoids.c rdpTriangles.c \
 rdpCompositeRects.c rdpXv.c rdpSimd.c $(EXTRA_FILES)
 
-libxorgxrdp_la_LIBADD = $(ASMLIB)
+libxorgxrdp_la_LIBADD = $(ASMLIB) $(EGLLIB)
