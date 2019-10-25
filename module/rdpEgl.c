@@ -163,6 +163,13 @@ rdpEglDestroy(void *eglptr)
 }
 
 /******************************************************************************/
+static int
+rdpEglRfxYuvToRgb(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex)
+{
+    return 0;
+}
+
+/******************************************************************************/
 Bool
 rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                  int *num_out_rects, struct image_data *id)
@@ -171,6 +178,7 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int height;
     int out_rect_index;
     uint32_t tex;
+    uint32_t yuv_tex;
     BoxRec extents_rect;
     BoxRec extents_rect1;
     ScreenPtr pScreen;
@@ -178,8 +186,12 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     PixmapPtr pixmap;
     GCPtr copyGC;
     ChangeGCVal tmpval[1];
+    rdpPtr dev;
+    struct rdp_egl *egl;
 
-    pScreen = clientCon->dev->pScreen;
+    dev = clientCon->dev;
+    pScreen = dev->pScreen;
+    egl = (struct rdp_egl *) (dev->egl);
     screen_pixmap = pScreen->GetScreenPixmap(pScreen);
     if (screen_pixmap == NULL)
     {
@@ -199,7 +211,7 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     width = extents_rect1.x2 - extents_rect1.x1;
     height = extents_rect1.y2 - extents_rect1.y1;
     LLOGLN(0, ("rdpEglCaptureRfx: width %d height %d", width, height));
-    copyGC = GetScratchGC(clientCon->dev->depth, pScreen);
+    copyGC = GetScratchGC(dev->depth, pScreen);
     if (copyGC != NULL)
     {
         tmpval[0].val = GXcopy;
@@ -214,18 +226,21 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                                   extents_rect1.x1, extents_rect1.y1,
                                   width, height, 0, 0);
             tex = glamor_get_pixmap_texture(pixmap);
-            LLOGLN(0, ("rdpEglCaptureRfx: tex 0x%8.8x", tex));
+            glGenTextures(1, &yuv_tex);
+            LLOGLN(0, ("rdpEglCaptureRfx: tex 0x%8.8x yuv_tex 0x%8.8x", tex, yuv_tex));
+            rdpEglRfxYuvToRgb(egl, tex, yuv_tex);
+            glDeleteTextures(1, &yuv_tex);
             pScreen->DestroyPixmap(pixmap);
         }
         else
         {
-            LLOGLN(0, ("rdpEglCaptureRfx: GetScratchGC failed"));
+            LLOGLN(0, ("rdpEglCaptureRfx: CreatePixmap failed"));
         }
         FreeScratchGC(copyGC);
     }
     else
     {
-        LLOGLN(0, ("rdpEglCaptureRfx: CreatePixmap failed"));
+        LLOGLN(0, ("rdpEglCaptureRfx: GetScratchGC failed"));
     }
     *num_out_rects = out_rect_index;
     return TRUE;
