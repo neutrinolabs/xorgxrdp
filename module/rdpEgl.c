@@ -170,13 +170,78 @@ rdpEglRfxYuvToRgb(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex)
 }
 
 /******************************************************************************/
+static int
+rdpEglOut(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr out_rects,
+          int *num_out_rects, struct image_data *id, uint32_t tex,
+          BoxPtr prect)
+{
+    GLuint fb[1];
+    int x;
+    int y;
+    int lx;
+    int ly;
+    int dst_stride;
+    int rcode;
+    int out_rect_index;
+    BoxRec rect;
+    uint8_t *dst;
+    int *pixels;
+
+    glGenFramebuffers(1, fb);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb[0]);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+
+    dst = id->shmem_pixels;
+    dst_stride = clientCon->cap_stride_bytes;
+    out_rect_index = 0;
+
+    y = prect->y1;
+    while (y < prect->y2)
+    {
+        x = prect->x1;
+        while (x < prect->x2)
+        {
+            rect.x1 = x;
+            rect.y1 = y;
+            rect.x2 = rect.x1 + 64;
+            rect.y2 = rect.y1 + 64;
+            LLOGLN(10, ("rdpEglOut: x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.y1, rect.x2, rect.y2));
+            rcode = rdpRegionContainsRect(in_reg, &rect);
+            if (rcode != rgnOUT)
+            {
+                pixels = (int *) (dst + (y << 8) * (dst_stride >> 8) + (x << 8));
+                lx = x - prect->x1;
+                ly = y - prect->y1;
+                if (rcode == rgnPART)
+                {
+                    glReadPixels(lx, ly, 64, 64, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+                }
+                else /* rgnIN */
+                {
+                    glReadPixels(lx, ly, 64, 64, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+                }
+            }
+            out_rects[out_rect_index] = rect;
+            out_rect_index++;
+            x += 64;
+        }
+        y += 64;
+    }
+
+    *num_out_rects = out_rect_index;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, fb);
+    return 0;
+}
+
+/******************************************************************************/
 Bool
 rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                  int *num_out_rects, struct image_data *id)
 {
     int width;
     int height;
-    int out_rect_index;
     uint32_t tex;
     uint32_t yuv_tex;
     BoxRec extents_rect;
@@ -202,7 +267,6 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     {
         return FALSE;
     }
-    out_rect_index = 0;
     extents_rect = *rdpRegionExtents(in_reg);
     extents_rect1.x1 = extents_rect.x1 & ~63;
     extents_rect1.y1 = extents_rect.y1 & ~63;
@@ -229,6 +293,7 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             glGenTextures(1, &yuv_tex);
             LLOGLN(0, ("rdpEglCaptureRfx: tex 0x%8.8x yuv_tex 0x%8.8x", tex, yuv_tex));
             rdpEglRfxYuvToRgb(egl, tex, yuv_tex);
+            rdpEglOut(clientCon, in_reg, *out_rects, num_out_rects, id, tex, &extents_rect1);
             glDeleteTextures(1, &yuv_tex);
             pScreen->DestroyPixmap(pixmap);
         }
@@ -242,6 +307,5 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     {
         LLOGLN(0, ("rdpEglCaptureRfx: GetScratchGC failed"));
     }
-    *num_out_rects = out_rect_index;
     return TRUE;
 }
