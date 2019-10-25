@@ -50,6 +50,7 @@ EGL
 #include "rdpClientCon.h"
 #include "rdpMisc.h"
 #include "rdpEgl.h"
+#include "rdpReg.h"
 
 struct rdp_egl
 {
@@ -166,5 +167,66 @@ Bool
 rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                  int *num_out_rects, struct image_data *id)
 {
-    return 0;
+    int width;
+    int height;
+    int out_rect_index;
+    uint32_t tex;
+    BoxRec extents_rect;
+    BoxRec extents_rect1;
+    ScreenPtr pScreen;
+    PixmapPtr screen_pixmap;
+    PixmapPtr pixmap;
+    GCPtr copyGC;
+    ChangeGCVal tmpval[1];
+
+    pScreen = clientCon->dev->pScreen;
+    screen_pixmap = pScreen->GetScreenPixmap(pScreen);
+    if (screen_pixmap == NULL)
+    {
+        return FALSE;
+    }
+    *out_rects = g_new(BoxRec, RDP_MAX_TILES);
+    if (*out_rects == NULL)
+    {
+        return FALSE;
+    }
+    out_rect_index = 0;
+    extents_rect = *rdpRegionExtents(in_reg);
+    extents_rect1.x1 = extents_rect.x1 & ~63;
+    extents_rect1.y1 = extents_rect.y1 & ~63;
+    extents_rect1.x2 = (extents_rect.x2 + 63) & ~63;
+    extents_rect1.y2 = (extents_rect.y2 + 63) & ~63;
+    width = extents_rect1.x2 - extents_rect1.x1;
+    height = extents_rect1.y2 - extents_rect1.y1;
+    LLOGLN(0, ("rdpEglCaptureRfx: width %d height %d", width, height));
+    copyGC = GetScratchGC(clientCon->dev->depth, pScreen);
+    if (copyGC != NULL)
+    {
+        tmpval[0].val = GXcopy;
+        ChangeGC(NullClient, copyGC, GCFunction, tmpval);
+        pixmap = pScreen->CreatePixmap(pScreen, width, height,
+                                       pScreen->rootDepth,
+                                       GLAMOR_CREATE_NO_LARGE);
+        if (pixmap != NULL)
+        {
+            copyGC->ops->CopyArea(&(screen_pixmap->drawable),
+                                  &(pixmap->drawable), copyGC,
+                                  extents_rect1.x1, extents_rect1.y1,
+                                  width, height, 0, 0);
+            tex = glamor_get_pixmap_texture(pixmap);
+            LLOGLN(0, ("rdpEglCaptureRfx: tex 0x%8.8x", tex));
+            pScreen->DestroyPixmap(pixmap);
+        }
+        else
+        {
+            LLOGLN(0, ("rdpEglCaptureRfx: GetScratchGC failed"));
+        }
+        FreeScratchGC(copyGC);
+    }
+    else
+    {
+        LLOGLN(0, ("rdpEglCaptureRfx: CreatePixmap failed"));
+    }
+    *num_out_rects = out_rect_index;
+    return TRUE;
 }

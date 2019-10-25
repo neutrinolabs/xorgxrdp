@@ -41,6 +41,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XRDP_KEYB_NAME "XRDPKEYB"
 #define XRDP_VERSION 1000
 
+#define RDP_MAX_TILES 4096
+
 #define COLOR8(r, g, b) \
     ((((r) >> 5) << 0)  | (((g) >> 5) << 3) | (((b) >> 6) << 6))
 #define COLOR15(r, g, b) \
