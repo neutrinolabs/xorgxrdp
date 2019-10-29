@@ -56,14 +56,16 @@ struct rdp_egl
 {
     GLuint quad_vao[1];
     GLuint quad_vbo[1];
-    GLuint vertex_shader[2];
-    GLuint fragment_shader[2];
-    GLuint program[2];
+    GLuint vertex_shader[3];
+    GLuint fragment_shader[3];
+    GLuint program[3];
     GLuint fb[1];
     GLint copy_tex_loc;
     GLint copy_tex_size_loc;
     GLint yuv_tex_loc;
     GLint yuv_tex_size_loc;
+    GLint yuvlp_tex_loc;
+    GLint yuvlp_tex_size_loc;
 };
 
 static const GLfloat g_vertices[] =
@@ -117,6 +119,72 @@ void main()\n\
                   pixel.a);\n\
     pixel2 = clamp(pixel1, 0.0, 1.0);\n\
     gl_FragColor = pixel2;\n\
+}\n";
+static const GLchar g_fs_rfx_yuv_to_yuvlp[] =
+"\
+#version 330 core\n\
+uniform sampler2D tex;\n\
+uniform vec2 tex_size;\n\
+vec4 getpixel(int x1, int y1, int offset)\n\
+{\n\
+    int x;\n\
+    int y;\n\
+    vec2 xy;\n\
+    x = x1 + offset % 64;\n\
+    y = y1 + offset / 64;\n\
+    xy.x = x + 0.5;\n\
+    xy.y = y + 0.5;\n\
+    return texture(tex, xy / tex_size);\n\
+}\n\
+void main()\n\
+{\n\
+    int x;\n\
+    int y;\n\
+    int x1;\n\
+    int y1;\n\
+    int x2;\n\
+    int y2;\n\
+    int offset;\n\
+    vec4 pixel1;\n\
+    x = int(gl_FragCoord.x);\n\
+    y = int(gl_FragCoord.y);\n\
+    x1 = x & ~63;\n\
+    y1 = y & ~63;\n\
+    x2 = x - x1;\n\
+    y2 = y - y1;\n\
+    offset = y2 * 64 + x2;\n\
+    if (offset < 1024)\n\
+    {\n\
+        pixel1.b = getpixel(x1, y1, offset * 4 + 0).r;\n\
+        pixel1.g = getpixel(x1, y1, offset * 4 + 1).r;\n\
+        pixel1.r = getpixel(x1, y1, offset * 4 + 2).r;\n\
+        pixel1.a = getpixel(x1, y1, offset * 4 + 3).r;\n\
+    }\n\
+    else if (offset < 2048)\n\
+    {\n\
+        offset -= 1024;\n\
+        pixel1.b = getpixel(x1, y1, offset * 4 + 0).g;\n\
+        pixel1.g = getpixel(x1, y1, offset * 4 + 1).g;\n\
+        pixel1.r = getpixel(x1, y1, offset * 4 + 2).g;\n\
+        pixel1.a = getpixel(x1, y1, offset * 4 + 3).g;\n\
+    }\n\
+    else if (offset < 3072)\n\
+    {\n\
+        offset -= 2048;\n\
+        pixel1.b = getpixel(x1, y1, offset * 4 + 0).b;\n\
+        pixel1.g = getpixel(x1, y1, offset * 4 + 1).b;\n\
+        pixel1.r = getpixel(x1, y1, offset * 4 + 2).b;\n\
+        pixel1.a = getpixel(x1, y1, offset * 4 + 3).b;\n\
+    }\n\
+    else\n\
+    {\n\
+        offset -= 3072;\n\
+        pixel1.b = getpixel(x1, y1, offset * 4 + 0).a;\n\
+        pixel1.g = getpixel(x1, y1, offset * 4 + 1).a;\n\
+        pixel1.r = getpixel(x1, y1, offset * 4 + 2).a;\n\
+        pixel1.a = getpixel(x1, y1, offset * 4 + 3).a;\n\
+    }\n\
+    gl_FragColor = pixel1;\n\
 }\n";
 
 #define LOG_LEVEL 1
@@ -199,6 +267,31 @@ rdpEglCreate(ScreenPtr screen)
     egl->yuv_tex_size_loc = glGetUniformLocation(egl->program[1], "tex_size");
     LLOGLN(0, ("rdpEglCreate: yuv_tex_loc %d yuv_tex_size_loc %d",
            egl->yuv_tex_loc, egl->yuv_tex_size_loc));
+    /* create yuvlp shader */
+    vsource = g_vs;
+    fsource = g_fs_rfx_yuv_to_yuvlp;
+    egl->vertex_shader[2] = glCreateShader(GL_VERTEX_SHADER);
+    egl->fragment_shader[2] = glCreateShader(GL_FRAGMENT_SHADER);
+    vlength = strlen(vsource);
+    flength = strlen(fsource);
+    glShaderSource(egl->vertex_shader[2], 1, &vsource, &vlength);
+    glShaderSource(egl->fragment_shader[2], 1, &fsource, &flength);
+    glCompileShader(egl->vertex_shader[2]);
+    glGetShaderiv(egl->vertex_shader[2], GL_COMPILE_STATUS, &compiled);
+    LLOGLN(0, ("rdpEglCreate: vertex_shader compiled %d", compiled));
+    glCompileShader(egl->fragment_shader[2]);
+    glGetShaderiv(egl->fragment_shader[2], GL_COMPILE_STATUS, &compiled);
+    LLOGLN(0, ("rdpEglCreate: fragment_shader compiled %d", compiled));
+    egl->program[2] = glCreateProgram();
+    glAttachShader(egl->program[2], egl->vertex_shader[2]);
+    glAttachShader(egl->program[2], egl->fragment_shader[2]);
+    glLinkProgram(egl->program[2]);
+    glGetProgramiv(egl->program[2], GL_LINK_STATUS, &linked);
+    LLOGLN(0, ("rdpEglCreate: linked %d", linked));
+    egl->yuvlp_tex_loc = glGetUniformLocation(egl->program[2], "tex");
+    egl->yuvlp_tex_size_loc = glGetUniformLocation(egl->program[2], "tex_size");
+    LLOGLN(0, ("rdpEglCreate: yuvlp_tex_loc %d yuvlp_tex_size_loc %d",
+           egl->yuvlp_tex_loc, egl->yuvlp_tex_size_loc));
     return egl;
 }
 
@@ -228,7 +321,8 @@ rdpEglRfxRgbToYuv(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &old_vertex_array);
     glBindTexture(GL_TEXTURE_2D, src_tex);
     glBindFramebuffer(GL_FRAMEBUFFER, egl->fb[0]);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst_tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, dst_tex, 0);
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
@@ -248,64 +342,32 @@ rdpEglRfxRgbToYuv(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
 
 /******************************************************************************/
 static int
-rdpCopyBox_ayuv_to_yuvalp(int dstx, int dsty, int srcx, int srcy,
-                          const uint8_t *src, int src_stride,
-                          uint8_t *dst, int dst_stride,
-                          BoxPtr rects, int num_rects)
+rdpEglRfxYuvToYuvlp(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
+                    GLint dst_width, GLint dst_height)
 {
-    const uint8_t *s8;
-    uint8_t *d8;
-    uint8_t *yptr;
-    uint8_t *uptr;
-    uint8_t *vptr;
-    uint8_t *aptr;
-    const uint32_t *s32;
-    int index;
-    int jndex;
-    int kndex;
-    int width;
-    int height;
-    uint32_t pixel;
-    uint8_t a;
-    int y;
-    int u;
-    int v;
-    BoxPtr box;
+    GLint old_vertex_array;
+    int status;
 
-    for (index = 0; index < num_rects; index++)
+    glActiveTexture(GL_TEXTURE0);
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &old_vertex_array);
+    glBindTexture(GL_TEXTURE_2D, src_tex);
+    glBindFramebuffer(GL_FRAMEBUFFER, egl->fb[0]);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, dst_tex, 0);
+    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        box = rects + index;
-        s8 = src + (box->y1 - srcy) * src_stride;
-        s8 += (box->x1 - srcx) * 4;
-        d8 = dst + (box->y1 - dsty) * 64;
-        d8 += box->x1 - dstx;
-        width = box->x2 - box->x1;
-        height = box->y2 - box->y1;
-        for (jndex = 0; jndex < height; jndex++)
-        {
-            s32 = (const uint32_t *) s8;
-            yptr = d8;
-            uptr = yptr + 64 * 64;
-            vptr = uptr + 64 * 64;
-            aptr = vptr + 64 * 64;
-            kndex = 0;
-            while (kndex < width)
-            {
-                pixel = *(s32++);
-                a = (pixel >> 24) & 0xff;
-                y = (pixel >> 16) & 0xff;
-                u = (pixel >>  8) & 0xff;
-                v = (pixel >>  0) & 0xff;
-                *(yptr++) = y;
-                *(uptr++) = u;
-                *(vptr++) = v;
-                *(aptr++) = a;
-                kndex++;
-            }
-            d8 += dst_stride;
-            s8 += src_stride;
-        }
+        LLOGLN(0, ("rdpEglRfxYuvToYuvlp: glCheckFramebufferStatus error"));
     }
+    glViewport(0, 0, dst_width, dst_height);
+    glUseProgram(egl->program[2]);
+    glBindVertexArray(egl->quad_vao[0]);
+    glUniform1i(egl->yuvlp_tex_loc, 0);
+    glUniform2f(egl->yuvlp_tex_size_loc, dst_width, dst_height);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindVertexArray(old_vertex_array);
     return 0;
 }
 
@@ -327,7 +389,6 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     BoxRec rect;
     uint8_t *dst;
     uint8_t *tile_dst;
-    void* pixel_data;
     int crc_offset;
     int crc_stride;
     int crc;
@@ -335,11 +396,6 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     RegionRec tile_reg;
     BoxPtr rects;
 
-    pixel_data = malloc(64 * 64 * 4);
-    if (pixel_data == NULL)
-    {
-        return 1;
-    }
     glBindFramebuffer(GL_FRAMEBUFFER, egl->fb[0]);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                            GL_TEXTURE_2D, tex, 0);
@@ -350,17 +406,18 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     }
     dst = id->shmem_pixels;
     dst_stride = clientCon->cap_stride_bytes;
-
+    /* check crc list size */
     crc_stride = (clientCon->dev->width + 63) / 64;
     num_crcs = crc_stride * ((clientCon->dev->height + 63) / 64);
     if (num_crcs != clientCon->num_rfx_crcs_alloc)
     {
+        LLOGLN(0, ("rdpEglOut: resize the crc list was %d now %d",
+               clientCon->num_rfx_crcs_alloc, num_crcs));
         /* resize the crc list */
         clientCon->num_rfx_crcs_alloc = num_crcs;
         free(clientCon->rfx_crcs);
         clientCon->rfx_crcs = g_new0(int, num_crcs);
     }
-
     out_rect_index = 0;
     y = tile_extents_rect->y1;
     while (y < tile_extents_rect->y2)
@@ -392,17 +449,13 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                     crc = crc_process_data(crc, rects,
                                            num_rects * sizeof(BoxRec));
                     glReadPixels(lx, ly, 64, 64, GL_BGRA,
-                                 GL_UNSIGNED_INT_8_8_8_8_REV, pixel_data);
-                    rdpCopyBox_ayuv_to_yuvalp(x, y, x, y, pixel_data, 64 * 4,
-                                              tile_dst, 64, rects, num_rects);
+                                 GL_UNSIGNED_INT_8_8_8_8_REV, tile_dst);
                     rdpRegionUninit(&tile_reg);
                 }
                 else /* rgnIN */
                 {
                     glReadPixels(lx, ly, 64, 64, GL_BGRA,
-                                 GL_UNSIGNED_INT_8_8_8_8_REV, pixel_data);
-                    rdpCopyBox_ayuv_to_yuvalp(x, y, x, y, pixel_data, 64 * 4,
-                                              tile_dst, 64, &rect, 1);
+                                 GL_UNSIGNED_INT_8_8_8_8_REV, tile_dst);
                 }
                 crc = crc_process_data(crc, tile_dst, 64 * 64 * 4);
                 crc = crc_end(crc);
@@ -435,7 +488,6 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     }
     *num_out_rects = out_rect_index;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    free(pixel_data);
     return 0;
 }
 
@@ -506,8 +558,9 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 LLOGLN(10, ("rdpEglCaptureRfx: tex 0x%8.8x yuv_tex 0x%8.8x",
                        tex, yuv_tex));
                 rdpEglRfxRgbToYuv(egl, tex, yuv_tex, width, height);
+                rdpEglRfxYuvToYuvlp(egl, yuv_tex, tex, width, height);
                 rdpEglOut(clientCon, egl, in_reg, *out_rects, num_out_rects,
-                          id, yuv_tex, &tile_extents_rect);
+                          id, tex, &tile_extents_rect);
                 pScreen->DestroyPixmap(yuv_pixmap);
             }
             pScreen->DestroyPixmap(pixmap);
