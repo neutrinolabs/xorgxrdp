@@ -432,7 +432,7 @@ rdpEglDestroy(void *eglptr)
 /******************************************************************************/
 static int
 rdpEglRfxRgbToYuv(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
-                  GLint dst_width, GLint dst_height)
+                  GLint width, GLint height)
 {
     GLint old_vertex_array;
     int status;
@@ -448,11 +448,11 @@ rdpEglRfxRgbToYuv(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
     {
         LLOGLN(0, ("rdpEglRfxYuvToRgb: glCheckFramebufferStatus error"));
     }
-    glViewport(0, 0, dst_width, dst_height);
+    glViewport(0, 0, width, height);
     glUseProgram(egl->program[1]);
     glBindVertexArray(egl->quad_vao[0]);
     glUniform1i(egl->tex_loc[1], 0);
-    glUniform2f(egl->tex_size_loc[1], dst_width, dst_height);
+    glUniform2f(egl->tex_size_loc[1], width, height);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -463,7 +463,7 @@ rdpEglRfxRgbToYuv(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
 /******************************************************************************/
 static int
 rdpEglRfxYuvToYuvlp(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
-                    GLint dst_width, GLint dst_height)
+                    GLint width, GLint height)
 {
     GLint old_vertex_array;
     int status;
@@ -479,11 +479,11 @@ rdpEglRfxYuvToYuvlp(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
     {
         LLOGLN(0, ("rdpEglRfxYuvToYuvlp: glCheckFramebufferStatus error"));
     }
-    glViewport(0, 0, dst_width, dst_height);
+    glViewport(0, 0, width, height);
     glUseProgram(egl->program[2]);
     glBindVertexArray(egl->quad_vao[0]);
     glUniform1i(egl->tex_loc[2], 0);
-    glUniform2f(egl->tex_size_loc[2], dst_width, dst_height);
+    glUniform2f(egl->tex_size_loc[2], width, height);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -494,11 +494,15 @@ rdpEglRfxYuvToYuvlp(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
 /******************************************************************************/
 static int
 rdpEglRfxCrc(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
-             GLint src_width, GLint src_height, int *crcs)
+             GLint width, GLint height, int *crcs)
 {
     GLint old_vertex_array;
     int status;
+    int w_div_64;
+    int h_div_64;
 
+    w_div_64 = width / 64;
+    h_div_64 = height / 64;
     glActiveTexture(GL_TEXTURE0);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &old_vertex_array);
     glBindTexture(GL_TEXTURE_2D, src_tex);
@@ -510,13 +514,13 @@ rdpEglRfxCrc(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
     {
         LLOGLN(0, ("rdpEglRfxCrc: glCheckFramebufferStatus error"));
     }
-    glViewport(0, 0, src_width / 64, src_height / 64);
+    glViewport(0, 0, w_div_64, h_div_64);
     glUseProgram(egl->program[3]);
     glBindVertexArray(egl->quad_vao[0]);
     glUniform1i(egl->tex_loc[3], 0);
-    glUniform2f(egl->tex_size_loc[3], src_width, src_height);
+    glUniform2f(egl->tex_size_loc[3], width, height);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glReadPixels(0, 0, src_width / 64, src_height / 64, GL_BGRA,
+    glReadPixels(0, 0, w_div_64, h_div_64, GL_BGRA,
                  GL_UNSIGNED_INT_8_8_8_8_REV, crcs);
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -545,7 +549,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     int crc_stride;
     int crc;
     int num_crcs;
-    int tile_extents_width;
+    int tile_extents_stride;
 
     glBindFramebuffer(GL_FRAMEBUFFER, egl->fb[0]);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -569,7 +573,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
         free(clientCon->rfx_crcs);
         clientCon->rfx_crcs = g_new0(int, num_crcs);
     }
-    tile_extents_width = tile_extents_rect->x2 - tile_extents_rect->x1;
+    tile_extents_stride = (tile_extents_rect->x2 - tile_extents_rect->x1) / 64;
     out_rect_index = 0;
     y = tile_extents_rect->y1;
     while (y < tile_extents_rect->y2)
@@ -590,7 +594,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                 ly = y - tile_extents_rect->y1;
                 tile_dst = dst + (y << 8) * (dst_stride >> 8) + (x << 8);
                 LLOGLN(10, ("rdpEglOut: lx %d ly %d", lx, ly));
-                crc = crcs[(ly / 64) * (tile_extents_width / 64) + (lx / 64)];
+                crc = crcs[(ly / 64) * tile_extents_stride + (lx / 64)];
                 crc_offset = (y / 64) * crc_stride + (x / 64);
                 if (crc == clientCon->rfx_crcs[crc_offset])
                 {
@@ -625,8 +629,8 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
 
 /******************************************************************************/
 static int
-rdpEglRfxClear(struct rdp_egl *egl, GCPtr rfxGC, PixmapPtr yuv_pixmap,
-               BoxPtr tile_extents_rect, RegionPtr in_reg)
+rdpEglRfxClear(GCPtr rfxGC, PixmapPtr yuv_pixmap, BoxPtr tile_extents_rect,
+               RegionPtr in_reg)
 {
     RegionPtr reg;
     xRectangle rect;
@@ -726,8 +730,8 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                                          tile_extents_rect.y1,
                                          width, height, 0, 0);
                     rdpEglRfxRgbToYuv(egl, tex, yuv_tex, width, height);
-                    rdpEglRfxClear(egl, rfxGC, yuv_pixmap,
-                                   &tile_extents_rect, in_reg);
+                    rdpEglRfxClear(rfxGC, yuv_pixmap, &tile_extents_rect,
+                                   in_reg);
                     rdpEglRfxYuvToYuvlp(egl, yuv_tex, tex, width, height);
                     rdpEglRfxCrc(egl, tex, crc_tex, width, height, crcs);
                     rdpEglOut(clientCon, egl, in_reg, *out_rects,
@@ -735,7 +739,15 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                               crcs);
                     pScreen->DestroyPixmap(yuv_pixmap);
                 }
+                else
+                {
+                    LLOGLN(0, ("rdpEglCaptureRfx: CreatePixmap failed"));
+                }
                 pScreen->DestroyPixmap(crc_pixmap);
+            }
+            else
+            {
+                LLOGLN(0, ("rdpEglCaptureRfx: CreatePixmap failed"));
             }
             pScreen->DestroyPixmap(pixmap);
         }
