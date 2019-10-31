@@ -52,6 +52,8 @@ EGL
 #include "rdpEgl.h"
 #include "rdpReg.h"
 
+#define XRDP_CRC_CHECK 0
+
 struct rdp_egl
 {
     GLuint quad_vao[1];
@@ -593,7 +595,20 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                 lx = x - tile_extents_rect->x1;
                 ly = y - tile_extents_rect->y1;
                 tile_dst = dst + (y << 8) * (dst_stride >> 8) + (x << 8);
-                LLOGLN(10, ("rdpEglOut: lx %d ly %d", lx, ly));
+#if XRDP_CRC_CHECK
+                /* check if the gpu calculated the crcs right */
+                glReadPixels(lx, ly, 64, 64, GL_BGRA,
+                             GL_UNSIGNED_INT_8_8_8_8_REV, tile_dst);
+                crc = crc_start();
+                crc = crc_process_data(crc, tile_dst, 64 * 64 * 4);
+                crc = crc_end(crc);
+                if (crc != crcs[(ly / 64) * tile_extents_stride + (lx / 64)])
+                {
+                    LLOGLN(0, ("rdpEglOut: error crc no match 0x%8.8x 0x%8.8x",
+                           crc,
+                           crcs[(ly / 64) * tile_extents_stride + (lx / 64)]));
+                }
+#endif
                 crc = crcs[(ly / 64) * tile_extents_stride + (lx / 64)];
                 crc_offset = (y / 64) * crc_stride + (x / 64);
                 if (crc == clientCon->rfx_crcs[crc_offset])
