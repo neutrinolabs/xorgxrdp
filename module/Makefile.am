@@ -1,6 +1,7 @@
 EXTRA_DIST = common.asm nasm_lt.sh
 EXTRA_FLAGS =
-EXTRA_FILES =
+EXTRA_SOURCES =
+EXTRA_HEADERS =
 SUBDIRS =
 ASMLIB =
 EGLLIB =
@@ -19,7 +20,8 @@ endif
 
 if WITH_GLAMOR
 EXTRA_FLAGS += -DXORGXRDP_GLAMOR -DGLAMOR_FOR_XORG
-EXTRA_FILES += rdpEgl.c rdpEgl.h
+EXTRA_SOURCES += rdpEgl.c
+EXTRA_HEADERS += rdpEgl.h
 EGLLIB += -lepoxy
 endif
 
@@ -74,7 +76,8 @@ noinst_HEADERS = \
   rdpCompositeRects.h \
   rdpXv.h \
   amd64/funcs_amd64.h \
-  x86/funcs_x86.h
+  x86/funcs_x86.h \
+  $(EXTRA_HEADERS)
 
 libxorgxrdp_la_LTLIBRARIES = libxorgxrdp.la
 
@@ -90,6 +93,6 @@ rdpPolyText16.c rdpImageText8.c rdpImageText16.c rdpImageGlyphBlt.c \
 rdpPolyGlyphBlt.c rdpPushPixels.c rdpCursor.c rdpMain.c rdpRandR.c \
 rdpMisc.c rdpReg.c rdpComposite.c rdpGlyphs.c rdpPixmap.c rdpInput.c \
 rdpClientCon.c rdpCapture.c rdpTrapezoids.c rdpTriangles.c \
-rdpCompositeRects.c rdpXv.c rdpSimd.c $(EXTRA_FILES)
+rdpCompositeRects.c rdpXv.c rdpSimd.c $(EXTRA_SOURCES)
 
 libxorgxrdp_la_LIBADD = $(ASMLIB) $(EGLLIB)
