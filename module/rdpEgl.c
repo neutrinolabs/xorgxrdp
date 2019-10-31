@@ -446,7 +446,7 @@ rdpEglRfxRgbToYuv(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LLOGLN(0, ("rdpEglRfxYuvToRgb: glCheckFramebufferStatus error"));
+        LLOGLN(0, ("rdpEglRfxRgbToYuv: glCheckFramebufferStatus error"));
     }
     glViewport(0, 0, width, height);
     glUseProgram(egl->program[1]);
