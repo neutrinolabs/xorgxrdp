@@ -62,10 +62,9 @@ This is the main driver file
 #include "rdpXv.h"
 #include "rdpSimd.h"
 
+#if defined(XORGXRDP_GLAMOR)
 #include "xrdpdri2.h"
 #include "xrdpdri3.h"
-
-#if defined(XORGXRDP_GLAMOR)
 #include "rdpEgl.h"
 #include <glamor.h>
 /* use environment variable XORGXRDP_DRM_DEVICE to override
