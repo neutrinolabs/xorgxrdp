@@ -49,6 +49,10 @@ XVideo
 #include "rdpClientCon.h"
 #include "rdpXv.h"
 
+#if defined(XORGXRDP_GLAMOR)
+#include <glamor.h>
+#endif
+
 static char g_xv_image[] = "XV_IMAGE";
 
 #define LOG_LEVEL 1
@@ -645,6 +649,39 @@ xrdpVidQueryImageAttributes(ScrnInfoPtr pScrn, int id,
     return size;
 }
 
+#if defined(XORGXRDP_GLAMOR)
+/*****************************************************************************/
+static int
+xrdpXvPutImageWrap(ScrnInfoPtr pScrn,
+                   short src_x, short src_y, short drw_x, short drw_y,
+                   short src_w, short src_h, short drw_w, short drw_h,
+                   int format, unsigned char* buf,
+                   short width, short height,
+                   Bool sync, RegionPtr clipBoxes,
+                   pointer data, DrawablePtr dst)
+{
+    rdpPtr dev;
+    PutImageFuncPtr lPutImage;
+    BoxRec box;
+    RegionPtr reg;
+    int rv;
+
+    dev = XRDPPTR(pScrn);
+    box.x1 = drw_x;
+    box.y1 = drw_y;
+    box.x2 = box.x1 + drw_w;
+    box.y2 = box.y1 + drw_h;
+    lPutImage = (PutImageFuncPtr)(dev->xvPutImage);
+    rv = lPutImage(pScrn, src_x, src_y, drw_x, drw_y,
+                   src_w, src_h, drw_w, drw_h, format, buf, width, height,
+                   sync, clipBoxes, data, dst);
+    reg = rdpRegionCreate(&box, 0);
+    rdpClientConAddAllReg(dev, reg, dst);
+    rdpRegionDestroy(reg);
+    return rv;
+}
+#endif
+
 /*****************************************************************************/
 Bool
 rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
@@ -652,49 +689,72 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
     XF86VideoAdaptorPtr adaptor;
     DevUnion* pDevUnion;
     char name[256];
+    rdpPtr dev;
 
-    adaptor = xf86XVAllocateVideoAdaptorRec(pScrn);
-    if (adaptor == 0)
+    dev = XRDPPTR(pScrn);
+    if (dev->glamor)
     {
-        LLOGLN(0, ("rdpXvInit: xf86XVAllocateVideoAdaptorRec failed"));
-        return 0;
+#if defined(XORGXRDP_GLAMOR)
+        adaptor = glamor_xv_init(pScreen, 16);
+        if (adaptor == 0)
+        {
+            LLOGLN(0, ("rdpXvInit: glamor_xv_init failed"));
+            return 0;
+        }
+        dev->xvPutImage = adaptor->PutImage;
+        adaptor->PutImage = xrdpXvPutImageWrap;
+        if (!xf86XVScreenInit(pScreen, &adaptor, 1))
+        {
+            LLOGLN(0, ("rdpXvInit: xf86XVScreenInit failed"));
+            return 0;
+        }
+#endif
     }
-    adaptor->type = XvInputMask | XvImageMask | XvVideoMask | XvStillMask | XvWindowMask | XvPixmapMask;
-    //adaptor->flags = VIDEO_NO_CLIPPING;
-    //adaptor->flags = VIDEO_CLIP_TO_VIEWPORT;
-    adaptor->flags = 0;
-    snprintf(name, 255, "%s XVideo Adaptor", XRDP_MODULE_NAME);
-    name[255] = 0;
-    adaptor->name = name;
-    adaptor->nEncodings = T_NUM_ENCODINGS;
-    adaptor->pEncodings = &(g_xrdpVidEncodings[0]);
-    adaptor->nFormats = T_NUM_FORMATS;
-    adaptor->pFormats = &(g_xrdpVidFormats[0]);
-    adaptor->pFormats[0].depth = pScrn->depth;
-    LLOGLN(0, ("rdpXvInit: depth %d", pScrn->depth));
-    adaptor->nImages = sizeof(g_xrdpVidImages) / sizeof(XF86ImageRec);
-    adaptor->pImages = g_xrdpVidImages;
-    adaptor->nAttributes = 0;
-    adaptor->pAttributes = 0;
-    adaptor->nPorts = T_MAX_PORTS;
-    pDevUnion = g_new0(DevUnion, T_MAX_PORTS);
-    adaptor->pPortPrivates = pDevUnion;
-    adaptor->PutVideo = xrdpVidPutVideo;
-    adaptor->PutStill = xrdpVidPutStill;
-    adaptor->GetVideo = xrdpVidGetVideo;
-    adaptor->GetStill = xrdpVidGetStill;
-    adaptor->StopVideo = xrdpVidStopVideo;
-    adaptor->SetPortAttribute = xrdpVidSetPortAttribute;
-    adaptor->GetPortAttribute = xrdpVidGetPortAttribute;
-    adaptor->QueryBestSize = xrdpVidQueryBestSize;
-    adaptor->PutImage = xrdpVidPutImage;
-    adaptor->QueryImageAttributes = xrdpVidQueryImageAttributes;
-    if (!xf86XVScreenInit(pScreen, &adaptor, 1))
+    else
     {
-        LLOGLN(0, ("rdpXvInit: xf86XVScreenInit failed"));
-        return 0;
+        adaptor = xf86XVAllocateVideoAdaptorRec(pScrn);
+        if (adaptor == 0)
+        {
+            LLOGLN(0, ("rdpXvInit: xf86XVAllocateVideoAdaptorRec failed"));
+            return 0;
+        }
+        adaptor->type = XvInputMask | XvImageMask | XvVideoMask | XvStillMask | XvWindowMask | XvPixmapMask;
+        //adaptor->flags = VIDEO_NO_CLIPPING;
+        //adaptor->flags = VIDEO_CLIP_TO_VIEWPORT;
+        adaptor->flags = 0;
+        snprintf(name, 255, "%s XVideo Adaptor", XRDP_MODULE_NAME);
+        name[255] = 0;
+        adaptor->name = name;
+        adaptor->nEncodings = T_NUM_ENCODINGS;
+        adaptor->pEncodings = &(g_xrdpVidEncodings[0]);
+        adaptor->nFormats = T_NUM_FORMATS;
+        adaptor->pFormats = &(g_xrdpVidFormats[0]);
+        adaptor->pFormats[0].depth = pScrn->depth;
+        LLOGLN(0, ("rdpXvInit: depth %d", pScrn->depth));
+        adaptor->nImages = sizeof(g_xrdpVidImages) / sizeof(XF86ImageRec);
+        adaptor->pImages = g_xrdpVidImages;
+        adaptor->nAttributes = 0;
+        adaptor->pAttributes = 0;
+        adaptor->nPorts = T_MAX_PORTS;
+        pDevUnion = g_new0(DevUnion, T_MAX_PORTS);
+        adaptor->pPortPrivates = pDevUnion;
+        adaptor->PutVideo = xrdpVidPutVideo;
+        adaptor->PutStill = xrdpVidPutStill;
+        adaptor->GetVideo = xrdpVidGetVideo;
+        adaptor->GetStill = xrdpVidGetStill;
+        adaptor->StopVideo = xrdpVidStopVideo;
+        adaptor->SetPortAttribute = xrdpVidSetPortAttribute;
+        adaptor->GetPortAttribute = xrdpVidGetPortAttribute;
+        adaptor->QueryBestSize = xrdpVidQueryBestSize;
+        adaptor->PutImage = xrdpVidPutImage;
+        adaptor->QueryImageAttributes = xrdpVidQueryImageAttributes;
+        if (!xf86XVScreenInit(pScreen, &adaptor, 1))
+        {
+            LLOGLN(0, ("rdpXvInit: xf86XVScreenInit failed"));
+            return 0;
+        }
+        xf86XVFreeVideoAdaptorRec(adaptor);
     }
-    xf86XVFreeVideoAdaptorRec(adaptor);
     return 1;
 }
 

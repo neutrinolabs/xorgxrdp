@@ -41,6 +41,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XRDP_KEYB_NAME "XRDPKEYB"
 #define XRDP_VERSION 1000
 
+#define RDP_MAX_TILES 4096
+
 #define COLOR8(r, g, b) \
     ((((r) >> 5) << 0)  | (((g) >> 5) << 3) | (((b) >> 6) << 6))
 #define COLOR15(r, g, b) \
@@ -201,7 +203,9 @@ struct _rdpCounts
     CARD32 rdpCompositeCallCount;
     CARD32 rdpCopyWindowCallCount; /* 22 */
     CARD32 rdpTrapezoidsCallCount;
-    CARD32 callCount[64 - 23];
+    CARD32 rdpTrianglesCallCount;
+    CARD32 rdpCompositeRectsCallCount;
+    CARD32 callCount[64 - 25];
 };
 
 typedef int (*yuv_to_rgb32_proc)(const uint8_t *yuvs, int width, int height, int *rgbs);
@@ -242,6 +246,9 @@ struct _rdpRec
     CompositeProcPtr Composite;
     GlyphsProcPtr Glyphs;
     TrapezoidsProcPtr Trapezoids;
+    CreateScreenResourcesProcPtr CreateScreenResources;
+    TrianglesProcPtr Triangles;
+    CompositeRectsProcPtr CompositeRects;
 
     /* keyboard and mouse */
     miPointerScreenFuncPtr pCursorFuncs;
@@ -308,7 +315,14 @@ struct _rdpRec
     struct monitor_info minfo[16]; /* client monitor data */
     int doMultimon;
     int monitorCount;
-
+    /* glamor */
+    Bool glamor;
+    PixmapPtr screenSwPixmap;
+    void *xvPutImage;
+    /* dri */
+    int fd;
+    /* egl */
+    void *egl;
 };
 typedef struct _rdpRec rdpRec;
 typedef struct _rdpRec * rdpPtr;

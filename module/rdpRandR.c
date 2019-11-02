@@ -48,6 +48,10 @@ RandR draw calls
 #include "rdpMisc.h"
 #include "rdpRandR.h"
 
+#if defined(XORGXRDP_GLAMOR)
+#include <glamor.h>
+#endif
+
 static int g_panning = 0;
 
 /******************************************************************************/
@@ -92,6 +96,24 @@ rdpRRGetInfo(ScreenPtr pScreen, Rotation *pRotations)
     return TRUE;
 }
 
+#if defined(XORGXRDP_GLAMOR)
+/*****************************************************************************/
+static int
+rdpRRSetPixmapVisitWindow(WindowPtr window, void *data)
+{
+    ScreenPtr screen;
+
+    LLOGLN(10, ("rdpRRSetPixmapVisitWindow:"));
+    screen = window->drawable.pScreen;
+    if (screen->GetWindowPixmap(window) == data)
+    {
+        screen->SetWindowPixmap(window, screen->GetScreenPixmap(screen));
+        return WT_WALKCHILDREN;
+    }
+    return WT_DONTWALKCHILDREN;
+}
+#endif
+
 /******************************************************************************/
 Bool
 rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
@@ -119,16 +141,38 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     pScreen->height = height;
     pScreen->mmWidth = mmWidth;
     pScreen->mmHeight = mmHeight;
-    screenPixmap = pScreen->GetScreenPixmap(pScreen);
+    screenPixmap = dev->screenSwPixmap;
     free(dev->pfbMemory_alloc);
     dev->pfbMemory_alloc = g_new0(uint8_t, dev->sizeInBytes + 16);
     dev->pfbMemory = (uint8_t *) RDPALIGN(dev->pfbMemory_alloc, 16);
-    if (screenPixmap != 0)
+    pScreen->ModifyPixmapHeader(screenPixmap, width, height,
+                                -1, -1,
+                                dev->paddedWidthInBytes,
+                                dev->pfbMemory);
+    if (dev->glamor)
     {
-        pScreen->ModifyPixmapHeader(screenPixmap, width, height,
-                                    -1, -1,
-                                    dev->paddedWidthInBytes,
-                                    dev->pfbMemory);
+#if defined(XORGXRDP_GLAMOR)
+        PixmapPtr old_screen_pixmap;
+        uint32_t screen_tex;
+        old_screen_pixmap = pScreen->GetScreenPixmap(pScreen);
+        screenPixmap = pScreen->CreatePixmap(pScreen,
+                                             pScreen->width,
+                                             pScreen->height,
+                                             pScreen->rootDepth,
+                                             GLAMOR_CREATE_NO_LARGE);
+        if (screenPixmap == NULL)
+        {
+            return FALSE;
+        }
+        screen_tex = glamor_get_pixmap_texture(screenPixmap);
+        LLOGLN(0, ("rdpRRScreenSetSize: screen_tex 0x%8.8x", screen_tex));
+        pScreen->SetScreenPixmap(screenPixmap);
+        if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
+        {
+            TraverseTree(pScreen->root, rdpRRSetPixmapVisitWindow, old_screen_pixmap);
+        }
+        pScreen->DestroyPixmap(old_screen_pixmap);
+#endif
     }
     box.x1 = 0;
     box.y1 = 0;
@@ -221,28 +265,28 @@ get_rect(rdpPtr dev, const char *name, BoxPtr rect)
 {
     if (strcmp(name, "rdp0") == 0)
     {
-        rect->x1 = dev->minfo[0].left; 
+        rect->x1 = dev->minfo[0].left;
         rect->y1 = dev->minfo[0].top;
         rect->x2 = dev->minfo[0].right + 1;
         rect->y2 = dev->minfo[0].bottom + 1;
     }
     else if (strcmp(name, "rdp1") == 0)
     {
-        rect->x1 = dev->minfo[1].left; 
+        rect->x1 = dev->minfo[1].left;
         rect->y1 = dev->minfo[1].top;
         rect->x2 = dev->minfo[1].right + 1;
         rect->y2 = dev->minfo[1].bottom + 1;
     }
     else if (strcmp(name, "rdp2") == 0)
     {
-        rect->x1 = dev->minfo[2].left; 
+        rect->x1 = dev->minfo[2].left;
         rect->y1 = dev->minfo[2].top;
         rect->x2 = dev->minfo[2].right + 1;
         rect->y2 = dev->minfo[2].bottom + 1;
     }
     else if (strcmp(name, "rdp3") == 0)
     {
-        rect->x1 = dev->minfo[3].left; 
+        rect->x1 = dev->minfo[3].left;
         rect->y1 = dev->minfo[3].top;
         rect->x2 = dev->minfo[3].right + 1;
         rect->y2 = dev->minfo[3].bottom + 1;

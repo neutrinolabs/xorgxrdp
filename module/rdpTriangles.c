@@ -1,5 +1,5 @@
 /*
-Copyright 2014-2017 Jay Sorg
+Copyright 2018 Jay Sorg
 
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -42,7 +42,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
 #include "rdpReg.h"
-#include "rdpTrapezoids.h"
+#include "rdpTriangles.h"
 
 /******************************************************************************/
 #define LOG_LEVEL 1
@@ -51,21 +51,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /******************************************************************************/
 static void
-rdpTrapezoidsOrg(PictureScreenPtr ps, rdpPtr dev,
-                 CARD8 op, PicturePtr pSrc, PicturePtr pDst,
-                 PictFormatPtr maskFormat, INT16 xSrc, INT16 ySrc,
-                 int ntrap, xTrapezoid *traps)
+rdpTrianglesOrg(PictureScreenPtr ps, rdpPtr dev, CARD8 op,
+                PicturePtr pSrc, PicturePtr pDst,
+                PictFormatPtr maskFormat, INT16 xSrc, INT16 ySrc,
+                int ntris, xTriangle *tris)
 {
-    ps->Trapezoids = dev->Trapezoids;
-    ps->Trapezoids(op, pSrc, pDst, maskFormat, xSrc, ySrc, ntrap, traps);
-    ps->Trapezoids = rdpTrapezoids;
+    ps->Triangles = dev->Triangles;
+    ps->Triangles(op, pSrc, pDst, maskFormat, xSrc, ySrc, ntris, tris);
+    ps->Triangles = rdpTriangles;
 }
 
 /******************************************************************************/
 void
-rdpTrapezoids(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
-              PictFormatPtr maskFormat, INT16 xSrc, INT16 ySrc,
-              int ntrap, xTrapezoid *traps)
+rdpTriangles(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
+             PictFormatPtr maskFormat, INT16 xSrc, INT16 ySrc,
+             int ntris, xTriangle *tris)
 {
     ScreenPtr pScreen;
     rdpPtr dev;
@@ -73,24 +73,24 @@ rdpTrapezoids(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
     BoxRec box;
     RegionRec reg;
 
-    LLOGLN(10, ("rdpTrapezoids:"));
+    LLOGLN(10, ("rdpTriangles:"));
     pScreen = pDst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
-    dev->counts.rdpTrapezoidsCallCount++;
-    miTrapezoidBounds(ntrap, traps, &box);
+    dev->counts.rdpTrianglesCallCount++;
+    miTriangleBounds(ntris, tris, &box);
     box.x1 += pDst->pDrawable->x;
     box.y1 += pDst->pDrawable->y;
     box.x2 += pDst->pDrawable->x;
     box.y2 += pDst->pDrawable->y;
     rdpRegionInit(&reg, &box, 0);
+    ps = GetPictureScreen(pScreen);
     if (pDst->pCompositeClip != NULL)
     {
         rdpRegionIntersect(&reg, pDst->pCompositeClip, &reg);
     }
-    ps = GetPictureScreen(pScreen);
     /* do original call */
-    rdpTrapezoidsOrg(ps, dev, op, pSrc, pDst, maskFormat, xSrc, ySrc,
-                     ntrap, traps);
+    rdpTrianglesOrg(ps, dev, op, pSrc, pDst, maskFormat, xSrc, ySrc,
+                    ntris, tris);
     rdpClientConAddAllReg(dev, &reg, pDst->pDrawable);
     rdpRegionUninit(&reg);
 }

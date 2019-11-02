@@ -39,6 +39,14 @@ the rest
 #define printflike(arg_format, arg_first_check)
 #endif
 
+
+extern _X_EXPORT int
+crc_start(void);
+extern _X_EXPORT int
+crc_process_data(int crc, const void *data, int data_bytes);
+extern _X_EXPORT int
+crc_end(int crc);
+
 extern _X_EXPORT int
 rdpBitsPerPixel(int depth);
 extern _X_EXPORT int

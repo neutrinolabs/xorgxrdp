@@ -54,11 +54,25 @@ This is the main driver file
 #include "rdpMisc.h"
 #include "rdpComposite.h"
 #include "rdpTrapezoids.h"
+#include "rdpTriangles.h"
+#include "rdpCompositeRects.h"
 #include "rdpGlyphs.h"
 #include "rdpPixmap.h"
 #include "rdpClientCon.h"
 #include "rdpXv.h"
 #include "rdpSimd.h"
+
+#if defined(XORGXRDP_GLAMOR)
+#include "xrdpdri2.h"
+#include "xrdpdri3.h"
+#include "rdpEgl.h"
+#include <glamor.h>
+/* use environment variable XORGXRDP_DRM_DEVICE to override
+ * also read from xorg.conf file */
+char g_drm_device[128] = "/dev/dri/renderD128";
+Bool g_use_dri2 = TRUE;
+Bool g_use_dri3 = TRUE;
+#endif
 
 #define LLOG_LEVEL 1
 #define LLOGLN(_level, _args) \
@@ -154,6 +168,26 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
 
     rdpAllocRec(pScrn);
     dev = XRDPPTR(pScrn);
+
+    dev->glamor = FALSE;
+
+#if defined(XORGXRDP_GLAMOR)
+    if (getenv("XORGXRDP_DRM_DEVICE") != NULL)
+    {
+        strncpy(g_drm_device, getenv("XORGXRDP_DRM_DEVICE"), 127);
+        g_drm_device[127] = 0;
+    }
+    dev->fd = open(g_drm_device, O_RDWR, 0);
+    if (dev->fd == -1)
+    {
+        LLOGLN(0, ("rdpPreInit: %s open failed", g_drm_device));
+    }
+    else
+    {
+        LLOGLN(0, ("rdpPreInit: %s open ok, fd %d", g_drm_device, dev->fd));
+        dev->glamor = TRUE;
+    }
+#endif
 
     dev->width = 800;
     dev->height = 600;
@@ -261,6 +295,29 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
                dev->width, dev->height));
         return FALSE;
     }
+    if (dev->glamor)
+    {
+#if defined(XORGXRDP_GLAMOR)
+        if (xf86LoadSubModule(pScrn, GLAMOR_EGL_MODULE_NAME))
+        {
+            LLOGLN(0, ("rdpPreInit: glamor module load ok"));
+            if (glamor_egl_init(pScrn, dev->fd))
+            {
+                LLOGLN(0, ("rdpPreInit: glamor init ok"));
+            }
+            else
+            {
+                LLOGLN(0, ("rdpPreInit: glamor init failed"));
+                dev->glamor = FALSE;
+            }
+        }
+        else
+        {
+            LLOGLN(0, ("rdpPreInit: glamor module load failed"));
+            dev->glamor = FALSE;
+        }
+#endif
+    }
     return TRUE;
 }
 
@@ -280,7 +337,7 @@ static miPointerSpriteFuncRec g_rdpSpritePointerFuncs =
 static Bool
 rdpSaveScreen(ScreenPtr pScreen, int on)
 {
-    LLOGLN(0, ("rdpSaveScreen:"));
+    LLOGLN(10, ("rdpSaveScreen:"));
     return TRUE;
 }
 
@@ -369,7 +426,6 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
     pRRScrPriv->rrGetPanning         = rdpRRGetPanning;
     pRRScrPriv->rrSetPanning         = rdpRRSetPanning;
 
-
     rdpResizeSession(dev, 1024, 768);
 
     envvar = getenv("XRDP_START_WIDTH");
@@ -417,6 +473,72 @@ rdpWakeupHandler1(void *blockData, int result)
     rdpClientConCheck((ScreenPtr)blockData);
 }
 
+#if defined(XORGXRDP_GLAMOR)
+/*****************************************************************************/
+static int
+rdpSetPixmapVisitWindow(WindowPtr window, void *data)
+{
+    ScreenPtr screen;
+
+    LLOGLN(10, ("rdpSetPixmapVisitWindow:"));
+    screen = window->drawable.pScreen;
+    if (screen->GetWindowPixmap(window) == data)
+    {
+        screen->SetWindowPixmap(window, screen->GetScreenPixmap(screen));
+        return WT_WALKCHILDREN;
+    }
+    return WT_DONTWALKCHILDREN;
+}
+#endif
+
+/*****************************************************************************/
+static Bool
+rdpCreateScreenResources(ScreenPtr pScreen)
+{
+    Bool ret;
+    rdpPtr dev;
+
+    LLOGLN(0, ("rdpCreateScreenResources:"));
+    dev = rdpGetDevFromScreen(pScreen);
+    pScreen->CreateScreenResources = dev->CreateScreenResources;
+    ret = pScreen->CreateScreenResources(pScreen);
+    pScreen->CreateScreenResources = rdpCreateScreenResources;
+    if (!ret)
+    {
+        return FALSE;
+    }
+    dev->screenSwPixmap = pScreen->GetScreenPixmap(pScreen);
+    if (dev->glamor)
+    {
+#if defined(XORGXRDP_GLAMOR)
+        PixmapPtr old_screen_pixmap;
+        PixmapPtr screen_pixmap;
+        uint32_t screen_tex;
+        old_screen_pixmap = dev->screenSwPixmap;
+        LLOGLN(0, ("rdpCreateScreenResources: create screen pixmap w %d h %d",
+               pScreen->width, pScreen->height));
+        screen_pixmap = pScreen->CreatePixmap(pScreen,
+                                              pScreen->width,
+                                              pScreen->height,
+                                              pScreen->rootDepth,
+                                              GLAMOR_CREATE_NO_LARGE);
+        if (screen_pixmap == NULL)
+        {
+            return FALSE;
+        }
+        screen_tex = glamor_get_pixmap_texture(screen_pixmap);
+        LLOGLN(0, ("rdpCreateScreenResources: screen_tex 0x%8.8x", screen_tex));
+        pScreen->SetScreenPixmap(screen_pixmap);
+        if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
+        {
+            TraverseTree(pScreen->root, rdpSetPixmapVisitWindow, old_screen_pixmap);
+        }
+#endif
+    }
+
+    return TRUE;
+}
+
 /*****************************************************************************/
 static Bool
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 13, 0, 0, 0)
@@ -459,7 +581,6 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         LLOGLN(0, ("rdpScreenInit: fbScreenInit failed"));
         return FALSE;
     }
-
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 14, 0, 0, 0)
     /* 1.13 has this function, 1.14 and up does not */
     miInitializeBackingStore(pScreen);
@@ -467,14 +588,6 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
     /* try to init simd functions */
     rdpSimdInit(pScreen, pScrn);
-
-#if defined(XvExtension)
-    /* XVideo */
-    if (!rdpXvInit(pScreen, pScrn))
-    {
-        LLOGLN(0, ("rdpScreenInit: rdpXvInit failed"));
-    }
-#endif
 
     vis = pScreen->visuals + (pScreen->numVisuals - 1);
     while (vis >= pScreen->visuals)
@@ -491,6 +604,42 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         vis--;
     }
     fbPictureInit(pScreen, 0, 0);
+    if (dev->glamor)
+    {
+#if defined(XORGXRDP_GLAMOR)
+        /* it's not that we don't want dri3, we just want to init it ourself */
+        if (glamor_init(pScreen, GLAMOR_USE_EGL_SCREEN | GLAMOR_NO_DRI3))
+        {
+            LLOGLN(0, ("rdpScreenInit: glamor_init ok"));
+        }
+        else
+        {
+            LLOGLN(0, ("rdpScreenInit: glamor_init failed"));
+        }
+        if (g_use_dri2)
+        {
+            if (rdpDri2Init(pScreen) != 0)
+            {
+                LLOGLN(0, ("rdpScreenInit: rdpDri2Init failed"));
+            }
+            else
+            {
+                LLOGLN(0, ("rdpScreenInit: rdpDri2Init ok"));
+            }
+        }
+        if (g_use_dri3)
+        {
+            if (rdpDri3Init(pScreen) != 0)
+            {
+                LLOGLN(0, ("rdpScreenInit: rdpDri3Init failed"));
+            }
+            else
+            {
+                LLOGLN(0, ("rdpScreenInit: rdpDri3Init ok"));
+            }
+        }
+#endif
+    }
     xf86SetBlackWhitePixels(pScreen);
     xf86SetBackingStore(pScreen);
 
@@ -559,7 +708,16 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         /* trapezoids */
         dev->Trapezoids = ps->Trapezoids;
         ps->Trapezoids = rdpTrapezoids;
+        /* triangles */
+        dev->Triangles = ps->Triangles;
+        ps->Triangles = rdpTriangles;
+        /* composite rects */
+        dev->CompositeRects = ps->CompositeRects;
+        ps->CompositeRects = rdpCompositeRects;
     }
+
+    dev->CreateScreenResources = pScreen->CreateScreenResources;
+    pScreen->CreateScreenResources = rdpCreateScreenResources;
 
     RegisterBlockAndWakeupHandlers(rdpBlockHandler1, rdpWakeupHandler1, pScreen);
 
@@ -573,6 +731,21 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     dev->Bpp_mask = 0x00FFFFFF;
     dev->Bpp = 4;
     dev->bitsPerPixel = 32;
+
+#if defined(XvExtension)
+    /* XVideo */
+    if (!rdpXvInit(pScreen, pScrn))
+    {
+        LLOGLN(0, ("rdpScreenInit: rdpXvInit failed"));
+    }
+#endif
+
+    if (dev->glamor)
+    {
+#if defined(XORGXRDP_GLAMOR)
+        dev->egl = rdpEglCreate(pScreen);
+#endif
+    }
 
     LLOGLN(0, ("rdpScreenInit: out"));
     return TRUE;
@@ -657,6 +830,7 @@ rdpProbe(DriverPtr drv, int flags)
     GDevPtr *dev_sections;
     Bool found_screen;
     ScrnInfoPtr pscrn;
+    const char *val;
 
     LLOGLN(0, ("rdpProbe:"));
     if (flags & PROBE_DETECT)
@@ -681,6 +855,41 @@ rdpProbe(DriverPtr drv, int flags)
     found_screen = FALSE;
     for (i = 0; i < num_dev_sections; i++)
     {
+        val = xf86FindOptionValue(dev_sections[i]->options, "DRMDevice");
+        if (val != NULL)
+        {
+#if defined(XORGXRDP_GLAMOR)
+            strncpy(g_drm_device, val, 127);
+            g_drm_device[127] = 0;
+            LLOGLN(0, ("rdpProbe: found DRMDevice xorg.conf value [%s]", val));
+#endif
+        }
+        val = xf86FindOptionValue(dev_sections[i]->options, "DRI2");
+        if (val != NULL)
+        {
+#if defined(XORGXRDP_GLAMOR)
+            if ((strcmp(val, "0") == 0) ||
+                (strcmp(val, "no") == 0) ||
+                (strcmp(val, "false") == 0))
+            {
+               g_use_dri2 = 0;
+            }
+            LLOGLN(0, ("rdpProbe: found DRI2 xorg.conf value [%s]", val));
+#endif
+        }
+        val = xf86FindOptionValue(dev_sections[i]->options, "DRI3");
+        if (val != NULL)
+        {
+#if defined(XORGXRDP_GLAMOR)
+            if ((strcmp(val, "0") == 0) ||
+                (strcmp(val, "no") == 0) ||
+                (strcmp(val, "false") == 0))
+            {
+               g_use_dri3 = 0;
+            }
+            LLOGLN(0, ("rdpProbe: found DRI3 xorg.conf value [%s]", val));
+#endif
+        }
         entity = xf86ClaimFbSlot(drv, 0, dev_sections[i], 1);
         pscrn = xf86ConfigFbEntity(pscrn, 0, entity, 0, 0, 0, 0);
         if (pscrn)
