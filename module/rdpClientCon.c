@@ -406,6 +406,10 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     }
     free_stream(clientCon->out_s);
     free_stream(clientCon->in_s);
+    if (clientCon->shmemptr != NULL)
+    {
+        shmdt(clientCon->shmemptr);
+    }
     free(clientCon);
     return 0;
 }
