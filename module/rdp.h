@@ -270,6 +270,7 @@ struct _rdpRec
     RROutputGetPropertyProcPtr rrOutputGetProperty;
     RRGetPanningProcPtr rrGetPanning;
     RRSetPanningProcPtr rrSetPanning;
+    int allow_screen_resize;
 
     int listen_sck;
     char uds_data[256];
