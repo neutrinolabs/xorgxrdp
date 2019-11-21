@@ -746,7 +746,9 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
 
     if ((dev->width != width) || (dev->height != height))
     {
+        dev->allow_screen_resize = 1;
         ok = RRScreenSizeSet(dev->pScreen, width, height, mmwidth, mmheight);
+        dev->allow_screen_resize = 0;
         LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: RRScreenSizeSet ok=[%d]", ok));
         RRTellChanged(dev->pScreen);
     }

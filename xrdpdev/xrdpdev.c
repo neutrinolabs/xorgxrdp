@@ -359,7 +359,9 @@ rdpResizeSession(rdpPtr dev, int width, int height)
     if ((dev->width != width) || (dev->height != height))
     {
         LLOGLN(0, ("  calling RRScreenSizeSet"));
+        dev->allow_screen_resize = 1;
         ok = RRScreenSizeSet(dev->pScreen, width, height, mmwidth, mmheight);
+        dev->allow_screen_resize = 0;
         LLOGLN(0, ("  RRScreenSizeSet ok %d", ok));
     }
     return ok;
