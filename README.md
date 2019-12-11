@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/neutrinolabs/xorgxrdp.svg?branch=devel)](https://travis-ci.org/neutrinolabs/xorgxrdp)
 
-*Current Version:* 0.2.11
+*Current Version:* 0.2.12
 
 # xorgxrdp
 
