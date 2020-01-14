@@ -128,7 +128,7 @@ PtrAddEvent(rdpPointer *pointer)
         pointer->old_cursor_y = pointer->cursor_y;
     }
 
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < 9; i++)
     {
         if ((pointer->button_mask ^ pointer->old_button_mask) & (1 << i))
         {
@@ -224,6 +224,22 @@ rdpInputMouse(rdpPtr dev, int msg,
             break;
         case 114:
             pointer->button_mask = pointer->button_mask | 64;
+            PtrAddEvent(pointer);
+            break;
+        case 115:
+            pointer->button_mask = pointer->button_mask & (~128);
+            PtrAddEvent(pointer);
+            break;
+        case 116:
+            pointer->button_mask = pointer->button_mask | 128;
+            PtrAddEvent(pointer);
+            break;
+        case 117:
+            pointer->button_mask = pointer->button_mask & (~256);
+            PtrAddEvent(pointer);
+            break;
+        case 118:
+            pointer->button_mask = pointer->button_mask | 256;
             PtrAddEvent(pointer);
             break;
     }
