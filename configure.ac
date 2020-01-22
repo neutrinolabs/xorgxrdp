@@ -28,6 +28,9 @@ if test "x${enable_glamor}" = "xyes"; then
 fi
 
 if test "x$XRDP_CFLAGS" = "x"; then
+  # FIXME: to be changed before releasing 0.2.12 because
+  # FIXME: some constants such as WM_BUTTON{8,9}{DOWN,UP} are added after 0.9.2 release
+  # PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.13])
   PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.0])
 fi
 
