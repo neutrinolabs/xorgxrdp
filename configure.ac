@@ -29,6 +29,7 @@ fi
 
 if test "x$XRDP_CFLAGS" = "x"; then
   PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.13])
+  XRDP_CFLAGS=`pkg-config xrdp --cflags`
 fi
 
 AC_ARG_ENABLE([strict-locations],
