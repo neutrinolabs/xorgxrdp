@@ -129,6 +129,12 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     dev = rdpGetDevFromScreen(pScreen);
     if (dev->allow_screen_resize == 0)
     {
+        if ((width == pScreen->width) && (height == pScreen->height) &&
+            (mmWidth == pScreen->mmWidth) && (mmHeight == pScreen->mmHeight))
+        {
+            LLOGLN(0, ("rdpRRScreenSetSize: already this size"));
+            return TRUE;
+        }
         LLOGLN(0, ("rdpRRScreenSetSize: not allowing resize"));
         return FALSE;
     }
