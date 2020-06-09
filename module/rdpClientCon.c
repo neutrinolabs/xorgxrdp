@@ -103,6 +103,8 @@ static int
 rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon);
 static CARD32
 rdpDeferredIdleDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg);
+static void
+rdpScheduleDeferredUpdate(rdpClientCon *clientCon);
 
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
 
@@ -2424,6 +2426,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     LLOGLN(10, ("rdpDeferredUpdateCallback:"));
     clientCon = (rdpClientCon *) arg;
     clientCon->updateScheduled = FALSE;
+    clientCon->lastUpdateTime = now;
     if (clientCon->suppress_output)
     {
         LLOGLN(10, ("rdpDeferredUpdateCallback: suppress_output set"));
@@ -2436,10 +2439,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         LLOGLN(10, ("rdpDeferredUpdateCallback: reschedule rect_id %d "
                "rect_id_ack %d",
                clientCon->rect_id, clientCon->rect_id_ack));
-        clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, 40,
-                                          rdpDeferredUpdateCallback,
-                                          clientCon);
-        clientCon->updateScheduled = TRUE;
+        rdpScheduleDeferredUpdate(clientCon);
         return 0;
     }
     else
@@ -2532,12 +2532,41 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     }
     if (rdpRegionNotEmpty(clientCon->dirtyRegion))
     {
-        clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, 40,
-                                          rdpDeferredUpdateCallback,
-                                          clientCon);
-        clientCon->updateScheduled = TRUE;
+        rdpScheduleDeferredUpdate(clientCon);
     }
     return 0;
+}
+
+
+/******************************************************************************/
+#define MIN_MS_BETWEEN_FRAMES 40
+#define MIN_MS_TO_WAIT_FOR_MORE_UPDATES 4
+static void
+rdpScheduleDeferredUpdate(rdpClientCon *clientCon)
+{
+    uint32_t curTime;
+    uint32_t msToWait;
+    uint32_t minNextUpdateTime;
+
+    curTime = (uint32_t) GetTimeInMillis();
+    /* use two separate delays in order to limit the update rate and wait a bit
+       for more changes before sending an update. Always waiting the longer
+       delay would introduce unnecessarily much latency. */
+    msToWait = MIN_MS_TO_WAIT_FOR_MORE_UPDATES;
+    minNextUpdateTime = clientCon->lastUpdateTime + MIN_MS_BETWEEN_FRAMES;
+    /* the first check is to gracefully handle the infrequent case of
+       the time wrapping around */
+    if(clientCon->lastUpdateTime < curTime &&
+        minNextUpdateTime > curTime + msToWait)
+    {
+        msToWait = minNextUpdateTime - curTime;
+    }
+
+    clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0,
+                                      (CARD32) msToWait,
+                                      rdpDeferredUpdateCallback,
+                                      clientCon);
+    clientCon->updateScheduled = TRUE;
 }
 
 /******************************************************************************/
@@ -2549,9 +2578,7 @@ rdpClientConAddDirtyScreenReg(rdpPtr dev, rdpClientCon *clientCon,
     rdpRegionUnion(clientCon->dirtyRegion, clientCon->dirtyRegion, reg);
     if (clientCon->updateScheduled == FALSE)
     {
-        clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, 40,
-                                          rdpDeferredUpdateCallback, clientCon);
-        clientCon->updateScheduled = TRUE;
+        rdpScheduleDeferredUpdate(clientCon);
     }
     return 0;
 }
