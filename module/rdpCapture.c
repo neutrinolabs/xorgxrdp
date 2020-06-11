@@ -38,6 +38,8 @@ capture
 #include <xf86.h>
 #include <xf86_OSproc.h>
 
+#include <sys/sdt.h>
+
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
@@ -821,6 +823,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int crc_stride;
     int crc;
     int num_crcs;
+    int num_skips;
 
     LLOGLN(10, ("rdpCapture2:"));
 
@@ -848,6 +851,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
     extents_rect = *rdpRegionExtents(in_reg);
     y = extents_rect.y1 & ~63;
+    num_skips = 0;
     while (y < extents_rect.y2)
     {
         x = extents_rect.x1 & ~63;
@@ -896,6 +900,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 if (crc == clientCon->rfx_crcs[crc_offset])
                 {
                     LLOGLN(10, ("rdpCapture2: crc skip at x %d y %d", x, y));
+                    num_skips += 1;
                 }
                 else
                 {
@@ -914,6 +919,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         }
         y += 64;
     }
+    DTRACE_PROBE2(xorgxrdp, rdpCapture2, out_rect_index, num_skips);
     *num_out_rects = out_rect_index;
     return TRUE;
 }
