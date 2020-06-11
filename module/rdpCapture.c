@@ -574,6 +574,23 @@ rdpCopyBox_a8r8g8b8_to_nv12(rdpClientCon *clientCon,
 }
 
 /******************************************************************************/
+/* copy rects with no error checking */
+static uint64_t
+wyhash_rfx_tile(const uint8_t *src, int src_stride, int x, int y, uint64_t seed)
+{
+    int row;
+    uint64_t hash;
+    const uint8_t *s8;
+    hash = seed;
+    for(row = 0; row < 64; row++)
+    {
+        s8 = src + (y+row) * src_stride + x * 4;
+        hash = wyhash((const void*)s8, 64 * 4, hash, _wyp);
+    }
+    return hash;
+}
+
+/******************************************************************************/
 static Bool
 rdpCapture0(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             int *num_out_rects, struct image_data *id)
@@ -883,20 +900,18 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                                                   src, src_stride,
                                                   dst, dst_stride,
                                                   rects, num_rects);
+                    crc_dst = dst + (y << 8) * (dst_stride >> 8) + (x << 8);
+                    crc = wyhash((const void*)crc_dst, 64 * 64 * 4, crc, _wyp);
                     rdpRegionUninit(&tile_reg);
                 }
                 else /* rgnIN */
                 {
                     LLOGLN(10, ("rdpCapture2: rgnIN"));
-                    rdpCopyBox_a8r8g8b8_to_yuvalp(x, y,
-                                                  src, src_stride,
-                                                  dst, dst_stride,
-                                                  &rect, 1);
+                    crc = wyhash_rfx_tile(src, src_stride, x, y, crc);
+
                 }
-                crc_dst = dst + (y << 8) * (dst_stride >> 8) + (x << 8);
-                crc = wyhash((const void*)crc_dst, 64 * 64 * 4, crc, _wyp);
                 crc_offset = (y / 64) * crc_stride + (x / 64);
-                LLOGLN(10, ("rdpCapture2: crc 0x%8.8x 0x%8.8x",
+                LLOGLN(10, ("rdpCapture2: crc 0x%8.8lx 0x%8.8lx",
                        crc, clientCon->rfx_crcs[crc_offset]));
                 if (crc == clientCon->rfx_crcs[crc_offset])
                 {
@@ -905,6 +920,14 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 }
                 else
                 {
+                    /* lazily only do this if hash wasn't identical */
+                    if (rcode != rgnPART)
+                    {
+                        rdpCopyBox_a8r8g8b8_to_yuvalp(x, y,
+                              src, src_stride,
+                              dst, dst_stride,
+                              &rect, 1);
+                    }
                     clientCon->rfx_crcs[crc_offset] = crc;
                     (*out_rects)[out_rect_index] = rect;
                     out_rect_index++;
