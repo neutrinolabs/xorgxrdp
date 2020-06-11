@@ -47,6 +47,8 @@ capture
 #include "rdpMisc.h"
 #include "rdpCapture.h"
 
+#include "wyhash.h"
+
 #if defined(XORGXRDP_GLAMOR)
 #include "rdpEgl.h"
 #include <glamor.h>
@@ -821,7 +823,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int dst_stride;
     int crc_offset;
     int crc_stride;
-    int crc;
+    uint64_t crc;
     int num_crcs;
     int num_skips;
 
@@ -846,7 +848,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         /* resize the crc list */
         clientCon->num_rfx_crcs_alloc = num_crcs;
         free(clientCon->rfx_crcs);
-        clientCon->rfx_crcs = g_new0(int, num_crcs);
+        clientCon->rfx_crcs = g_new0(uint64_t, num_crcs);
     }
 
     extents_rect = *rdpRegionExtents(in_reg);
@@ -866,7 +868,8 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
             if (rcode != rgnOUT)
             {
-                crc = crc_start();
+                /* hex digits of pi as a 64 bit int */
+                crc = 0x3243f6a8885a308dull;
                 if (rcode == rgnPART)
                 {
                     LLOGLN(10, ("rdpCapture2: rgnPART"));
@@ -875,8 +878,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     rdpRegionIntersect(&tile_reg, in_reg, &tile_reg);
                     rects = REGION_RECTS(&tile_reg);
                     num_rects = REGION_NUM_RECTS(&tile_reg);
-                    crc = crc_process_data(crc, rects,
-                                           num_rects * sizeof(BoxRec));
+                    crc = wyhash((const void*)rects, num_rects * sizeof(BoxRec), crc, _wyp);
                     rdpCopyBox_a8r8g8b8_to_yuvalp(x, y,
                                                   src, src_stride,
                                                   dst, dst_stride,
@@ -892,8 +894,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                                                   &rect, 1);
                 }
                 crc_dst = dst + (y << 8) * (dst_stride >> 8) + (x << 8);
-                crc = crc_process_data(crc, crc_dst, 64 * 64 * 4);
-                crc = crc_end(crc);
+                crc = wyhash((const void*)crc_dst, 64 * 64 * 4, crc, _wyp);
                 crc_offset = (y / 64) * crc_stride + (x / 64);
                 LLOGLN(10, ("rdpCapture2: crc 0x%8.8x 0x%8.8x",
                        crc, clientCon->rfx_crcs[crc_offset]));

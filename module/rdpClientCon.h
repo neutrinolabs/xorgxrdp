@@ -111,7 +111,7 @@ struct _rdpClientCon
     RegionPtr dirtyRegion;
 
     int num_rfx_crcs_alloc;
-    int *rfx_crcs;
+    uint64_t *rfx_crcs;
 
     /* true = skip drawing */
     int suppress_output;
