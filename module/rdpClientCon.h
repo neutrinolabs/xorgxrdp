@@ -105,6 +105,7 @@ struct _rdpClientCon
     int rect_id_ack;
 
     OsTimerPtr updateTimer;
+    CARD32 lastUpdateTime; /* millisecond timestamp */
     int updateScheduled; /* boolean */
 
     RegionPtr dirtyRegion;
