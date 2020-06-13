@@ -34,6 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* all driver need this */
 #include <xf86.h>
 #include <xf86_OSproc.h>
+#include <sys/sdt.h>
 
 #include "rdp.h"
 #include "rdpDraw.h"
@@ -69,6 +70,7 @@ rdpPutImage(DrawablePtr pDst, GCPtr pGC, int depth, int x, int y,
     int cd;
     BoxRec box;
 
+    DTRACE_PROBE2(xorgxrdp, rdpPutImage, w, h);
     LLOGLN(10, ("rdpPutImage:"));
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPutImageCallCount++;
