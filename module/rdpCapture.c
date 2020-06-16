@@ -822,13 +822,15 @@ rdpCapture1(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 /******************************************************************************/
 static Bool
 rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
-            int *num_out_rects, struct image_data *id)
+            int *num_out_rects, BoxPtr scroll_rect, short *scroll_offset,
+            struct image_data *id)
 {
     int x;
     int y;
     int out_rect_index;
     int num_rects;
     int rcode;
+    int in_scroll_rect;
     BoxRec rect;
     BoxRec extents_rect;
     BoxPtr rects;
@@ -845,6 +847,20 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int num_skips;
 
     LLOGLN(10, ("rdpCapture2:"));
+
+    /* TODO detect scroll offset properly */
+    *scroll_offset = 0;
+    scroll_rect->x1 = 0;
+    scroll_rect->x2 = 0;
+    scroll_rect->y1 = 0;
+    scroll_rect->y2 = 0;
+
+    /* for testing */
+    // *scroll_offset = 76;
+    // scroll_rect->x1 = 64*3;
+    // scroll_rect->x2 = 64*60;
+    // scroll_rect->y1 = 64*6;
+    // scroll_rect->y2 = 64*33;
 
     *out_rects = g_new(BoxRec, RDP_MAX_TILES);
     if (*out_rects == NULL)
@@ -883,7 +899,10 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             rcode = rdpRegionContainsRect(in_reg, &rect);
             LLOGLN(10, ("rdpCapture2: rcode %d", rcode));
 
-            if (rcode != rgnOUT)
+            in_scroll_rect = (rect.x1 >= scroll_rect->x1) && (rect.x2 <= scroll_rect->x2) &&
+                (rect.y1 >= scroll_rect->y1) && (rect.y2 <= scroll_rect->y2);
+
+            if (rcode != rgnOUT && !in_scroll_rect)
             {
                 /* hex digits of pi as a 64 bit int */
                 crc = 0x3243f6a8885a308dull;
@@ -1093,7 +1112,8 @@ copy_vmem(rdpPtr dev, RegionPtr in_reg)
  *****************************************************************************/
 Bool
 rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
-           int *num_out_rects, struct image_data *id)
+           int *num_out_rects, BoxPtr scroll_rect, short *scroll_offset,
+           struct image_data *id)
 {
     int mode;
 
@@ -1113,13 +1133,17 @@ rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     switch (mode)
     {
         case 0:
+            *scroll_offset = 0;
             return rdpCapture0(clientCon, in_reg, out_rects, num_out_rects, id);
         case 1:
+            *scroll_offset = 0;
             return rdpCapture1(clientCon, in_reg, out_rects, num_out_rects, id);
         case 2:
             /* used for remotefx capture */
-            return rdpCapture2(clientCon, in_reg, out_rects, num_out_rects, id);
+            return rdpCapture2(clientCon, in_reg, out_rects, num_out_rects,
+                scroll_rect, scroll_offset, id);
         case 3:
+            *scroll_offset = 0;
             /* used for even align capture */
             return rdpCapture3(clientCon, in_reg, out_rects, num_out_rects, id);
         default:
