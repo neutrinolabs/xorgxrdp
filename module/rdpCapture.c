@@ -48,6 +48,8 @@ capture
 #include "rdpCapture.h"
 
 #include "wyhash.h"
+/* hex digits of pi as a 64 bit int */
+#define WYHASH_SEED 0x3243f6a8885a308dull
 
 #if defined(XORGXRDP_GLAMOR)
 #include "rdpEgl.h"
@@ -574,20 +576,27 @@ rdpCopyBox_a8r8g8b8_to_nv12(rdpClientCon *clientCon,
 }
 
 /******************************************************************************/
-/* copy rects with no error checking */
-static uint64_t
-wyhash_rfx_tile(const uint8_t *src, int src_stride, int x, int y, uint64_t seed)
+static void
+wyhash_rfx_tile_rows(const uint8_t *src, int src_stride, int x, int y,
+    uint64_t *row_hashes, int nrows)
 {
     int row;
-    uint64_t hash;
     const uint8_t *s8;
-    hash = seed;
-    for(row = 0; row < 64; row++)
+
+    for(row = 0; row < nrows; row++)
     {
         s8 = src + (y+row) * src_stride + x * 4;
-        hash = wyhash((const void*)s8, 64 * 4, hash, _wyp);
+        row_hashes[row] = wyhash((const void*)s8, 64 * 4, WYHASH_SEED, _wyp);
     }
-    return hash;
+}
+
+/******************************************************************************/
+static uint64_t
+wyhash_rfx_tile(const uint8_t *src, int src_stride, int x, int y)
+{
+    uint64_t row_hashes[64];
+    wyhash_rfx_tile_rows(src, src_stride, x, y, row_hashes, 64);
+    return wyhash((const void*)row_hashes, 64*sizeof(uint64_t), WYHASH_SEED, _wyp);
 }
 
 /******************************************************************************/
@@ -820,6 +829,10 @@ rdpCapture1(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 }
 
 /******************************************************************************/
+#define SCROLL_SEARCH_DIST 256
+#define NUM_SCROLL_OFFSETS (SCROLL_SEARCH_DIST*2+1)
+#define SCROLL_DET_MIN_H (NUM_SCROLL_OFFSETS+64)
+#define SCROLL_DET_MIN_W SCROLL_DET_MIN_H
 static Bool
 rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             int *num_out_rects, BoxPtr scroll_rect, short *scroll_offset,
@@ -847,6 +860,38 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int num_skips;
 
     LLOGLN(10, ("rdpCapture2:"));
+    extents_rect = *rdpRegionExtents(in_reg);
+
+    /* only try to detect a scroll rectangle if area is big enough */
+    uint16_t *offset_histogram = g_new0(uint16_t, NUM_SCROLL_OFFSETS);
+    if(extents_rect.y2 - extents_rect.y1 >= SCROLL_DET_MIN_H &&
+       extents_rect.x2 - extents_rect.x1 >= SCROLL_DET_MIN_W)
+    {
+        y = extents_rect.y1 & ~63;
+        while (y < extents_rect.y2)
+        {
+            x = extents_rect.x1 & ~63;
+            while (x < extents_rect.x2)
+            {
+                rect.x1 = x;
+                rect.y1 = y - SCROLL_SEARCH_DIST;
+                rect.x2 = rect.x1 + 64;
+                rect.y2 = rect.y1 + 64 + SCROLL_SEARCH_DIST;
+                rcode = rdpRegionContainsRect(in_reg, &rect);
+                if (rcode == rgnIN)
+                {
+                    /* TODO don't use all rectangles to check for scrolling */
+
+                    /* check scroll offsets */
+                    crc_offset = (y / 64) * crc_stride + (x / 64);
+                    uint64_t target_hash = clientCon->rfx_crcs[crc_offset];
+                    wyhash_count_offsets(src, src_stride, x, y, target_hash, offset_histogram, NUM_SCROLL_OFFSETS);
+                }
+                x += 64;
+            }
+            y += 64;
+        }
+    }
 
     /* TODO detect scroll offset properly */
     *scroll_offset = 0;
@@ -884,7 +929,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         clientCon->rfx_crcs = g_new0(uint64_t, num_crcs);
     }
 
-    extents_rect = *rdpRegionExtents(in_reg);
     y = extents_rect.y1 & ~63;
     num_skips = 0;
     while (y < extents_rect.y2)
@@ -905,7 +949,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             if (rcode != rgnOUT && !in_scroll_rect)
             {
                 /* hex digits of pi as a 64 bit int */
-                crc = 0x3243f6a8885a308dull;
                 if (rcode == rgnPART)
                 {
                     LLOGLN(10, ("rdpCapture2: rgnPART"));
@@ -920,13 +963,14 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                                                   dst, dst_stride,
                                                   rects, num_rects);
                     crc_dst = dst + (y << 8) * (dst_stride >> 8) + (x << 8);
+                    crc = 0x3243f6a8885a308dull;
                     crc = wyhash((const void*)crc_dst, 64 * 64 * 4, crc, _wyp);
                     rdpRegionUninit(&tile_reg);
                 }
                 else /* rgnIN */
                 {
                     LLOGLN(10, ("rdpCapture2: rgnIN"));
-                    crc = wyhash_rfx_tile(src, src_stride, x, y, crc);
+                    crc = wyhash_rfx_tile(src, src_stride, x, y);
 
                 }
                 crc_offset = (y / 64) * crc_stride + (x / 64);
