@@ -112,6 +112,7 @@ struct _rdpClientCon
 
     int num_rfx_crcs_alloc;
     uint64_t *rfx_crcs;
+    uint64_t *rfx_tile_row_hashes;
 
     /* true = skip drawing */
     int suppress_output;
