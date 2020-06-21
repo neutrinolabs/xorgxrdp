@@ -862,6 +862,74 @@ rdpCapture1(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 }
 
 /******************************************************************************/
+static int
+find_scroll_rect(const uint8_t *map, int map_width, int map_height, int seed_y, BoxPtr foundRect)
+{
+    // find x extents at seed
+    int x1 = 0;
+    int x2 = 0; // exclusive
+    for(int x = 0; x < map_width; x++)
+    {
+        uint8_t v = map[seed_y*map_width+x];
+        if(v == 0 && x1 != x2) break; // already found a span and it ended
+        if(v != 0)
+        {
+            if(x1 == x2) x1 = x; // didn't have a span so start one
+            x2 = x+1;
+        }
+    }
+    DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollextentx, x1, x2);
+
+    // extend rectangle up and down
+    int y1 = 0;
+    int y2 = 0; // exclusive
+    for(int y = 0; y < map_height; y++)
+    {
+        uint8_t v = 1;
+        for(int x = x1; x < x2; x++)
+        {
+            if(map[y*map_width+x] == 0)
+            {
+                v = 0;
+                break;
+            }
+        }
+
+        if(v == 0 && y1 != y2) break; // already found a span and it ended
+        if(v != 0)
+        {
+            if(y1 == y2) y1 = y; // didn't have a span so start one
+            y2 = y+1;
+        }
+    }
+    DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollextenty, y1, y2);
+
+    if(x2 > x1 && y2 > y1)
+    {
+        foundRect->x1 = x1;
+        foundRect->x2 = x2;
+        foundRect->y1 = y1;
+        foundRect->y2 = y2;
+        return 1;
+    }
+
+    return 0;
+}
+
+/******************************************************************************/
+static void
+print_scroll_map(const uint8_t *map, int map_width, int map_height)
+{
+    for(int y = 0; y < map_height; y++) {
+        for(int x = 0; x < map_width; x++) {
+            char c = map[y*map_width+x] ? '#' : '.';
+            ErrorF("%c", c);
+        }
+        ErrorF("\n");
+    }
+}
+
+/******************************************************************************/
 #define SCROLL_SEARCH_DIST 256
 #define NUM_SCROLL_OFFSETS (SCROLL_SEARCH_DIST*2+1)
 #define SCROLL_DET_MIN_H (NUM_SCROLL_OFFSETS+64)
@@ -904,7 +972,8 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     crc_stride = (clientCon->dev->width + 63) / 64;
     // tile rows are column-major
     int tile_row_stride = ((clientCon->dev->height + 63) / 64) * 64;
-    num_crcs = crc_stride * ((clientCon->dev->height + 63) / 64);
+    int crc_height = ((clientCon->dev->height + 63) / 64);
+    num_crcs = crc_stride * crc_height;
     if (num_crcs != clientCon->num_rfx_crcs_alloc)
     {
         /* resize the hash list */
@@ -1005,10 +1074,12 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             }
         }
         free(offset_histogram);
+
+        // positive means we found the old contents below its old location
         best_offset -= SCROLL_SEARCH_DIST;
         DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrolldet, best_offset, max_count);
 
-        if(max_count >= 3) {
+        if(max_count >= 7) {
             int num_matched = 0;
             int num_checked = 0;
             uint8_t *scrolled_map = g_new0(uint8_t, num_crcs);
@@ -1042,7 +1113,27 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             }
             DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollmap, num_checked, num_matched);
 
+            // print_scroll_map(scrolled_map, crc_stride, crc_height);
+
             // find large rectangle from bitmap
+            int seed_y = ((extents_rect.y2 + extents_rect.y1) / 2) / 64;
+            BoxRec foundRect;
+            int found = find_scroll_rect(scrolled_map, crc_stride, crc_height, seed_y, &foundRect);
+            if(found)
+            {
+                // we copy to the scroll rect from the old frame at the scroll rect plus the y offset
+                // best_offset maps from old to new so we need to invert it to map new to old
+                *scroll_offset = -best_offset;
+                // transform old tile rect to new scroll rect
+                scroll_rect->x1 = foundRect.x1*64;
+                scroll_rect->x2 = foundRect.x2*64;
+                scroll_rect->y1 = foundRect.y1*64+best_offset;
+                scroll_rect->y2 = foundRect.y2*64+best_offset;
+
+                int tiles_scrolled = (foundRect.x2-foundRect.x1)*(foundRect.y2-foundRect.y1);
+                DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrolled, *scroll_offset, tiles_scrolled);
+            }
+
             free(scrolled_map);
         }
     }
@@ -1079,7 +1170,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             in_scroll_rect = (rect.x1 >= scroll_rect->x1) && (rect.x2 <= scroll_rect->x2) &&
                 (rect.y1 >= scroll_rect->y1) && (rect.y2 <= scroll_rect->y2);
 
-            if (rcode != rgnOUT && !in_scroll_rect)
+            if (rcode != rgnOUT)
             {
                 /* hex digits of pi as a 64 bit int */
                 if (rcode == rgnPART)
@@ -1116,22 +1207,25 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 }
                 else
                 {
-                    /* lazily only do this if hash wasn't identical */
-                    if (rcode != rgnPART)
-                    {
-                        rdpCopyBox_a8r8g8b8_to_yuvalp(x, y,
-                              src, src_stride,
-                              dst, dst_stride,
-                              &rect, 1);
-                    }
                     clientCon->rfx_crcs[crc_offset] = crc;
-                    (*out_rects)[out_rect_index] = rect;
-                    out_rect_index++;
-                    if (out_rect_index >= RDP_MAX_TILES)
+                    if(!in_scroll_rect)
                     {
-                        free(*out_rects);
-                        *out_rects = NULL;
-                        return FALSE;
+                        /* lazily only do this if hash wasn't identical */
+                        if (rcode != rgnPART)
+                        {
+                            rdpCopyBox_a8r8g8b8_to_yuvalp(x, y,
+                                  src, src_stride,
+                                  dst, dst_stride,
+                                  &rect, 1);
+                        }
+                        (*out_rects)[out_rect_index] = rect;
+                        out_rect_index++;
+                        if (out_rect_index >= RDP_MAX_TILES)
+                        {
+                            free(*out_rects);
+                            *out_rects = NULL;
+                            return FALSE;
+                        }
                     }
                 }
             }
