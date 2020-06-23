@@ -38,8 +38,6 @@ capture
 #include <xf86.h>
 #include <xf86_OSproc.h>
 
-#include <sys/sdt.h>
-
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
@@ -592,15 +590,6 @@ wyhash_rfx_tile_rows(const uint8_t *src, int src_stride, int x, int y,
 
 /******************************************************************************/
 static uint64_t
-wyhash_rfx_tile(const uint8_t *src, int src_stride, int x, int y)
-{
-    uint64_t row_hashes[64];
-    wyhash_rfx_tile_rows(src, src_stride, x, y, row_hashes, 64);
-    return wyhash((const void*)row_hashes, 64*sizeof(uint64_t), WYHASH_SEED, _wyp);
-}
-
-/******************************************************************************/
-static uint64_t
 wyhash_rfx_tile_from_rows(const uint64_t *tile_rows, int tile_row_stride, int x, int y)
 {
     const uint64_t *row_hashes = tile_rows + (x / 64) * tile_row_stride + y;
@@ -878,7 +867,6 @@ find_scroll_rect(const uint8_t *map, int map_width, int map_height, int seed_y, 
             x2 = x+1;
         }
     }
-    DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollextentx, x1, x2);
 
     // extend rectangle up and down
     int y1 = 0;
@@ -902,7 +890,6 @@ find_scroll_rect(const uint8_t *map, int map_width, int map_height, int seed_y, 
             y2 = y+1;
         }
     }
-    DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollextenty, y1, y2);
 
     if(x2 > x1 && y2 > y1)
     {
@@ -914,19 +901,6 @@ find_scroll_rect(const uint8_t *map, int map_width, int map_height, int seed_y, 
     }
 
     return 0;
-}
-
-/******************************************************************************/
-static void
-print_scroll_map(const uint8_t *map, int map_width, int map_height)
-{
-    for(int y = 0; y < map_height; y++) {
-        for(int x = 0; x < map_width; x++) {
-            char c = map[y*map_width+x] ? '#' : '.';
-            ErrorF("%c", c);
-        }
-        ErrorF("\n");
-    }
 }
 
 /******************************************************************************/
@@ -1011,7 +985,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         }
         x += 64;
     }
-    DTRACE_PROBE1(xorgxrdp, rdpCapture2_firstrows, num_diff_first_rows);
 
     *scroll_offset = 0;
     scroll_rect->x1 = 0;
@@ -1077,7 +1050,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
         // positive means we found the old contents below its old location
         best_offset -= SCROLL_SEARCH_DIST;
-        DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrolldet, best_offset, max_count);
 
         if(max_count >= 7) {
             int num_matched = 0;
@@ -1111,10 +1083,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 }
                 x += 64;
             }
-            DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollmap, num_checked, num_matched);
-
-            // ErrorF("scroll: %i probes for %i (%i,%i)x(%i,%i) \n", max_count, best_offset, extents_rect.x1, extents_rect.y1, extents_rect.x2, extents_rect.y2);
-            // print_scroll_map(scrolled_map, crc_stride, crc_height);
 
             // find large rectangle from bitmap
             int seed_y = ((extents_rect.y2 + extents_rect.y1) / 2) / 64;
@@ -1134,7 +1102,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     scroll_rect->y1 = foundRect.y1*64+best_offset;
                     scroll_rect->y2 = foundRect.y2*64+best_offset;
 
-                    DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrolled, *scroll_offset, tiles_scrolled);
                 }
             }
 
@@ -1237,7 +1204,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         }
         y += 64;
     }
-    DTRACE_PROBE2(xorgxrdp, rdpCapture2, out_rect_index, num_skips);
     *num_out_rects = out_rect_index;
     return TRUE;
 }
