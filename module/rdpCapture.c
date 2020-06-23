@@ -1113,6 +1113,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             }
             DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollmap, num_checked, num_matched);
 
+            // ErrorF("scroll: %i probes for %i (%i,%i)x(%i,%i) \n", max_count, best_offset, extents_rect.x1, extents_rect.y1, extents_rect.x2, extents_rect.y2);
             // print_scroll_map(scrolled_map, crc_stride, crc_height);
 
             // find large rectangle from bitmap
@@ -1121,17 +1122,20 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             int found = find_scroll_rect(scrolled_map, crc_stride, crc_height, seed_y, &foundRect);
             if(found)
             {
-                // we copy to the scroll rect from the old frame at the scroll rect plus the y offset
-                // best_offset maps from old to new so we need to invert it to map new to old
-                *scroll_offset = -best_offset;
-                // transform old tile rect to new scroll rect
-                scroll_rect->x1 = foundRect.x1*64;
-                scroll_rect->x2 = foundRect.x2*64;
-                scroll_rect->y1 = foundRect.y1*64+best_offset;
-                scroll_rect->y2 = foundRect.y2*64+best_offset;
-
                 int tiles_scrolled = (foundRect.x2-foundRect.x1)*(foundRect.y2-foundRect.y1);
-                DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrolled, *scroll_offset, tiles_scrolled);
+                if(tiles_scrolled > 10)
+                {
+                    // we copy to the scroll rect from the old frame at the scroll rect plus the y offset
+                    // best_offset maps from old to new so we need to invert it to map new to old
+                    *scroll_offset = -best_offset;
+                    // transform old tile rect to new scroll rect
+                    scroll_rect->x1 = foundRect.x1*64;
+                    scroll_rect->x2 = foundRect.x2*64;
+                    scroll_rect->y1 = foundRect.y1*64+best_offset;
+                    scroll_rect->y2 = foundRect.y2*64+best_offset;
+
+                    DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrolled, *scroll_offset, tiles_scrolled);
+                }
             }
 
             free(scrolled_map);
