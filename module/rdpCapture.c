@@ -1109,14 +1109,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         }
     }
 
-
-    /* for testing */
-    // *scroll_offset = 76;
-    // scroll_rect->x1 = 64*3;
-    // scroll_rect->x2 = 64*60;
-    // scroll_rect->y1 = 64*6;
-    // scroll_rect->y2 = 64*33;
-
     *out_rects = g_new(BoxRec, RDP_MAX_TILES);
     if (*out_rects == NULL)
     {
