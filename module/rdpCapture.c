@@ -912,21 +912,6 @@ find_scroll_rect(const uint8_t *map, int map_width, int map_height,
 }
 
 /******************************************************************************/
-static void
-print_scroll_map(const uint8_t *map, int map_width, int map_height)
-{
-    int y, x;
-    char c;
-    for(y = 0; y < map_height; y++) {
-        for(x = 0; x < map_width; x++) {
-            c = map[y*map_width+x] ? '#' : '.';
-            ErrorF("%c", c);
-        }
-        ErrorF("\n");
-    }
-}
-
-/******************************************************************************/
 #define SCROLL_SEARCH_DIST 256
 #define NUM_SCROLL_OFFSETS (SCROLL_SEARCH_DIST*2+1)
 #define SCROLL_DET_MIN_H (NUM_SCROLL_OFFSETS+64)
@@ -1212,8 +1197,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
                 }
                 crc_offset = (y / 64) * crc_stride + (x / 64);
-                LLOGLN(10, ("rdpCapture2: crc 0x%8.8lx 0x%8.8lx",
-                       crc, clientCon->rfx_crcs[crc_offset]));
                 if (crc == clientCon->rfx_crcs[crc_offset])
                 {
                     LLOGLN(10, ("rdpCapture2: crc skip at x %d y %d", x, y));
