@@ -2390,14 +2390,17 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
         num_rects = 0;
         LLOGLN(10, ("rdpCapRect: capture_code %d",
                     clientCon->client_info.capture_code));
-        if (rdpCapture(clientCon, cap_dirty, &rects, &num_rects, &scroll_rect, &scroll_offset, id))
+        if (rdpCapture(clientCon, cap_dirty, &rects, &num_rects, 
+            &scroll_rect, &scroll_offset, id))
         {
             LLOGLN(10, ("rdpCapRect: num_rects %d", num_rects));
             if (scroll_offset != 0)
             {
                 rdpClientConScreenBlt(clientCon->dev, clientCon,
-                      scroll_rect.x1, scroll_rect.y1, scroll_rect.x2-scroll_rect.x1,
-                      scroll_rect.y2-scroll_rect.y1, scroll_rect.x1, scroll_rect.y1+scroll_offset);
+                      scroll_rect.x1, scroll_rect.y1, 
+                      scroll_rect.x2-scroll_rect.x1,
+                      scroll_rect.y2-scroll_rect.y1, 
+                      scroll_rect.x1, scroll_rect.y1+scroll_offset);
             }
             rdpClientConSendPaintRectShmEx(clientCon->dev, clientCon, id,
                                            cap_dirty, rects, num_rects);

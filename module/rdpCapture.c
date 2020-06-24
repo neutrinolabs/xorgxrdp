@@ -590,7 +590,8 @@ wyhash_rfx_tile_rows(const uint8_t *src, int src_stride, int x, int y,
 
 /******************************************************************************/
 static uint64_t
-wyhash_rfx_tile_from_rows(const uint64_t *tile_rows, int tile_row_stride, int x, int y)
+wyhash_rfx_tile_from_rows(const uint64_t *tile_rows, int tile_row_stride, 
+                          int x, int y)
 {
     const uint64_t *row_hashes;
     row_hashes = tile_rows + (x / 64) * tile_row_stride + y;
@@ -599,13 +600,15 @@ wyhash_rfx_tile_from_rows(const uint64_t *tile_rows, int tile_row_stride, int x,
 
 /******************************************************************************/
 static void
-wyhash_count_offsets(const uint64_t *row_hashes, uint64_t target_hash, uint16_t *offset_histogram, int num_offsets, int neutral_offset)
+wyhash_count_offsets(const uint64_t *row_hashes, uint64_t target_hash, 
+    uint16_t *offset_histogram, int num_offsets, int neutral_offset)
 {
     int offset;
     /* if a tile as the same as the previous frame with no offset we wouldn't
        need to encode it anyways and also it might be a repeating/blank
        pattern that would cause false positives in our detection */
-    uint64_t neutral_hash = wyhash((const void*)(row_hashes+neutral_offset), 64*sizeof(uint64_t), WYHASH_SEED, _wyp);
+    uint64_t neutral_hash = wyhash((const void*)(row_hashes+neutral_offset), 
+        64*sizeof(uint64_t), WYHASH_SEED, _wyp);
     if(neutral_hash == target_hash)
     {
         return;
@@ -614,7 +617,8 @@ wyhash_count_offsets(const uint64_t *row_hashes, uint64_t target_hash, uint16_t 
     for(offset = 0; offset < num_offsets; offset++)
     {
         if(offset != neutral_offset) {
-            uint64_t offset_tile_hash = wyhash((const void*)(row_hashes+offset), 64*sizeof(uint64_t), WYHASH_SEED, _wyp);
+            uint64_t offset_tile_hash = wyhash((const void*)(row_hashes+offset), 
+                64*sizeof(uint64_t), WYHASH_SEED, _wyp);
             if(offset_tile_hash == target_hash)
             {
                 offset_histogram[offset] += 1;
