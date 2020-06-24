@@ -110,24 +110,4 @@ static __inline__ uint64_t wyhash(const void *key, uint64_t len, uint64_t seed, 
 const uint64_t _wyp[5] = {0xa0761d6478bd642full, 0xe7037ed1a0b428dbull, 0x8ebc6af09c88c6e3ull, 0x589965cc75374cc3ull, 0x1d8e4e27c47d124full};
 static __inline__ uint64_t wyhash64(uint64_t A, uint64_t B){  A^=_wyp[0]; B^=_wyp[1];  _wymum(&A,&B);  return _wymix(A^_wyp[0],B^_wyp[1]);}
 static __inline__ uint64_t wyrand(uint64_t *seed){  *seed+=_wyp[0]; return _wymix(*seed,*seed^_wyp[1]);}
-static __inline__ void make_secret(uint64_t seed, uint64_t *secret){
-  size_t i, j;
-  uint8_t c[] = {15, 23, 27, 29, 30, 39, 43, 45, 46, 51, 53, 54, 57, 58, 60, 71, 75, 77, 78, 83, 85, 86, 89, 90, 92, 99, 101, 102, 105, 106, 108, 113, 114, 116, 120, 135, 139, 141, 142, 147, 149, 150, 153, 154, 156, 163, 165, 166, 169, 170, 172, 177, 178, 180, 184, 195, 197, 198, 201, 202, 204, 209, 210, 212, 216, 225, 226, 228, 232, 240 };
-  for(i=0;i<5;i++){
-    uint8_t ok;
-    do{
-      ok=1; secret[i]=0;
-      for(j=0;j<64;j+=8) secret[i]|=((uint64_t)c[wyrand(&seed)%sizeof(c)])<<j;
-      if(secret[i]%2==0){ ok=0; continue; }
-      for(j=0;j<i;j++)
-#if defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__clang__)
-        if(__builtin_popcountll(secret[j]^secret[i])!=32){ ok=0; break; }
-#elif defined(_MSC_VER)
-        if(_mm_popcnt_u64(secret[j]^secret[i])!=32){ ok=0; break; }
-#endif
-       if(!ok)continue;
-       for(j=3;j<0x100000000ull;j+=2) if(secret[i]%j==0){ ok=0; break; }
-    }while(!ok);
-  }
-}
 #endif
