@@ -1,5 +1,5 @@
 EXTRA_DIST = common.asm nasm_lt.sh
-EXTRA_FLAGS = --std=gnu90 --pedantic
+EXTRA_FLAGS =
 EXTRA_SOURCES =
 EXTRA_HEADERS =
 SUBDIRS =
