@@ -592,18 +592,10 @@ wyhash_rfx_tile_rows(const uint8_t *src, int src_stride, int x, int y,
 
 /******************************************************************************/
 static uint64_t
-wyhash_rfx_tile(const uint8_t *src, int src_stride, int x, int y)
-{
-    uint64_t row_hashes[64];
-    wyhash_rfx_tile_rows(src, src_stride, x, y, row_hashes, 64);
-    return wyhash((const void*)row_hashes, 64*sizeof(uint64_t), WYHASH_SEED, _wyp);
-}
-
-/******************************************************************************/
-static uint64_t
 wyhash_rfx_tile_from_rows(const uint64_t *tile_rows, int tile_row_stride, int x, int y)
 {
-    const uint64_t *row_hashes = tile_rows + (x / 64) * tile_row_stride + y;
+    const uint64_t *row_hashes;
+    row_hashes = tile_rows + (x / 64) * tile_row_stride + y;
     return wyhash((const void*)row_hashes, 64*sizeof(uint64_t), WYHASH_SEED, _wyp);
 }
 
@@ -611,6 +603,7 @@ wyhash_rfx_tile_from_rows(const uint64_t *tile_rows, int tile_row_stride, int x,
 static void
 wyhash_count_offsets(const uint64_t *row_hashes, uint64_t target_hash, uint16_t *offset_histogram, int num_offsets, int neutral_offset)
 {
+    int offset;
     /* if a tile as the same as the previous frame with no offset we wouldn't
        need to encode it anyways and also it might be a repeating/blank
        pattern that would cause false positives in our detection */
@@ -620,7 +613,7 @@ wyhash_count_offsets(const uint64_t *row_hashes, uint64_t target_hash, uint16_t 
         return;
     }
 
-    for(int offset = 0; offset < num_offsets; offset++)
+    for(offset = 0; offset < num_offsets; offset++)
     {
         if(offset != neutral_offset) {
             uint64_t offset_tile_hash = wyhash((const void*)(row_hashes+offset), 64*sizeof(uint64_t), WYHASH_SEED, _wyp);
@@ -863,30 +856,32 @@ rdpCapture1(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
 /******************************************************************************/
 static int
-find_scroll_rect(const uint8_t *map, int map_width, int map_height, int seed_y, BoxPtr foundRect)
+find_scroll_rect(const uint8_t *map, int map_width, int map_height, 
+                 int seed_y, BoxPtr foundRect)
 {
-    // find x extents at seed
-    int x1 = 0;
-    int x2 = 0; // exclusive
-    for(int x = 0; x < map_width; x++)
+    int x1, x2, y1, y2, x, y;
+    /* find x extents at seed */
+    x1 = 0;
+    x2 = 0; /* exclusive */
+    for(x = 0; x < map_width; x++)
     {
         uint8_t v = map[seed_y*map_width+x];
-        if(v == 0 && x1 != x2) break; // already found a span and it ended
+        if(v == 0 && x1 != x2) break; /* already found a span and it ended */
         if(v != 0)
         {
-            if(x1 == x2) x1 = x; // didn't have a span so start one
+            if(x1 == x2) x1 = x; /* didn't have a span so start one */
             x2 = x+1;
         }
     }
     DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollextentx, x1, x2);
 
-    // extend rectangle up and down
-    int y1 = 0;
-    int y2 = 0; // exclusive
-    for(int y = 0; y < map_height; y++)
+    /* extend rectangle up and down */
+    y1 = 0;
+    y2 = 0; /* exclusive */
+    for(y = 0; y < map_height; y++)
     {
         uint8_t v = 1;
-        for(int x = x1; x < x2; x++)
+        for(x = x1; x < x2; x++)
         {
             if(map[y*map_width+x] == 0)
             {
@@ -895,10 +890,10 @@ find_scroll_rect(const uint8_t *map, int map_width, int map_height, int seed_y, 
             }
         }
 
-        if(v == 0 && y1 != y2) break; // already found a span and it ended
+        if(v == 0 && y1 != y2) break; /* already found a span and it ended */
         if(v != 0)
         {
-            if(y1 == y2) y1 = y; // didn't have a span so start one
+            if(y1 == y2) y1 = y; /* didn't have a span so start one */
             y2 = y+1;
         }
     }
@@ -920,9 +915,11 @@ find_scroll_rect(const uint8_t *map, int map_width, int map_height, int seed_y, 
 static void
 print_scroll_map(const uint8_t *map, int map_width, int map_height)
 {
-    for(int y = 0; y < map_height; y++) {
-        for(int x = 0; x < map_width; x++) {
-            char c = map[y*map_width+x] ? '#' : '.';
+    int y, x;
+    char c;
+    for(y = 0; y < map_height; y++) {
+        for(x = 0; x < map_width; x++) {
+            c = map[y*map_width+x] ? '#' : '.';
             ErrorF("%c", c);
         }
         ErrorF("\n");
@@ -960,6 +957,19 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     uint64_t crc;
     int num_crcs;
     int num_skips;
+    int tile_row_stride, crc_height;
+    int i, best_offset, num_diff_first_rows;
+    int xn, px, yn, py;
+    int num_matched, num_checked;
+    int seed_y, found, tiles_scrolled;
+    uint64_t *row_hashes;
+    uint64_t old_first_row, new_first_row;
+    uint16_t *offset_histogram;
+    uint16_t max_count;
+    uint8_t *scrolled_map;
+    uint64_t old_hash, new_hash;
+    uint64_t target_hash;
+    BoxRec foundRect;
 
     LLOGLN(10, ("rdpCapture2:"));
     extents_rect = *rdpRegionExtents(in_reg);
@@ -970,9 +980,9 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     dst_stride = clientCon->cap_stride_bytes;
 
     crc_stride = (clientCon->dev->width + 63) / 64;
-    // tile rows are column-major
-    int tile_row_stride = ((clientCon->dev->height + 63) / 64) * 64;
-    int crc_height = ((clientCon->dev->height + 63) / 64);
+    /* tile rows are column-major */
+    tile_row_stride = ((clientCon->dev->height + 63) / 64) * 64;
+    crc_height = ((clientCon->dev->height + 63) / 64);
     num_crcs = crc_stride * crc_height;
     if (num_crcs != clientCon->num_rfx_crcs_alloc)
     {
@@ -981,13 +991,12 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         free(clientCon->rfx_crcs);
         free(clientCon->rfx_tile_row_hashes);
         clientCon->rfx_crcs = g_new0(uint64_t, num_crcs);
-        int num_tile_rows = num_crcs * 64;
-        clientCon->rfx_tile_row_hashes = g_new0(uint64_t, num_tile_rows);
+        clientCon->rfx_tile_row_hashes = g_new0(uint64_t, num_crcs * 64);
     }
 
-    // update the tile row hashes
-    // column major order to be kind to prefetchers even though it shouldn't matter much
-    int num_diff_first_rows = 0;
+    /* update the tile row hashes. Column major order to be kind to 
+       prefetchers even though it shouldn't matter much */
+    num_diff_first_rows = 0;
     x = extents_rect.x1 & ~63;
     while (x < extents_rect.x2)
     {
@@ -1001,10 +1010,11 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             rcode = rdpRegionContainsRect(in_reg, &rect);
             if (rcode == rgnIN)
             {
-                uint64_t *row_hashes = clientCon->rfx_tile_row_hashes + (x / 64) * tile_row_stride + y;
-                uint64_t old_first_row = row_hashes[0];
+                row_hashes = clientCon->rfx_tile_row_hashes + 
+                    (x / 64) * tile_row_stride + y;
+                old_first_row = row_hashes[0];
                 wyhash_rfx_tile_rows(src, src_stride, x, y, row_hashes, 64);
-                uint64_t new_first_row = row_hashes[0];
+                new_first_row = row_hashes[0];
                 num_diff_first_rows += (old_first_row != new_first_row);
             }
             y += 64;
@@ -1024,12 +1034,12 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
        extents_rect.x2 - extents_rect.x1 >= SCROLL_DET_MIN_W &&
        num_diff_first_rows >= SCROLL_DET_MIN_FIRST_ROW_CHANGES)
     {
-        // probe for candidate scroll offsets
-        uint16_t *offset_histogram = g_new0(uint16_t, NUM_SCROLL_OFFSETS);
-        int xn = 0;
-        int px = 0;
-        int yn = 0;
-        int py = 0;
+        /* probe for candidate scroll offsets */
+        offset_histogram = g_new0(uint16_t, NUM_SCROLL_OFFSETS);
+        xn = 0;
+        px = 0;
+        yn = 0;
+        py = 0;
         y = extents_rect.y1 & ~63;
         while (y < extents_rect.y2)
         {
@@ -1043,7 +1053,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 rcode = rdpRegionContainsRect(in_reg, &rect);
                 if (rcode == rgnIN)
                 {
-                    /* only use a grid of spaced rectangles for scroll detection */
+                    /* only use a grid of spaced rects for scroll detection */
                     if(x != px) xn += 1;
                     if(y != py) yn += 1;
                     px = x;
@@ -1052,9 +1062,12 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     {
                         /* check scroll offsets */
                         crc_offset = (y / 64) * crc_stride + (x / 64);
-                        uint64_t target_hash = clientCon->rfx_crcs[crc_offset];
-                        uint64_t *row_hashes = clientCon->rfx_tile_row_hashes + (rect.x1 / 64) * tile_row_stride + rect.y1;
-                        wyhash_count_offsets(row_hashes, target_hash, offset_histogram, NUM_SCROLL_OFFSETS, SCROLL_SEARCH_DIST);
+                        target_hash = clientCon->rfx_crcs[crc_offset];
+                        row_hashes = clientCon->rfx_tile_row_hashes + 
+                            (rect.x1 / 64) * tile_row_stride + rect.y1;
+                        wyhash_count_offsets(row_hashes, target_hash, 
+                            offset_histogram, NUM_SCROLL_OFFSETS, 
+                            SCROLL_SEARCH_DIST);
                     }
                 }
                 x += 64;
@@ -1062,10 +1075,10 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             y += 64;
         }
 
-        // find the best candidate scroll offset
-        int best_offset = 0;
-        uint16_t max_count = 0;
-        for(int i = 0; i < NUM_SCROLL_OFFSETS; i++)
+        /* find the best candidate scroll offset */
+        best_offset = 0;
+        max_count = 0;
+        for(i = 0; i < NUM_SCROLL_OFFSETS; i++)
         {
             if(offset_histogram[i] >= max_count)
             {
@@ -1075,15 +1088,15 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         }
         free(offset_histogram);
 
-        // positive means we found the old contents below its old location
+        /* positive means we found the old contents below its old location */
         best_offset -= SCROLL_SEARCH_DIST;
         DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrolldet, best_offset, max_count);
 
         if(max_count >= 7) {
-            int num_matched = 0;
-            int num_checked = 0;
-            uint8_t *scrolled_map = g_new0(uint8_t, num_crcs);
-            // make bitmap of tiles with that offset
+            num_matched = 0;
+            num_checked = 0;
+            scrolled_map = g_new0(uint8_t, num_crcs);
+            /* make bitmap of tiles with that offset */
             x = extents_rect.x1 & ~63;
             while (x < extents_rect.x2)
             {
@@ -1099,9 +1112,11 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     {
                         num_checked += 1;
                         crc_offset = (y / 64) * crc_stride + (x / 64);
-                        uint64_t old_tile_hash = clientCon->rfx_crcs[crc_offset];
-                        uint64_t new_tile_hash = wyhash_rfx_tile_from_rows(clientCon->rfx_tile_row_hashes, tile_row_stride, rect.x1, rect.y1);
-                        if(old_tile_hash == new_tile_hash)
+                        old_hash = clientCon->rfx_crcs[crc_offset];
+                        new_hash = wyhash_rfx_tile_from_rows(
+                            clientCon->rfx_tile_row_hashes, tile_row_stride, 
+                            rect.x1, rect.y1);
+                        if(old_hash == new_hash)
                         {
                             scrolled_map[crc_offset] = 1;
                             num_matched += 1;
@@ -1113,22 +1128,21 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             }
             DTRACE_PROBE2(xorgxrdp, rdpCapture2_scrollmap, num_checked, num_matched);
 
-            // ErrorF("scroll: %i probes for %i (%i,%i)x(%i,%i) \n", max_count, best_offset, extents_rect.x1, extents_rect.y1, extents_rect.x2, extents_rect.y2);
-            // print_scroll_map(scrolled_map, crc_stride, crc_height);
-
-            // find large rectangle from bitmap
-            int seed_y = ((extents_rect.y2 + extents_rect.y1) / 2) / 64;
-            BoxRec foundRect;
-            int found = find_scroll_rect(scrolled_map, crc_stride, crc_height, seed_y, &foundRect);
+            /* find large rectangle from bitmap */
+            seed_y = ((extents_rect.y2 + extents_rect.y1) / 2) / 64;
+            found = find_scroll_rect(scrolled_map, crc_stride, 
+                crc_height, seed_y, &foundRect);
             if(found)
             {
-                int tiles_scrolled = (foundRect.x2-foundRect.x1)*(foundRect.y2-foundRect.y1);
+                tiles_scrolled = (foundRect.x2-foundRect.x1)*
+                    (foundRect.y2-foundRect.y1);
                 if(tiles_scrolled > 10)
                 {
-                    // we copy to the scroll rect from the old frame at the scroll rect plus the y offset
-                    // best_offset maps from old to new so we need to invert it to map new to old
+                    /* we copy to the scroll rect from the old frame at the
+                       scroll rect plus the y offset best_offset maps from old
+                       to new so we need to invert it to map new to old */
                     *scroll_offset = -best_offset;
-                    // transform old tile rect to new scroll rect
+                    /* transform old tile rect to new scroll rect */
                     scroll_rect->x1 = foundRect.x1*64;
                     scroll_rect->x2 = foundRect.x2*64;
                     scroll_rect->y1 = foundRect.y1*64+best_offset;
@@ -1141,14 +1155,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             free(scrolled_map);
         }
     }
-
-
-    /* for testing */
-    // *scroll_offset = 76;
-    // scroll_rect->x1 = 64*3;
-    // scroll_rect->x2 = 64*60;
-    // scroll_rect->y1 = 64*6;
-    // scroll_rect->y2 = 64*33;
 
     *out_rects = g_new(BoxRec, RDP_MAX_TILES);
     if (*out_rects == NULL)
@@ -1171,8 +1177,10 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             rcode = rdpRegionContainsRect(in_reg, &rect);
             LLOGLN(10, ("rdpCapture2: rcode %d", rcode));
 
-            in_scroll_rect = (rect.x1 >= scroll_rect->x1) && (rect.x2 <= scroll_rect->x2) &&
-                (rect.y1 >= scroll_rect->y1) && (rect.y2 <= scroll_rect->y2);
+            in_scroll_rect = (rect.x1 >= scroll_rect->x1) 
+                && (rect.x2 <= scroll_rect->x2) 
+                && (rect.y1 >= scroll_rect->y1) 
+                && (rect.y2 <= scroll_rect->y2);
 
             if (rcode != rgnOUT)
             {
@@ -1185,7 +1193,8 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     rdpRegionIntersect(&tile_reg, in_reg, &tile_reg);
                     rects = REGION_RECTS(&tile_reg);
                     num_rects = REGION_NUM_RECTS(&tile_reg);
-                    crc = wyhash((const void*)rects, num_rects * sizeof(BoxRec), crc, _wyp);
+                    crc = wyhash((const void*)rects, num_rects * sizeof(BoxRec), 
+                        crc, _wyp);
                     rdpCopyBox_a8r8g8b8_to_yuvalp(x, y,
                                                   src, src_stride,
                                                   dst, dst_stride,
@@ -1198,7 +1207,8 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 else /* rgnIN */
                 {
                     LLOGLN(10, ("rdpCapture2: rgnIN"));
-                    crc = wyhash_rfx_tile_from_rows(clientCon->rfx_tile_row_hashes, tile_row_stride, x, y);
+                    crc = wyhash_rfx_tile_from_rows(
+                        clientCon->rfx_tile_row_hashes, tile_row_stride, x, y);
 
                 }
                 crc_offset = (y / 64) * crc_stride + (x / 64);
