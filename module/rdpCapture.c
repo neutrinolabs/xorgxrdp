@@ -941,7 +941,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int tile_row_stride, crc_height;
     int i, best_offset, num_diff_first_rows;
     int xn, px, yn, py;
-    int num_matched, num_checked;
     int seed_y, found, tiles_scrolled;
     uint64_t *row_hashes;
     uint64_t old_first_row, new_first_row;
@@ -1072,8 +1071,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         best_offset -= SCROLL_SEARCH_DIST;
 
         if(max_count >= 7) {
-            num_matched = 0;
-            num_checked = 0;
             scrolled_map = g_new0(uint8_t, num_crcs);
             /* make bitmap of tiles with that offset */
             x = extents_rect.x1 & ~63;
@@ -1089,7 +1086,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     rcode = rdpRegionContainsRect(in_reg, &rect);
                     if (rcode == rgnIN)
                     {
-                        num_checked += 1;
                         crc_offset = (y / 64) * crc_stride + (x / 64);
                         old_hash = clientCon->rfx_crcs[crc_offset];
                         new_hash = wyhash_rfx_tile_from_rows(
@@ -1098,7 +1094,6 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                         if(old_hash == new_hash)
                         {
                             scrolled_map[crc_offset] = 1;
-                            num_matched += 1;
                         }
                     }
                     y += 64;
