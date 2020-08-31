@@ -28,7 +28,7 @@ if test "x${enable_glamor}" = "xyes"; then
 fi
 
 if test "x$XRDP_CFLAGS" = "x"; then
-  PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.13])
+  PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.14])
   XRDP_CFLAGS=`pkg-config xrdp --cflags`
 fi
 
