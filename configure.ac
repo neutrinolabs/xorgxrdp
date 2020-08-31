@@ -2,7 +2,7 @@
 
 AC_PREREQ(2.65)
 # package version must be x.y.z
-AC_INIT([xorgxrdp], [0.2.13], [xrdp-devel@googlegroups.com])
+AC_INIT([xorgxrdp], [0.2.14], [xrdp-devel@googlegroups.com])
 package_version_major=$(echo ${PACKAGE_VERSION}|cut -d. -f1)
 package_version_minor=$(echo ${PACKAGE_VERSION}|cut -d. -f2)
 package_version_patchlevel=$(echo ${PACKAGE_VERSION}|cut -d. -f3)
