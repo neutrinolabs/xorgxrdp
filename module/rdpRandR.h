@@ -61,6 +61,6 @@ extern _X_EXPORT Bool
 rdpRRSetPanning(ScreenPtr pScrn, RRCrtcPtr crtc, BoxPtr totalArea,
                 BoxPtr trackingArea, INT16* border);
 extern _X_EXPORT int
-rdpRRSetRdpOutputs(rdpPtr dev);
+rdpRRSetRdpOutputs(rdpPtr dev, rdpClientCon *clientCon);
 
 #endif
