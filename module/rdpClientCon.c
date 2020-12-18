@@ -1377,6 +1377,7 @@ rdpClientConInit(rdpPtr dev)
             return 1;
         }
         g_sck_listen(dev->disconnect_sck);
+        g_chmod_hex(dev->disconnect_uds, 0x0660);
         rdpClientConAddEnabledDevice(dev->pScreen, dev->disconnect_sck);
     }
 
