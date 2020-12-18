@@ -1447,7 +1447,11 @@ rdpClientConDeinit(rdpPtr dev)
         rdpClientConRemoveEnabledDevice(dev->listen_sck);
         g_sck_close(dev->listen_sck);
         LLOGLN(0, ("rdpClientConDeinit: deleting file %s", dev->uds_data));
-        unlink(dev->uds_data);
+        if (unlink(dev->uds_data) < 0)
+        {
+            LLOGLN(0, ("rdpClientConDeinit: failed to delete %s (%s)",
+                        dev->uds_data, strerror(errno)));
+        }
     }
 
     if (dev->disconnect_sck != 0)
@@ -1455,7 +1459,11 @@ rdpClientConDeinit(rdpPtr dev)
         rdpClientConRemoveEnabledDevice(dev->disconnect_sck);
         g_sck_close(dev->disconnect_sck);
         LLOGLN(0, ("rdpClientConDeinit: deleting file %s", dev->disconnect_uds));
-        unlink(dev->disconnect_uds);
+        if (unlink(dev->disconnect_uds) < 0)
+        {
+            LLOGLN(0, ("rdpClientConDeinit: failed to delete %s (%s)",
+                        dev->disconnect_uds, strerror(errno)));
+        }
     }
 
     return 0;
