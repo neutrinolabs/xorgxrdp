@@ -1401,7 +1401,6 @@ rdpClientConInit(rdpPtr dev)
         i = atoi(ptext);
         if (i > 0)
         {
-            dev->do_kill_disconnected = 1;
             dev->disconnect_timeout_s = atoi(ptext);
         }
     }
@@ -1409,7 +1408,11 @@ rdpClientConInit(rdpPtr dev)
     if (ptext != 0)
     {
         i = atoi(ptext);
-        if (i != 0)
+        if (i == 0)
+        {
+            dev->do_kill_disconnected = 0;
+        }
+        else
         {
             dev->do_kill_disconnected = 1;
         }
