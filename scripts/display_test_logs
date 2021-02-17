@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Display any logs in the tests folder
+
+# Move to the project root directory
+if cd `dirname $0`/.. ; then
+    found=
+    for f in tests/*.log; do
+        if [ -f $f ]; then
+            echo
+            echo === $f ===
+            echo
+            cat $f
+            found=1
+        fi
+    done
+    if [ -z "$found" ]; then
+        echo "No test logs are available"
+    fi
+fi
+
+exit $?
