@@ -3,7 +3,14 @@
 # Test that Xorg can load the compiled modules
 
 # X server to run
-: ${XORG=Xorg}
+if [ -z "$XORG" ]; then
+    if [ -x /usr/lib/xorg/Xorg ]; then
+        # Don't use the Ubuntu wrapped server
+        XORG=/usr/lib/xorg/Xorg
+    else
+        XORG=Xorg
+    fi
+fi
 
 # Client to connect to Xorg
 : ${XCLIENT=xdpyinfo}
