@@ -211,6 +211,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
 
     LLOGLN(0, ("rdpClientConGotConnection:"));
     clientCon = g_new0(rdpClientCon, 1);
+    clientCon->shmemstatus = SHM_UNINITIALIZED;
     clientCon->dev = dev;
     dev->last_event_time_ms = GetTimeInMillis();
     dev->do_dirty_ons = 1;
@@ -690,6 +691,7 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
 
     LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: set width %d height %d "
            "bpp %d", width, height, bpp));
+    clientCon->shmemstatus = SHM_RESIZING;
     clientCon->rdp_width = width;
     clientCon->rdp_height = height;
     clientCon->rdp_bpp = bpp;
@@ -828,6 +830,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     int i1;
     int index;
     BoxRec box;
+    enum shared_memory_status shmemstatus = SHM_ACTIVE;
 
     LLOGLN(0, ("rdpClientConProcessMsgClientInfo:"));
     s = clientCon->in_s;
@@ -876,6 +879,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
                "bytes %d", clientCon->shmemid, clientCon->shmemptr, bytes));
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+        shmemstatus = SHM_RFX_ACTIVE;
     }
     else if (clientCon->client_info.capture_code == 3) /* H264 */
     {
@@ -896,6 +900,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
                "bytes %d", clientCon->shmemid, clientCon->shmemptr, bytes));
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+        shmemstatus = SHM_H264_ACTIVE;
     }
 
     if (clientCon->client_info.capture_format != 0)
@@ -1014,6 +1019,10 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     /* rdpLoadLayout */
     rdpInputKeyboardEvent(dev, 18, (long)(&(clientCon->client_info)),
                           0, 0, 0);
+
+    if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
+        clientCon->shmemstatus = shmemstatus;
+    }
 
     return 0;
 }
@@ -2447,9 +2456,17 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     clientCon = (rdpClientCon *) arg;
     clientCon->updateScheduled = FALSE;
     clientCon->lastUpdateTime = now;
+
     if (clientCon->suppress_output)
     {
         LLOGLN(10, ("rdpDeferredUpdateCallback: suppress_output set"));
+        return 0;
+    }
+    if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
+        LLOGLN(10, ("rdpDeferredUpdateCallback: clientCon->shmemstatus "
+               "is not valid for capture operations: %d"
+               " reschedule rect_id %d rect_id_ack %d",
+               clientCon->shmemstatus, clientCon->rect_id, clientCon->rect_id_ack));
         return 0;
     }
     if ((clientCon->rect_id > clientCon->rect_id_ack) ||
