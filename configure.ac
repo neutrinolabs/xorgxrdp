@@ -25,6 +25,9 @@ PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
   [AC_MSG_ERROR([please install xserver-xorg-dev, xorg-x11-server-sdk or xorg-x11-server-devel])])
 if test "x${enable_glamor}" = "xyes"; then
   PKG_CHECK_MODULES([XORG_SERVER_GLAMOR], [xorg-server >= 1.19.0])
+  PKG_CHECK_MODULES([XORG_SERVER_GBM], [gbm >= 0], [], [AC_MSG_ERROR([please install libgbm-dev or mesa-libgbm-devel])])
+  PKG_CHECK_MODULES([XORG_SERVER_EPOXY], [epoxy >= 0], [], [AC_MSG_ERROR([please install libepoxy-dev or libepoxy-devel])])
+  PKG_CHECK_MODULES([XORG_SERVER_EGL], [egl >= 0], [], [AC_MSG_ERROR([please install libegl1-mesa-dev or mesa-libEGL-devel])])
 fi
 
 if test "x$XRDP_CFLAGS" = "x"; then
@@ -73,7 +76,7 @@ if test "x${with_simd}" != "xno"; then
 fi
 
 AC_ARG_ENABLE(glamor, AS_HELP_STRING([--enable-glamor],
-              [Use glamor (default: no)]),
+              [Use glamor(requires xorg server 1.19+) (default: no)]),
               [], [enable_glamor=no])
 AM_CONDITIONAL(WITH_GLAMOR, [test x$enable_glamor = xyes])
 
