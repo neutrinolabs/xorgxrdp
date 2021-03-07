@@ -87,7 +87,8 @@ Bool g_use_dri3 = TRUE;
   while (0)
 
 static int g_setup_done = 0;
-static OsTimerPtr g_timer = 0;
+static OsTimerPtr g_randr_timer = 0;
+static OsTimerPtr g_damage_timer = 0;
 
 static char g_xrdp_driver_name[] = XRDP_DRIVER_NAME;
 
@@ -365,6 +366,47 @@ rdpResizeSession(rdpPtr dev, int width, int height)
         LLOGLN(0, ("  RRScreenSizeSet ok %d", ok));
     }
     return ok;
+}
+
+/*****************************************************************************/
+static void
+xorgxrdpDamageReport(DamagePtr pDamage, RegionPtr pRegion, void *closure)
+{
+    rdpPtr dev;
+    ScreenPtr pScreen;
+
+    LLOGLN(10, ("xorgxrdpDamageReport:"));
+    pScreen = (ScreenPtr)closure;
+    dev = rdpGetDevFromScreen(pScreen);
+    rdpClientConAddAllReg(dev, pRegion, &(pScreen->root->drawable));
+}
+
+/*****************************************************************************/
+static void
+xorgxrdpDamageDestroy(DamagePtr pDamage, void *closure)
+{
+    LLOGLN(0, ("xorgxrdpDamageDestroy:"));
+}
+
+/******************************************************************************/
+/* returns error */
+static CARD32
+rdpDeferredDamage(OsTimerPtr timer, CARD32 now, pointer arg)
+{
+    ScreenPtr pScreen;
+    rdpPtr dev;
+
+    pScreen = (ScreenPtr) arg;
+    dev = rdpGetDevFromScreen(pScreen);
+    dev->damage = DamageCreate(xorgxrdpDamageReport, xorgxrdpDamageDestroy,
+                               DamageReportRawRegion, TRUE,
+                               pScreen, pScreen);
+    if (dev->damage != NULL)
+    {
+        DamageSetReportAfterOp(dev->damage, TRUE);
+        DamageRegister(&(pScreen->root->drawable), dev->damage);
+    }
+    return 0;
 }
 
 /******************************************************************************/
@@ -723,7 +765,8 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
     RegisterBlockAndWakeupHandlers(rdpBlockHandler1, rdpWakeupHandler1, pScreen);
 
-    g_timer = TimerSet(g_timer, 0, 10, rdpDeferredRandR, pScreen);
+    g_randr_timer = TimerSet(g_randr_timer, 0, 10, rdpDeferredRandR, pScreen);
+    g_damage_timer = TimerSet(g_damage_timer, 0, 10, rdpDeferredDamage, pScreen);
 
     if (rdpClientConInit(dev) != 0)
     {
