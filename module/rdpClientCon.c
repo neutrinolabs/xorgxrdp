@@ -839,6 +839,14 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     memcpy(&(clientCon->client_info), s->p - 4, bytes);
     clientCon->client_info.size = bytes;
 
+    if (clientCon->client_info.version != CLIENT_INFO_CURRENT_VERSION)
+    {
+        LLOGLN(0, ("expected xrdp client_info version %d, got %d",
+                   CLIENT_INFO_CURRENT_VERSION,
+                   clientCon->client_info.version));
+        FatalError("Incompatible xrdp version detected  - please recompile");
+    }
+
     LLOGLN(0, ("  got client info bytes %d", bytes));
     LLOGLN(0, ("  jpeg support %d", clientCon->client_info.jpeg));
     i1 = clientCon->client_info.offscreen_support_level;
