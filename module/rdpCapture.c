@@ -587,6 +587,11 @@ rdpCapture0(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
     LLOGLN(10, ("rdpCapture0:"));
 
+    if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
+        LLOGLN(0, ("rdpCapture0: WARNING -- Shared memory is not configured. Aborting capture!"));
+        return FALSE;
+    }
+
     rv = TRUE;
 
 
@@ -691,6 +696,11 @@ rdpCapture1(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int dst_format;
 
     LLOGLN(10, ("rdpCapture1:"));
+
+    if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
+        LLOGLN(0, ("rdpCapture1: WARNING -- Shared memory is not configured. Aborting capture!"));
+        return FALSE;
+    }
 
     rv = TRUE;
 
@@ -824,6 +834,11 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
     LLOGLN(10, ("rdpCapture2:"));
 
+    if (clientCon->shmemstatus != SHM_RFX_ACTIVE) {
+        LLOGLN(0, ("rdpCapture2: WARNING -- Shared memory is not configured for RFX. Aborting capture!"));
+        return FALSE;
+    }
+
     *out_rects = g_new(BoxRec, RDP_MAX_TILES);
     if (*out_rects == NULL)
     {
@@ -937,6 +952,11 @@ rdpCapture3(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int dst_format;
 
     LLOGLN(10, ("rdpCapture3:"));
+
+    if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
+        LLOGLN(0, ("rdpCapture3: WARNING -- Shared memory is not configured. Aborting capture!"));
+        return FALSE;
+    }
 
     rv = TRUE;
 
