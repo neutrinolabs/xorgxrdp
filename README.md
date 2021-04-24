@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/neutrinolabs/xorgxrdp.svg?branch=devel)](https://travis-ci.org/neutrinolabs/xorgxrdp)
+[![Build Status](https://github.com/neutrinolabs/xorgxrdp/actions/workflows/build.yml/badge.svg)](https://github.com/neutrinolabs/xorgxrdp/actions)
 
 *Current Version:* 0.2.15
 
