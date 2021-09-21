@@ -1026,6 +1026,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         clientCon->shmemstatus = shmemstatus;
     }
 
+    rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, clientCon->rdp_width, clientCon->rdp_height);
+
     return 0;
 }
 
