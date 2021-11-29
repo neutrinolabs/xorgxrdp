@@ -675,6 +675,38 @@ rdpClientConProcessMsgVersion(rdpPtr dev, rdpClientCon *clientCon,
     return 0;
 }
 
+/**************************************************************************//**
+ * Allocate shared memory
+ *
+ * This memory is shared with the xup driver in xrdp which avoids a lot
+ * of unnecessary copying
+ *
+ * @param clientCon Client connection
+ * @param bytes Size of area to attach
+ */
+static void
+AllocSharedMemory(rdpClientCon *clientCon, int bytes)
+{
+    if (clientCon->shmemptr == NULL || clientCon->shmem_bytes != bytes)
+    {
+        if (clientCon->shmemptr != 0)
+        {
+            shmdt(clientCon->shmemptr);
+        }
+        clientCon->shmemid = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0777);
+        clientCon->shmemptr = shmat(clientCon->shmemid, 0, 0);
+        clientCon->shmem_bytes = bytes;
+        shmctl(clientCon->shmemid, IPC_RMID, NULL);
+        LLOGLN(0, ("AllocSharedMemory: shmemid %d shmemptr %p bytes %d",
+               clientCon->shmemid, clientCon->shmemptr,
+               clientCon->shmem_bytes));
+    }
+    else
+    {
+        LLOGLN(0, ("AllocSharedMemory: reusing shmemid %d",
+               clientCon->shmemid));
+    }
+}
 /******************************************************************************/
 /*
     this from miScreenInit
@@ -727,17 +759,9 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
 
     clientCon->cap_stride_bytes = clientCon->rdp_width * clientCon->rdp_Bpp;
 
-    if (clientCon->shmemptr != 0)
-    {
-        shmdt(clientCon->shmemptr);
-    }
     bytes = clientCon->rdp_width * clientCon->rdp_height *
             clientCon->rdp_Bpp;
-    clientCon->shmemid = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0777);
-    clientCon->shmemptr = shmat(clientCon->shmemid, 0, 0);
-    shmctl(clientCon->shmemid, IPC_RMID, NULL);
-    LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: shmemid %d shmemptr %p",
-           clientCon->shmemid, clientCon->shmemptr));
+    AllocSharedMemory(clientCon, bytes);
     clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->rdp_width;
 
     if (clientCon->shmRegion != 0)
@@ -868,17 +892,9 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         clientCon->cap_height = RDPALIGN(clientCon->rdp_height, 64);
         LLOGLN(0, ("  cap_width %d cap_height %d",
                clientCon->cap_width, clientCon->cap_height));
-        if (clientCon->shmemptr != 0)
-        {
-            shmdt(clientCon->shmemptr);
-        }
         bytes = clientCon->cap_width * clientCon->cap_height *
                 clientCon->rdp_Bpp;
-        clientCon->shmemid = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0777);
-        clientCon->shmemptr = shmat(clientCon->shmemid, 0, 0);
-        shmctl(clientCon->shmemid, IPC_RMID, NULL);
-        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: shmemid %d shmemptr %p "
-               "bytes %d", clientCon->shmemid, clientCon->shmemptr, bytes));
+        AllocSharedMemory(clientCon, bytes);
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
         shmemstatus = SHM_RFX_ACTIVE;
@@ -890,16 +906,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         clientCon->cap_height = clientCon->rdp_height;
         LLOGLN(0, ("  cap_width %d cap_height %d",
                clientCon->cap_width, clientCon->cap_height));
-        if (clientCon->shmemptr != 0)
-        {
-            shmdt(clientCon->shmemptr);
-        }
         bytes = clientCon->cap_width * clientCon->cap_height * 2;
-        clientCon->shmemid = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0777);
-        clientCon->shmemptr = shmat(clientCon->shmemid, 0, 0);
-        shmctl(clientCon->shmemid, IPC_RMID, NULL);
-        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: shmemid %d shmemptr %p "
-               "bytes %d", clientCon->shmemid, clientCon->shmemptr, bytes));
+        AllocSharedMemory(clientCon, bytes);
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
         shmemstatus = SHM_H264_ACTIVE;
