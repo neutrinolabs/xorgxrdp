@@ -43,7 +43,7 @@ XORG_ARGS="$@"
 
 
 # If the X server has setuid bit, make a local copy
-XORG_FULL=`which $XORG`
+XORG_FULL=`command -v $XORG`
 if test -u $XORG_FULL; then
   XORG=`pwd`/Xorg.no-setuid
   echo "$XORG_FULL has setuid bit set, will use $XORG"
