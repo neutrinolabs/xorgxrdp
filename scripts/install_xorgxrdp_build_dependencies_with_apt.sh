@@ -40,7 +40,8 @@ in
         ;;
 esac
 
-exec apt-get -yq \
+apt-get update
+apt-get -yq \
     --no-install-suggests \
     --no-install-recommends \
     $APT_EXTRA_ARGS \
