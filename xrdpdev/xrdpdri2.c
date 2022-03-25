@@ -54,6 +54,10 @@ dri2
 #include "rdpPri.h"
 #include "rdpDraw.h"
 
+#if defined(XORGXRDP_GLAMOR)
+#include <glamor.h>
+#endif
+
 #define LLOG_LEVEL 1
 #define LLOGLN(_level, _args) \
   do \
@@ -150,6 +154,9 @@ rdpDri2Init(ScreenPtr pScreen)
 {
     rdpPtr dev;
     DRI2InfoRec info;
+#if defined(XORGXRDP_GLAMOR)
+    const char *driver_names[2] = { NULL, NULL };
+#endif
 
     LLOGLN(0, ("rdpDri2Init:"));
     dev = rdpGetDevFromScreen(pScreen);
@@ -171,6 +178,35 @@ rdpDri2Init(ScreenPtr pScreen)
     info.CreateBuffer2 = rdpDri2CreateBuffer2;
     info.DestroyBuffer2 = rdpDri2DestroyBuffer2;
     info.CopyRegion2 = rdpDri2CopyRegion2;
+#if defined(XORGXRDP_GLAMOR)
+    /* This is from xorg's hw/xfree86/drivers/modesetting/dri2.c. */
+    /* This ensures that dri/va (=driver[0]) and vdpau (=driver[1])   */
+    /* get the correct values. Currently only needed for intel drivers.    */
+    /* Ask Glamor to obtain the DRI driver name via EGL_MESA_query_driver. */
+    driver_names[0] = glamor_egl_get_driver_name(pScreen);
+
+    if (driver_names[0]) {
+        /* There is no VDPAU driver for Intel, fallback to the generic
+         * OpenGL/VAAPI va_gl backend to emulate VDPAU.  Otherwise,
+         * guess that the DRI and VDPAU drivers have the same name.
+         */
+        if (strcmp(driver_names[0], "i965") == 0 ||
+            strcmp(driver_names[0], "iris") == 0) {
+            driver_names[1] = "va_gl";
+        } else {
+            driver_names[1] = driver_names[0];
+        }
+
+        info.numDrivers = 2;
+        info.driverNames = driver_names;
+    } else {
+        /* EGL_MESA_query_driver was unavailable; let dri2.c select the
+         * driver and fill in these fields for us.
+         */
+        info.numDrivers = 0;
+        info.driverNames = NULL;
+    }
+#endif
     if (!DRI2ScreenInit(pScreen, &info))
     {
         return 1;
