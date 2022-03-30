@@ -192,7 +192,7 @@ rdpDri2Init(ScreenPtr pScreen)
          * guess that the DRI and VDPAU drivers have the same name.
          */
         if (strcmp(driver_names[0], "i965") == 0 ||
-            strcmp(driver_names[0], "iris") == 0) ||
+            strcmp(driver_names[0], "iris") == 0 ||
             strcmp(driver_names[0], "crocus") == 0)
         {
             driver_names[1] = "va_gl";
