@@ -28,6 +28,10 @@ jobs:
             name_extra: Without simd
 
           - CC: gcc
+            CONF_FLAGS: --enable-glamor
+            name_extra: With glamor
+
+          - CC: gcc
             CONF_FLAGS: --host=i686-linux
             CFLAGS: -m32
             arch: i386
@@ -43,6 +47,10 @@ jobs:
           - CC: clang
             CONF_FLAGS: --without-simd
             name_extra: Without simd
+
+          - CC: clang
+            CONF_FLAGS: --enable-glamor
+            name_extra: With glamor
 
           - CC: clang
             CONF_FLAGS: --host=i686-linux
