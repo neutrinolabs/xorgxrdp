@@ -325,6 +325,7 @@ struct _rdpRec
     int fd;
     /* egl */
     void *egl;
+    DamagePtr damage;
 };
 typedef struct _rdpRec rdpRec;
 typedef struct _rdpRec * rdpPtr;
