@@ -68,7 +68,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: sudo scripts/install_xorgxrdp_build_dependencies_with_apt.sh ${{ matrix.arch }} --allow-downgrades --allow-remove-essential --allow-change-held-packages
-      - run: git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git ${{ github.workspace}}/xrdp
+      - run: git clone --depth 1 --branch=v0.9 https://github.com/neutrinolabs/xrdp.git ${{ github.workspace}}/xrdp
       - run: ./bootstrap
       - run: ./configure ${{ matrix.CONF_FLAGS }}
       - run: make CFLAGS="$CFLAGS -O2 -Wall -Wwrite-strings -Werror"
