@@ -971,32 +971,14 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     {
         LLOGLN(0, ("  client can not do new(color) cursor"));
     }
-/*
-    TODO: Temporary workaround intended to support two different versions of the xrdp_client_info.h
-    header due to a customer request. This should be removed as soon as convenient, probably before the next
-    release. See https://github.com/neutrinolabs/xorgxrdp/issues/217
-*/
-#if CLIENT_INFO_CURRENT_VERSION == 20210723
     if (clientCon->client_info.monitorCount > 0)
-#else
-    if (clientCon->client_info.display_sizes.monitorCount > 0)
-#endif
     {
         LLOGLN(0, ("  client can do multimon"));
-#if CLIENT_INFO_CURRENT_VERSION == 20210723
         LLOGLN(0, ("  client monitor data, monitorCount=%d", clientCon->client_info.monitorCount));
-#else
-        LLOGLN(0, ("  client monitor data, monitorCount=%d", clientCon->client_info.display_sizes.monitorCount));
-#endif
         clientCon->doMultimon = 1;
         dev->doMultimon = 1;
-#if CLIENT_INFO_CURRENT_VERSION == 20210723
         memcpy(dev->minfo, clientCon->client_info.minfo, sizeof(dev->minfo));
         dev->monitorCount = clientCon->client_info.monitorCount;
-#else
-        memcpy(dev->minfo, clientCon->client_info.display_sizes.minfo, sizeof(dev->minfo));
-        dev->monitorCount = clientCon->client_info.display_sizes.monitorCount;
-#endif
 
         box.x1 = dev->minfo[0].left;
         box.y1 = dev->minfo[0].top;
