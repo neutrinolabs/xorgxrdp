@@ -41,12 +41,16 @@ RandR draw calls
 #include <fb.h>
 #include <micmap.h>
 #include <mi.h>
+#include <pixman.h>
+#include <xorg/rrtransform.h>
+#include <xorg/picturestr.h>
 
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpReg.h"
 #include "rdpMisc.h"
 #include "rdpRandR.h"
+#include "rdpClientCon.h"
 
 #if defined(XORGXRDP_GLAMOR)
 #include <glamor.h>
@@ -365,8 +369,41 @@ rdpRRSetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
 }
 
 /******************************************************************************/
+static void
+rdpRRSetOutputPhysicalSize(const char* func, RROutputPtr output, 
+                           struct monitor_info *monitor)
+{
+    if (monitor->physical_height == 0 || monitor->physical_width == 0)
+    {
+        return;
+    }
+    if (!RROutputSetPhysicalSize(output, 
+        monitor->physical_width, monitor->physical_height))
+    {
+        LLOGLN(0, ("%s: RROutputSetPhysicalSize failed", func));
+    }
+}
+
+/******************************************************************************/
+static Rotation
+rdpGetRotation(uint32_t orientation)
+{
+    switch (orientation)
+    {
+        case 90:
+            return RR_Rotate_90;
+        case 180:
+            return RR_Rotate_180;
+        case 270:
+            return RR_Rotate_270;
+        default:
+            return RR_Rotate_0;
+    }
+}
+
+/******************************************************************************/
 static RROutputPtr
-rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int height)
+rdpRRAddOutput(rdpPtr dev, const char *aname, struct monitor_info *monitor)
 {
     RRModePtr mode;
     RRCrtcPtr crtc;
@@ -375,6 +412,10 @@ rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int heigh
     char name[64];
     const int vfreq = 50;
     int i;
+    int width = (monitor->right - monitor->left + 1);
+    int height = (monitor->bottom - monitor->top + 1);
+    int x = monitor->left;
+    int y = monitor->top;
 
     sprintf (name, "%dx%d", width, height);
     memset (&modeInfo, 0, sizeof(modeInfo));
@@ -416,6 +457,7 @@ rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int heigh
         RRModeDestroy(mode);
         return 0;
     }
+    rdpRRSetOutputPhysicalSize(__func__, output, monitor);
     if (!RROutputSetClones(output, NULL, 0))
     {
         LLOGLN(0, ("rdpRRAddOutput: RROutputSetClones failed"));
@@ -432,19 +474,24 @@ rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int heigh
     {
         LLOGLN(0, ("rdpRRAddOutput: RROutputSetConnection failed"));
     }
-    RRCrtcNotify(crtc, mode, x, y, RR_Rotate_0, NULL, 1, &output);
+    RRCrtcNotify(crtc, mode, x, y, rdpGetRotation(monitor->orientation), 
+        NULL, 1, &output);
     return output;
 }
 
 /******************************************************************************/
 static RROutputPtr
 rdpRRUpdateOutput(RROutputPtr output, RRCrtcPtr crtc,
-                  int x, int y, int width, int height)
+                  struct monitor_info *monitor)
 {
     RRModePtr mode;
     xRRModeInfo modeInfo;
     char name[64];
     const int vfreq = 50;
+    int width = monitor->right - monitor->left + 1;
+    int height = monitor->bottom - monitor->top + 1;
+    int x = monitor->left;
+    int y = monitor->top;
 
     LLOGLN(0, ("rdpRRUpdateOutput:"));
     sprintf (name, "%dx%d", width, height);
@@ -465,7 +512,9 @@ rdpRRUpdateOutput(RROutputPtr output, RRCrtcPtr crtc,
     {
         LLOGLN(0, ("rdpRRUpdateOutput: RROutputSetModes failed"));
     }
-    RRCrtcNotify(crtc, mode, x, y, RR_Rotate_0, NULL, 1, &output);
+    rdpRRSetOutputPhysicalSize(__func__, output, monitor);
+    RRCrtcNotify(crtc, mode, x, y, rdpGetRotation(monitor->orientation),
+            NULL, 1, &output);
     RROutputChanged(output, 1);
     return output;
 }
@@ -516,14 +565,10 @@ rdpRRRemoveExtra(rrScrPrivPtr pRRScrPriv, int count)
 
 /******************************************************************************/
 int
-rdpRRSetRdpOutputs(rdpPtr dev)
+rdpRRSetRdpOutputs(rdpPtr dev, rdpClientCon *clientCon)
 {
     rrScrPrivPtr pRRScrPriv;
     int index;
-    int left;
-    int top;
-    int width;
-    int height;
     char text[256];
     RROutputPtr output;
 
@@ -532,29 +577,40 @@ rdpRRSetRdpOutputs(rdpPtr dev)
            pRRScrPriv->numCrtcs, pRRScrPriv->numOutputs, dev->monitorCount));
     if (dev->monitorCount <= 0)
     {
-        left = 0;
-        top = 0;
-        width = dev->width;
-        height = dev->height;
+        struct monitor_info monitor;
+        memset(&monitor, 0, sizeof(monitor));
+        monitor.top = 0;
+        monitor.left = 0;
+        monitor.right = dev->width - 1;
+        monitor.bottom = dev->height - 1;
+        monitor.physical_width
+            = clientCon->client_info.display_sizes.session_width;
+        monitor.physical_height
+            = clientCon->client_info.display_sizes.session_height;
+        monitor.orientation = 0;
+        monitor.desktop_scale_factor = 100;
+        monitor.device_scale_factor = 100;
+
         if (pRRScrPriv->numCrtcs > 0)
         {
             /* update */
             LLOGLN(0, ("rdpRRSetRdpOutputs: update output %d "
-                   "left %d top %d width %d height %d",
-                   0, left, top, width, height));
+                   "left %d top %d right %d bottom %d",
+                   0, monitor.left, monitor.top,
+                   monitor.right, monitor.bottom));
             output = rdpRRUpdateOutput(pRRScrPriv->outputs[0],
                                        pRRScrPriv->crtcs[0],
-                                       left, top, width, height);
+                                       &monitor);
         }
         else
         {
             /* add */
             LLOGLN(0, ("rdpRRSetRdpOutputs: add output %d "
-                   "left %d top %d width %d height %d",
-                   0, left, top, width, height));
+                   "left %d top %d right %d bottom %d",
+                   0, monitor.left, monitor.top,
+                   monitor.right, monitor.bottom));
             snprintf(text, 255, "rdp%d", 0);
-            output = rdpRRAddOutput(dev, text,
-                                    left, top, width, height);
+            output = rdpRRAddOutput(dev, text, &monitor);
         }
         if (output == NULL)
         {
@@ -568,29 +624,28 @@ rdpRRSetRdpOutputs(rdpPtr dev)
     {
         for (index = 0; index < dev->monitorCount; index++)
         {
-            left = dev->minfo[index].left;
-            top = dev->minfo[index].top;
-            width = dev->minfo[index].right - dev->minfo[index].left + 1;
-            height = dev->minfo[index].bottom - dev->minfo[index].top + 1;
             if (index < pRRScrPriv->numCrtcs)
             {
                 /* update */
                 LLOGLN(0, ("rdpRRSetRdpOutputs: update output %d "
-                       "left %d top %d width %d height %d",
-                       index, left, top, width, height));
+                       "left %d top %d right %d bottom %d scale %d",
+                       index, dev->minfo[index].left, dev->minfo[index].top,
+                       dev->minfo[index].right, dev->minfo[index].bottom,
+                       dev->minfo[index].desktop_scale_factor));
                 output = rdpRRUpdateOutput(pRRScrPriv->outputs[index],
                                            pRRScrPriv->crtcs[index],
-                                           left, top, width, height);
+                                           &dev->minfo[index]);
             }
             else
             {
                 /* add */
                 LLOGLN(0, ("rdpRRSetRdpOutputs: add output %d "
-                       "left %d top %d width %d height %d",
-                       index, left, top, width, height));
+                       "left %d top %d right %d bottom %d scale %d",
+                       index, dev->minfo[index].left, dev->minfo[index].top,
+                       dev->minfo[index].right, dev->minfo[index].bottom,
+                       dev->minfo[index].desktop_scale_factor));
                 snprintf(text, 255, "rdp%d", index);
-                output = rdpRRAddOutput(dev, text,
-                                        left, top, width, height);
+                output = rdpRRAddOutput(dev, text, &dev->minfo[index]);
             }
             if ((output != 0) && (dev->minfo[index].is_primary))
             {
