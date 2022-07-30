@@ -18,6 +18,7 @@ APT_EXTRA_ARGS="$@"
 PACKAGES=" \
     xserver-xorg-core \
     xserver-xorg-dev \
+    x11-utils \
     nasm \
     "
 
