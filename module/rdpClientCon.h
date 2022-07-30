@@ -107,6 +107,7 @@ struct _rdpClientCon
 
     uint8_t *shmemptr;
     int shmemid;
+    int shmem_bytes;
     int shmem_lineBytes;
     RegionPtr shmRegion;
     int rect_id;
