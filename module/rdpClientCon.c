@@ -685,27 +685,26 @@ rdpClientConProcessMsgVersion(rdpPtr dev, rdpClientCon *clientCon,
  * @param bytes Size of area to attach
  */
 static void
-AllocSharedMemory(rdpClientCon *clientCon, int bytes)
+rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
 {
-    if (clientCon->shmemptr == NULL || clientCon->shmem_bytes != bytes)
+    if (clientCon->shmemptr != NULL && clientCon->shmem_bytes == bytes)
     {
-        if (clientCon->shmemptr != 0)
-        {
-            shmdt(clientCon->shmemptr);
-        }
-        clientCon->shmemid = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0777);
-        clientCon->shmemptr = shmat(clientCon->shmemid, 0, 0);
-        clientCon->shmem_bytes = bytes;
-        shmctl(clientCon->shmemid, IPC_RMID, NULL);
-        LLOGLN(0, ("AllocSharedMemory: shmemid %d shmemptr %p bytes %d",
-               clientCon->shmemid, clientCon->shmemptr,
-               clientCon->shmem_bytes));
-    }
-    else
-    {
-        LLOGLN(0, ("AllocSharedMemory: reusing shmemid %d",
+        LLOGLN(0, ("rdpClientConAllocateSharedMemory: reusing shmemid %d",
                clientCon->shmemid));
+        return;
     }
+    
+    if (clientCon->shmemptr != 0)
+    {
+        shmdt(clientCon->shmemptr);
+    }
+    clientCon->shmemid = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0777);
+    clientCon->shmemptr = shmat(clientCon->shmemid, 0, 0);
+    clientCon->shmem_bytes = bytes;
+    shmctl(clientCon->shmemid, IPC_RMID, NULL);
+    LLOGLN(0, ("rdpClientConAllocateSharedMemory: shmemid %d shmemptr %p bytes %d",
+           clientCon->shmemid, clientCon->shmemptr,
+           clientCon->shmem_bytes));
 }
 /******************************************************************************/
 /*
