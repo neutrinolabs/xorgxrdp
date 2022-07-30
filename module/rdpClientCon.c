@@ -760,7 +760,7 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
 
     bytes = clientCon->rdp_width * clientCon->rdp_height *
             clientCon->rdp_Bpp;
-    AllocSharedMemory(clientCon, bytes);
+    rdpClientConAllocateSharedMemory(clientCon, bytes);
     clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->rdp_width;
 
     if (clientCon->shmRegion != 0)
@@ -893,7 +893,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
                clientCon->cap_width, clientCon->cap_height));
         bytes = clientCon->cap_width * clientCon->cap_height *
                 clientCon->rdp_Bpp;
-        AllocSharedMemory(clientCon, bytes);
+        rdpClientConAllocateSharedMemory(clientCon, bytes);
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
         shmemstatus = SHM_RFX_ACTIVE;
@@ -906,7 +906,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         LLOGLN(0, ("  cap_width %d cap_height %d",
                clientCon->cap_width, clientCon->cap_height));
         bytes = clientCon->cap_width * clientCon->cap_height * 2;
-        AllocSharedMemory(clientCon, bytes);
+        rdpClientConAllocateSharedMemory(clientCon, bytes);
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
         shmemstatus = SHM_H264_ACTIVE;
