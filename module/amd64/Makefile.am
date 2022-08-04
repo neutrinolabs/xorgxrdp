@@ -3,6 +3,7 @@ NAFLAGS += -DASM_ARCH_AMD64
 ASMSOURCES = \
   a8r8g8b8_to_a8b8g8r8_box_amd64_sse2.asm \
   a8r8g8b8_to_nv12_box_amd64_sse2.asm \
+  a8r8g8b8_to_nv12_709fr_box_amd64_sse2.asm \
   cpuid_amd64.asm \
   i420_to_rgb32_amd64_sse2.asm \
   uyvy_to_rgb32_amd64_sse2.asm \

@@ -373,7 +373,7 @@ rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int heigh
     RROutputPtr output;
     xRRModeInfo modeInfo;
     char name[64];
-    const int vfreq = 50;
+    const int vfreq = 25;
     int i;
 
     sprintf (name, "%dx%d", width, height);
@@ -444,7 +444,7 @@ rdpRRUpdateOutput(RROutputPtr output, RRCrtcPtr crtc,
     RRModePtr mode;
     xRRModeInfo modeInfo;
     char name[64];
-    const int vfreq = 50;
+    const int vfreq = 25;
 
     LLOGLN(0, ("rdpRRUpdateOutput:"));
     sprintf (name, "%dx%d", width, height);
@@ -530,6 +530,10 @@ rdpRRSetRdpOutputs(rdpPtr dev)
     pRRScrPriv = rrGetScrPriv(dev->pScreen);
     LLOGLN(0, ("rdpRRSetRdpOutputs: numCrtcs %d numOutputs %d monitorCount %d",
            pRRScrPriv->numCrtcs, pRRScrPriv->numOutputs, dev->monitorCount));
+    if (dev->nvidia)
+    {
+        return 0;
+    }
     if (dev->monitorCount <= 0)
     {
         left = 0;

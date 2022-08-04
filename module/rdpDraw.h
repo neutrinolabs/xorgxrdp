@@ -49,7 +49,8 @@ misc draw calls
     ) || \
     ( \
         ((_drw)->type == DRAWABLE_PIXMAP) && \
-        (((PixmapPtr)(_drw))->devPrivate.ptr == (_dev)->pfbMemory) \
+            (_drw)->pScreen->GetScreenPixmap((_drw)->pScreen) == \
+            (PixmapPtr)(_drw) \
     ) \
 )
 

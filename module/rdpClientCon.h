@@ -52,6 +52,9 @@ struct rdpup_os_bitmap
 enum shared_memory_status {
     SHM_UNINITIALIZED = 0,
     SHM_RESIZING,
+    SHM_ACTIVE_PENDING,
+    SHM_RFX_ACTIVE_PENDING,
+    SHM_H264_ACTIVE_PENDING,
     SHM_ACTIVE,
     SHM_RFX_ACTIVE,
     SHM_H264_ACTIVE
@@ -114,6 +117,8 @@ struct _rdpClientCon
     int rect_id_ack;
     enum shared_memory_status shmemstatus;
 
+    PixmapPtr helperPixmaps[16];
+
     OsTimerPtr updateTimer;
     CARD32 lastUpdateTime; /* millisecond timestamp */
     int updateScheduled; /* boolean */
@@ -122,10 +127,13 @@ struct _rdpClientCon
     RegionPtr dirtyRegion;
 
     int num_rfx_crcs_alloc;
-    int *rfx_crcs;
+    uint64_t *rfx_crcs;
+    uint64_t *rfx_tile_row_hashes;
 
     /* true = skip drawing */
     int suppress_output;
+
+    int helper_pid;
 
     struct _rdpClientCon *next;
     struct _rdpClientCon *prev;
