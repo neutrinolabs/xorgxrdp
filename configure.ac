@@ -80,6 +80,11 @@ AC_ARG_ENABLE(glamor, AS_HELP_STRING([--enable-glamor],
               [], [enable_glamor=no])
 AM_CONDITIONAL(WITH_GLAMOR, [test x$enable_glamor = xyes])
 
+AC_ARG_ENABLE(lrandr, AS_HELP_STRING([--enable-lrandr],
+              [Use local randr (default: no)]),
+              [], [enable_lrandr=no])
+AM_CONDITIONAL(WITH_LRANDR, [test x$enable_lrandr = xyes])
+
 AM_CONDITIONAL(WITH_SIMD_AMD64, [test x$simd_arch = xx86_64])
 AM_CONDITIONAL(WITH_SIMD_X86, [test x$simd_arch = xi386])
 

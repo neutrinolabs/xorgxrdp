@@ -3,6 +3,7 @@ NAFLAGS += -DASM_ARCH_I386
 ASMSOURCES = \
   a8r8g8b8_to_a8b8g8r8_box_x86_sse2.asm \
   a8r8g8b8_to_nv12_box_x86_sse2.asm \
+  a8r8g8b8_to_nv12_709fr_box_x86_sse2.asm \
   cpuid_x86.asm \
   i420_to_rgb32_x86_sse2.asm \
   uyvy_to_rgb32_x86_sse2.asm \
