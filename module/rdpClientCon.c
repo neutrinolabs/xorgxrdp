@@ -693,7 +693,7 @@ rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
                clientCon->shmemid));
         return;
     }
-    
+
     if (clientCon->shmemptr != 0)
     {
         shmdt(clientCon->shmemptr);
