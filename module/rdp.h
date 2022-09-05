@@ -288,6 +288,7 @@ struct _rdpRec
     int do_dirty_ons; /* boolean */
     int disconnect_scheduled; /* boolean */
     int do_kill_disconnected; /* boolean */
+    int do_touchpad_scroll_hack; /* boolean */
 
     OsTimerPtr disconnectTimer;
     int disconnect_timeout_s;
@@ -296,6 +297,7 @@ struct _rdpRec
     OsTimerPtr idleDisconnectTimer;
     int idle_disconnect_timeout_s;
     CARD32 last_event_time_ms;
+    CARD32 last_wheel_time_ms;
 
     int conNumber;
 
