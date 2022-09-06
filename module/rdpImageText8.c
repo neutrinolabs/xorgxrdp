@@ -30,7 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* this should be before all X11 .h files */
 #include <xorg-server.h>
 #include <xorgVersion.h>
- 
+
 /* all driver need this */
 #include <xf86.h>
 #include <xf86_OSproc.h>
