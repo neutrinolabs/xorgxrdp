@@ -171,7 +171,10 @@ PtrAddScrollEvent(rdpPointer *pointer, int vertical, int delta)
     scaled_delta = delta / SCALE_FACTOR == 0 ? delta > 0 ? 1 : -1 : delta / SCALE_FACTOR;
 
     // XWindow's and RDP's scrolling directions are exactly oppersite 
-    scaled_delta = -scaled_delta;
+    // on vertical(Some document references?).
+    if (vertical) {
+        scaled_delta = -scaled_delta;
+    }
 
     valuator_mask_zero(scroll_events_mask);
     valuator_mask_set_double(scroll_events_mask, mask_pos, scaled_delta);
