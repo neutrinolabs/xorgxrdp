@@ -50,6 +50,9 @@ xrdp mouse module
 #include "rdpInput.h"
 #include "rdpDraw.h"
 
+#define NBUTTONS 9
+#define NAXES 4
+
 /******************************************************************************/
 #define LOG_LEVEL 1
 #define LLOGLN(_level, _args) \
@@ -128,7 +131,7 @@ PtrAddEvent(rdpPointer *pointer)
         pointer->old_cursor_y = pointer->cursor_y;
     }
 
-    for (i = 0; i < 9; i++)
+    for (i = 0; i < NBUTTONS; i++)
     {
         if ((pointer->button_mask ^ pointer->old_button_mask) & (1 << i))
         {
@@ -146,6 +149,31 @@ PtrAddEvent(rdpPointer *pointer)
             }
         }
     }
+
+    pointer->old_button_mask = pointer->button_mask;
+}
+
+/******************************************************************************/
+static void
+PtrAddScrollEvent(rdpPointer *pointer, int vertical, int delta)
+{
+    ValuatorMask *scroll_events_mask;
+    int mask_pos;
+    int scaled_delta;
+
+    LLOGLN(0, ("PtrAddScrollEvent: vertical %d y %d", vertical, delta));
+
+    scroll_events_mask = valuator_mask_new(NAXES);
+    mask_pos = vertical ? 2 : 3;
+    scaled_delta = delta / 10 == 0 ? delta > 0 ? 1 : -1 : delta / 10;
+    scaled_delta = -scaled_delta;
+
+    valuator_mask_zero(scroll_events_mask);
+    valuator_mask_set_double(scroll_events_mask, mask_pos, scaled_delta);
+
+    xf86PostMotionEventM(pointer->device, FALSE, scroll_events_mask);
+
+    valuator_mask_free(&scroll_events_mask);
 
     pointer->old_button_mask = pointer->button_mask;
 }
@@ -242,6 +270,12 @@ rdpInputMouse(rdpPtr dev, int msg,
             pointer->button_mask = pointer->button_mask | 256;
             PtrAddEvent(pointer);
             break;
+        case WM_TOUCH_VSCROLL:
+            PtrAddScrollEvent(pointer, TRUE, param3);
+            break;
+        case WM_TOUCH_HSCROLL:
+            PtrAddScrollEvent(pointer, FALSE, param3);
+            break;
     }
     return 0;
 }
@@ -250,11 +284,10 @@ rdpInputMouse(rdpPtr dev, int msg,
 static int
 rdpmouseControl(DeviceIntPtr device, int what)
 {
-#define NBUTTONS 9
     BYTE map[NBUTTONS + 1]; /* Indexed from 1 */
     DevicePtr pDev;
     Atom btn_labels[NBUTTONS];
-    Atom axes_labels[2];
+    Atom axes_labels[NAXES];
     rdpPtr dev;
     int i;
 
@@ -282,11 +315,24 @@ rdpmouseControl(DeviceIntPtr device, int what)
 
             axes_labels[0] = XIGetKnownProperty(AXIS_LABEL_PROP_REL_X);
             axes_labels[1] = XIGetKnownProperty(AXIS_LABEL_PROP_REL_Y);
+            axes_labels[2] = XIGetKnownProperty(AXIS_LABEL_PROP_REL_VSCROLL);
+            axes_labels[3] = XIGetKnownProperty(AXIS_LABEL_PROP_REL_HSCROLL);
 
             InitPointerDeviceStruct(pDev, map, NBUTTONS, btn_labels, rdpmouseCtrl,
-                                    GetMotionHistorySize(), 2, axes_labels);
+                                    GetMotionHistorySize(), NAXES, axes_labels);
+
             dev = rdpGetDevFromScreen(NULL);
             dev->pointer.device = device;
+
+            // Initialize scroll valuators
+            xf86InitValuatorAxisStruct(device, 2, axes_labels[2]
+                                        , 0, -1, 0, 0, 0, Relative);
+            xf86InitValuatorAxisStruct(device, 3, axes_labels[3]
+                                        , 0, -1, 0, 0, 0, Relative);
+
+            SetScrollValuator(device, 2, SCROLL_TYPE_VERTICAL, 10, 0);
+            SetScrollValuator(device, 3, SCROLL_TYPE_HORIZONTAL, 10, 0);
+
             rdpRegisterInputCallback(1, rdpInputMouse);
             break;
         case DEVICE_ON:
