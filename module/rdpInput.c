@@ -115,30 +115,6 @@ rdpInputMouseEvent(rdpPtr dev, int msg,
 {
     dev->last_event_time_ms = GetTimeInMillis();
 
-    /*
-     * Workaround for too fast vertical scroll on touchpad.
-     * Provided by @seflerZ on neutrinolabs/xorgxrdp#150
-     */
-    if (dev->do_touchpad_scroll_hack)
-    {
-        if (msg == WM_BUTTON4UP ||
-            msg == WM_BUTTON4DOWN ||
-            msg == WM_BUTTON5UP ||
-            msg == WM_BUTTON5DOWN)
-        {
-
-          if (dev->last_event_time_ms - dev->last_wheel_time_ms < 10)
-          {
-              return 0;
-          }
-        }
-
-        if (msg == WM_BUTTON4UP || msg == WM_BUTTON5UP)
-        {
-            dev->last_wheel_time_ms = dev->last_event_time_ms;
-        }
-    }
-
     if (g_input_proc[1].proc != 0)
     {
         return g_input_proc[1].proc(dev, msg, param1, param2, param3, param4);
