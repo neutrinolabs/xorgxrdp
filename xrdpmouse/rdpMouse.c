@@ -154,6 +154,9 @@ PtrAddEvent(rdpPointer *pointer)
 }
 
 /******************************************************************************/
+// Maybe make it configurable later
+#define SCALE_FACTOR 10
+
 static void
 PtrAddScrollEvent(rdpPointer *pointer, int vertical, int delta)
 {
@@ -161,11 +164,13 @@ PtrAddScrollEvent(rdpPointer *pointer, int vertical, int delta)
     int mask_pos;
     int scaled_delta;
 
-    LLOGLN(0, ("PtrAddScrollEvent: vertical %d y %d", vertical, delta));
+    LLOGLN(10, ("PtrAddScrollEvent: vertical %d y %d", vertical, delta));
 
     scroll_events_mask = valuator_mask_new(NAXES);
     mask_pos = vertical ? 2 : 3;
-    scaled_delta = delta / 10 == 0 ? delta > 0 ? 1 : -1 : delta / 10;
+    scaled_delta = delta / SCALE_FACTOR == 0 ? delta > 0 ? 1 : -1 : delta / SCALE_FACTOR;
+
+    // XWindow's and RDP's scrolling directions are exactly oppersite 
     scaled_delta = -scaled_delta;
 
     valuator_mask_zero(scroll_events_mask);
