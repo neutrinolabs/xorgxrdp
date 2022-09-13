@@ -124,7 +124,7 @@ PtrAddEvent(rdpPointer *pointer)
     LLOGLN(10, ("PtrAddEvent: x %d y %d", pointer->cursor_x, pointer->cursor_y));
 
     if ((pointer->old_cursor_x != pointer->cursor_x) ||
-        (pointer->old_cursor_y != pointer->cursor_y))
+            (pointer->old_cursor_y != pointer->cursor_y))
     {
         rdpEnqueueMotion(pointer->device, pointer->cursor_x, pointer->cursor_y);
         pointer->old_cursor_x = pointer->cursor_x;
@@ -170,9 +170,10 @@ PtrAddScrollEvent(rdpPointer *pointer, int vertical, int delta)
     mask_pos = vertical ? 2 : 3;
     scaled_delta = delta / SCALE_FACTOR == 0 ? delta > 0 ? 1 : -1 : delta / SCALE_FACTOR;
 
-    // XWindow's and RDP's scrolling directions are exactly oppersite 
-    // on vertical(Some document references?).
-    if (vertical) {
+    // XWindow's and RDP's scrolling directions are exactly opposite
+    // on vertical(Need document references).
+    if (vertical)
+    {
         scaled_delta = -scaled_delta;
     }
 
@@ -195,7 +196,7 @@ rdpInputMouse(rdpPtr dev, int msg,
     rdpPointer *pointer;
 
     LLOGLN(10, ("rdpInputMouse: msg %d param1 %ld param2 %ld param3 %ld param4 %ld",
-           msg, param1, param2, param3, param4));
+                msg, param1, param2, param3, param4));
     pointer = &(dev->pointer);
     switch (msg)
     {
@@ -334,9 +335,9 @@ rdpmouseControl(DeviceIntPtr device, int what)
 
             // Initialize scroll valuators
             xf86InitValuatorAxisStruct(device, 2, axes_labels[2]
-                                        , 0, -1, 0, 0, 0, Relative);
+                                       , 0, -1, 0, 0, 0, Relative);
             xf86InitValuatorAxisStruct(device, 3, axes_labels[3]
-                                        , 0, -1, 0, 0, 0, Relative);
+                                       , 0, -1, 0, 0, 0, Relative);
 
             SetScrollValuator(device, 2, SCROLL_TYPE_VERTICAL, 10, 0);
             SetScrollValuator(device, 3, SCROLL_TYPE_HORIZONTAL, 10, 0);
@@ -377,7 +378,7 @@ rdpmousePreInit(InputDriverPtr drv, IDevPtr dev, int flags)
     InputInfoPtr info;
 
     LLOGLN(0, ("rdpmousePreInit: drv %p dev %p, flags 0x%x",
-           drv, dev, flags));
+               drv, dev, flags));
     info = xf86AllocateInput(drv, 0);
     info->name = dev->identifier;
     info->device_control = rdpmouseControl;
@@ -400,7 +401,7 @@ static int
 rdpmousePreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
     LLOGLN(0, ("rdpmousePreInit: drv %p info %p, flags 0x%x",
-           drv, info, flags));
+               drv, info, flags));
     info->device_control = rdpmouseControl;
     info->type_name = g_Mouse_str;
     return 0;
@@ -413,7 +414,7 @@ static void
 rdpmouseUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
     LLOGLN(0, ("rdpmouseUnInit: drv %p info %p, flags 0x%x",
-           drv, info, flags));
+               drv, info, flags));
     rdpUnregisterInputCallback(rdpInputMouse);
 }
 
