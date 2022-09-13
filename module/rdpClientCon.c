@@ -1473,26 +1473,6 @@ rdpClientConInit(rdpPtr dev)
     LLOGLN(0, ("rdpClientConInit: kill disconnected [%d] timeout [%d] sec",
                dev->do_kill_disconnected, dev->disconnect_timeout_s));
 
-    /* neutrinolabs/xorgxrdp#150 */
-    ptext = getenv("XRDP_XORG_TOUCHPAD_SCROLL_HACK");
-    if (ptext != 0)
-    {
-        i = atoi(ptext);
-	if (i != 0 ||
-            0 == strcasecmp(ptext, "true") ||
-            0 == strcasecmp(ptext, "yes") ||
-            0 == strcasecmp(ptext, "on"))
-	{
-            dev->do_touchpad_scroll_hack = 1;
-	}
-	else
-	{
-            dev->do_touchpad_scroll_hack = 0;
-	}
-    }
-
-    LLOGLN(0, ("rdpClientConInit: do_touchpad_scroll_hack [%d]",
-               dev->do_touchpad_scroll_hack));
 
     return 0;
 }
