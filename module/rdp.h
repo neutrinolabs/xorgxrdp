@@ -288,7 +288,6 @@ struct _rdpRec
     int do_dirty_ons; /* boolean */
     int disconnect_scheduled; /* boolean */
     int do_kill_disconnected; /* boolean */
-    int do_touchpad_scroll_hack; /* boolean */
 
     OsTimerPtr disconnectTimer;
     int disconnect_timeout_s;
