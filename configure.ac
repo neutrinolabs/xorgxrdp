@@ -28,6 +28,7 @@ if test "x${enable_glamor}" = "xyes"; then
   PKG_CHECK_MODULES([XORG_SERVER_GBM], [gbm >= 0], [], [AC_MSG_ERROR([please install libgbm-dev or mesa-libgbm-devel])])
   PKG_CHECK_MODULES([XORG_SERVER_EPOXY], [epoxy >= 0], [], [AC_MSG_ERROR([please install libepoxy-dev or libepoxy-devel])])
   PKG_CHECK_MODULES([XORG_SERVER_EGL], [egl >= 0], [], [AC_MSG_ERROR([please install libegl1-mesa-dev or mesa-libEGL-devel])])
+  PKG_CHECK_EXISTS(epoxy >= 1.5.4, [AC_DEFINE(GLAMOR_HAS_EGL_QUERY_DRIVER, 1, [Have GLAMOR_HAS_EGL_QUERY_DRIVER])], [])
 fi
 
 if test "x$XRDP_CFLAGS" = "x"; then
