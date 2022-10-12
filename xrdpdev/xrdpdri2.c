@@ -183,8 +183,9 @@ rdpDri2Init(ScreenPtr pScreen)
     /* This ensures that dri/va (=driver[0]) and vdpau (=driver[1])   */
     /* get the correct values. Currently only needed for intel drivers.    */
     /* Ask Glamor to obtain the DRI driver name via EGL_MESA_query_driver. */
+#if XORG_VERSION_CURRENT >= XORG_VERSION_NUMERIC(1, 20, 7, 0, 0)
     driver_names[0] = glamor_egl_get_driver_name(pScreen);
-
+#endif
     if (driver_names[0])
     {
         /* There is no VDPAU driver for Intel, fallback to the generic
