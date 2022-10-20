@@ -66,7 +66,7 @@ jobs:
       XRDP_CFLAGS: -I${{ github.workspace }}/xrdp/common
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: sudo scripts/install_xorgxrdp_build_dependencies_with_apt.sh ${{ matrix.arch }} --allow-downgrades --allow-remove-essential --allow-change-held-packages
       - run: git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git ${{ github.workspace}}/xrdp
       - run: ./bootstrap
