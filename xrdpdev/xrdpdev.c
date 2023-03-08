@@ -491,6 +491,7 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
     }
 
     RRScreenSetSizeRange(pScreen, 256, 256, 16 * 1024, 16 * 1024);
+    rdpRRSetRdpOutputs(dev);
     RRTellChanged(pScreen);
 
     return 0;
