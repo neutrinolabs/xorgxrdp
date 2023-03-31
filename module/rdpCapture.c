@@ -902,7 +902,7 @@ rdpCopyBox_yuv444_to_streamV2(rdpClientCon *clientCon,
         width = box->x2 - box->x1;
         height = box->y2 - box->y1;
         a8r8g8b8_to_yuv444_709fr_box(s8, src_stride,
-                                     d8, dst_stride,
+                                     d8, dst_main_stride,
                                      width, height);
     }
     // Now that it's been converted, split the streams
@@ -911,13 +911,13 @@ rdpCopyBox_yuv444_to_streamV2(rdpClientCon *clientCon,
         box = rects + index;
         s8 = src + (box->y1 - srcy) * src_stride;
         s8 += (box->x1 - srcx) * 4;
-        d8 = dst + (box->y1 - dst_main_y) * dst_main_stride;
+        d8 = dst_main + (box->y1 - dst_main_y) * dst_main_stride;
         d8 += (box->x1 - dst_main_x) * 4;
         width = box->x2 - box->x1;
         height = box->y2 - box->y1;
         a8r8g8b8_to_yuv444_709fr_box_streamV2(s8, src_stride,
-                                              dst_main, dst_stride,
-                                              dst_aux, dst_stride,
+                                              dst_main, dst_main_stride,
+                                              dst_aux, dst_aux_stride,
                                               width, height);
     }
     return 0;
