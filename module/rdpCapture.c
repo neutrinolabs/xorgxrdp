@@ -806,10 +806,7 @@ rdpCopyBox_a8r8g8b8_to_yuv444_709fr(rdpClientCon *clientCon,
 int
 a8r8g8b8_to_yuv444_709fr_box_streamV2(const uint8_t *s8, int src_stride,
                                       uint8_t *dst_main, int dst_main_stride,
-                                      int dst_main_x, int dst_main_y,
                                       uint8_t *dst_aux, int dst_aux_stride,
-                                      int dst_aux_x, int dst_aux_y,
-                                      uint8_t *d8, int dst_stride,
                                       int fullWidth, int fullHeight)
 {
     int halfHeight = fullHeight / 2;
@@ -818,60 +815,61 @@ a8r8g8b8_to_yuv444_709fr_box_streamV2(const uint8_t *s8, int src_stride,
     uint32_t *yuv_src_buffer;
     uint32_t *yuv_dst_buffer;
 
-    for (y = 0; y < fullHeight; y++)
-	{
-	    for (x = 0; x < fullWidth; x++)
-	    {
+    for (y = 0; y < fullHeight; ++y)
+    {
+        //Multiply by 4 because it won't work otherwise. (uint8 -> uint32)
+        for (x = 0; x < fullWidth; ++x)
+        {
             // B1[x,y] = Y444[x,y];
-            yuv_src_buffer = s8 + (y * src_stride) + x;
-	        yuv_dst_buffer = dst_main + (y * dst_main_stride) + x;
+            yuv_src_buffer = s8 + ((y * src_stride) + x) * 4;
+            yuv_dst_buffer = dst_main + ((y * dst_main_stride) + x) * 4;
             YUV444_SET_Y(yuv_dst_buffer, YUV444_GET_Y(yuv_src_buffer));
-	    }
+        }
 
-	    for (x = 0; x < halfWidth; x++)
-	    {
-            yuv_src_buffer = s8 + ((2 * y) * src_stride) + (2 * x);
-            yuv_dst_buffer = dst_aux + (y * dst_aux_stride) + x;
+        for (x = 0; x < halfWidth; ++x)
+        {
+            yuv_src_buffer = s8 + (((2 * y) * src_stride) + (2 * x)) * 4;
+            yuv_dst_buffer = dst_aux + ((y * dst_aux_stride) + x) * 4;
 
             // B4[x,y] = U444[2 * x, 2 * y];
             YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(yuv_src_buffer));
 
             // B5[x,y] = V444[2 * x, 2 * y];
             YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(yuv_src_buffer));
-	    }
-	}
-	
-	for (y = 0; y < halfHeight; y++)
+        }
+    }
+
+    for (y = 0; y < halfHeight; ++y)
     {
-	    for (x = 0; x < halfWidth; x++)
-	    {
+        for (x = 0; x < halfWidth; ++x)
+        {
             yuv_dst_buffer = dst_main + (y * dst_main_stride) + x;
 
             yuv_src_buffer = s8 + ((2 * y) * src_stride) + (2 * x);
 
-	        // B2[x,y] = U444[2 * x,     2 * y];
+            // B2[x,y] = U444[2 * x,     2 * y];
             YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(yuv_src_buffer));
 
-	        // B3[x,y] = V444[2 * x,     2 * y];
+            // B3[x,y] = V444[2 * x,     2 * y];
             YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(yuv_src_buffer));
 
-            yuv_dst_buffer = s8 + ((2 * y + 1) * src_stride) + (4 * x);
+            yuv_dst_buffer = s8 + (((2 * y + 1) * src_stride) + (4 * x)) * 4;
 
-	        // B6[x,y] = U444[4 * x,     2 * y + 1];
+            // B6[x,y] = U444[4 * x,     2 * y + 1];
             YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(yuv_src_buffer));
 
-	        // B7[x,y] = V444[4 * x,     2 * y + 1];
+            // B7[x,y] = V444[4 * x,     2 * y + 1];
             YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(yuv_src_buffer));
 
-            yuv_dst_buffer = s8 + ((2 * y + 1) * src_stride) + (4 * x + 2);
+            yuv_dst_buffer = s8 + (((2 * y + 1) * src_stride) + (4 * x + 2)) * 4;
 
-	        // B8[x,y] = U444[4 * x + 2, 2 * y + 1];
+            // B8[x,y] = U444[4 * x + 2, 2 * y + 1];
             YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(yuv_src_buffer));
 
-	        // B9[x,y] = V444[4 * x + 2, 2 * y + 1];
+            // B9[x,y] = V444[4 * x + 2, 2 * y + 1];
             YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(yuv_src_buffer));
-	    }
-	}
+        }
+    }
     return 0;
 }
 
@@ -916,28 +914,28 @@ rdpCopyBox_yuv444_to_streamV2(rdpClientCon *clientCon,
         d8 += (box->x1 - dstx) * 4;
         width = box->x2 - box->x1;
         height = box->y2 - box->y1;
-        a8r8g8b8_to_yuv444_709fr_box(s8, src_stride,
-                                     d8, dst_stride,
-                                     width, height);
+        a8r8g8b8_to_yuv444_709fr_box_streamV2(s8, src_stride,
+                                              d8, dst_stride,
+                                              width, height);
     }
     }
     return 0;
 }
 
-static int
-extractY(const uint8_t *image_data, int x, int y, int image_stride) {
+// static int
+// extractY(const uint8_t *image_data, int x, int y, int image_stride) {
 
-}
+// }
 
-static int
-extractU(const uint8_t *image_data, int x, int y, int image_stride) {
+// static int
+// extractU(const uint8_t *image_data, int x, int y, int image_stride) {
 
-}
+// }
 
-static int
-extractV(const uint8_t *image_data, int x, int y, int image_stride) {
+// static int
+// extractV(const uint8_t *image_data, int x, int y, int image_stride) {
 
-}
+// }
 
 /******************************************************************************/
 static Bool
