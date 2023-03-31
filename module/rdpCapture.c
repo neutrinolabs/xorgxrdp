@@ -68,9 +68,9 @@ capture
 #define YUV444_GET_U(pixel) (pixel >> 8) & UCHAR_MAX
 #define YUV444_GET_Y(pixel) (pixel >> 0) & UCHAR_MAX
 
-#define YUV444_SET_Y(pixel, Y) pixel = (pixel & 0xFFFFFF00) | (Y << 0);
-#define YUV444_SET_U(pixel, U) pixel = (pixel & 0xFFFF00FF) | (U << 8);
-#define YUV444_SET_V(pixel, V) pixel = (pixel & 0xFF00FFFF) | (V << 16);
+#define YUV444_SET_Y(pixel, Y) *pixel = (*pixel & 0xFFFFFF00) | (Y << 0);
+#define YUV444_SET_U(pixel, U) *pixel = (*pixel & 0xFFFF00FF) | (U << 8);
+#define YUV444_SET_V(pixel, V) *pixel = (*pixel & 0xFF00FFFF) | (V << 16);
 
 
 /******************************************************************************/
@@ -804,7 +804,7 @@ rdpCopyBox_a8r8g8b8_to_yuv444_709fr(rdpClientCon *clientCon,
 
 /******************************************************************************/
 int
-a8r8g8b8_to_yuv444_709fr_box_streamV2(const uint8_t *s8, int src_stride,
+a8r8g8b8_to_yuv444_709fr_box_streamV2(uint8_t *s8, int src_stride,
                                       uint8_t *dst_main, int dst_main_stride,
                                       uint8_t *dst_aux, int dst_aux_stride,
                                       int fullWidth, int fullHeight)
@@ -823,7 +823,7 @@ a8r8g8b8_to_yuv444_709fr_box_streamV2(const uint8_t *s8, int src_stride,
             // B1[x,y] = Y444[x,y];
             yuv_src_buffer = s8 + ((y * src_stride) + x) * 4;
             yuv_dst_buffer = dst_main + ((y * dst_main_stride) + x) * 4;
-            YUV444_SET_Y(yuv_dst_buffer, YUV444_GET_Y(yuv_src_buffer));
+            YUV444_SET_Y(yuv_dst_buffer, YUV444_GET_Y(*yuv_src_buffer));
         }
 
         for (x = 0; x < halfWidth; ++x)
@@ -832,10 +832,10 @@ a8r8g8b8_to_yuv444_709fr_box_streamV2(const uint8_t *s8, int src_stride,
             yuv_dst_buffer = dst_aux + ((y * dst_aux_stride) + x) * 4;
 
             // B4[x,y] = U444[2 * x, 2 * y];
-            YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(yuv_src_buffer));
+            YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(*yuv_src_buffer));
 
             // B5[x,y] = V444[2 * x, 2 * y];
-            YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(yuv_src_buffer));
+            YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(*yuv_src_buffer));
         }
     }
 
@@ -848,26 +848,26 @@ a8r8g8b8_to_yuv444_709fr_box_streamV2(const uint8_t *s8, int src_stride,
             yuv_src_buffer = s8 + ((2 * y) * src_stride) + (2 * x);
 
             // B2[x,y] = U444[2 * x,     2 * y];
-            YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(yuv_src_buffer));
+            YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(*yuv_src_buffer));
 
             // B3[x,y] = V444[2 * x,     2 * y];
-            YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(yuv_src_buffer));
+            YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(*yuv_src_buffer));
 
             yuv_dst_buffer = s8 + (((2 * y + 1) * src_stride) + (4 * x)) * 4;
 
             // B6[x,y] = U444[4 * x,     2 * y + 1];
-            YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(yuv_src_buffer));
+            YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(*yuv_src_buffer));
 
             // B7[x,y] = V444[4 * x,     2 * y + 1];
-            YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(yuv_src_buffer));
+            YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(*yuv_src_buffer));
 
             yuv_dst_buffer = s8 + (((2 * y + 1) * src_stride) + (4 * x + 2)) * 4;
 
             // B8[x,y] = U444[4 * x + 2, 2 * y + 1];
-            YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(yuv_src_buffer));
+            YUV444_SET_U(yuv_dst_buffer, YUV444_GET_U(*yuv_src_buffer));
 
             // B9[x,y] = V444[4 * x + 2, 2 * y + 1];
-            YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(yuv_src_buffer));
+            YUV444_SET_V(yuv_dst_buffer, YUV444_GET_V(*yuv_src_buffer));
         }
     }
     return 0;
@@ -891,13 +891,14 @@ rdpCopyBox_yuv444_to_streamV2(rdpClientCon *clientCon,
     int height;
     BoxPtr box;
 
+    // First convert to YUV444
     for (index = 0; index < num_rects; ++index)
     {
         box = rects + index;
         s8 = src + (box->y1 - srcy) * src_stride;
         s8 += (box->x1 - srcx) * 4;
-        d8 = dst + (box->y1 - dsty) * dst_stride;
-        d8 += (box->x1 - dstx) * 4;
+        d8 = dst_main + (box->y1 - dst_main_y) * dst_main_stride;
+        d8 += (box->x1 - dst_main_x) * 4;
         width = box->x2 - box->x1;
         height = box->y2 - box->y1;
         a8r8g8b8_to_yuv444_709fr_box(s8, src_stride,
@@ -905,19 +906,19 @@ rdpCopyBox_yuv444_to_streamV2(rdpClientCon *clientCon,
                                      width, height);
     }
     // Now that it's been converted, split the streams
-    for (index = 0; index < num_rects; ++index) {
+    for (index = 0; index < num_rects; ++index)
     {
         box = rects + index;
         s8 = src + (box->y1 - srcy) * src_stride;
         s8 += (box->x1 - srcx) * 4;
-        d8 = dst + (box->y1 - dsty) * dst_stride;
-        d8 += (box->x1 - dstx) * 4;
+        d8 = dst + (box->y1 - dst_main_y) * dst_main_stride;
+        d8 += (box->x1 - dst_main_x) * 4;
         width = box->x2 - box->x1;
         height = box->y2 - box->y1;
         a8r8g8b8_to_yuv444_709fr_box_streamV2(s8, src_stride,
-                                              d8, dst_stride,
+                                              dst_main, dst_stride,
+                                              dst_aux, dst_stride,
                                               width, height);
-    }
     }
     return 0;
 }
@@ -1543,11 +1544,34 @@ rdpCapture3(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     }
     else if (dst_format == XRDP_yuv444_709fr)
     {
-        rdpCopyBox_a8r8g8b8_to_yuv444_709fr(clientCon,
-                                            src, src_stride, 0, 0,
-                                            dst, dst_stride,
-                                            0, 0,
-                                            *out_rects, num_rects);
+        // rdpCopyBox_a8r8g8b8_to_yuv444_709fr(clientCon,
+        //                                     src, src_stride, 0, 0,
+        //                                     dst, dst_stride,
+        //                                     0, 0,
+        //                                     *out_rects, num_rects);
+
+
+        // rdpCopyBox_yuv444_to_streamV2(rdpClientCon *clientCon,
+        //                       const uint8_t *src, int src_stride,
+        //                       int srcx, int srcy,
+        //                       uint8_t *dst_main, int dst_main_stride,
+        //                       int dst_main_x, int dst_main_y,
+        //                       uint8_t *dst_aux, int dst_aux_stride,
+        //                       int dst_aux_x, int dst_aux_y,
+        //                       BoxPtr rects, int num_rects)
+        dst_uv = dst;
+        dst_uv += clientCon->cap_width * clientCon->cap_height;
+        rdpCopyBox_yuv444_to_streamV2(clientCon,
+                                      //src
+                                      src, src_stride,
+                                      0, 0,
+                                      //dst_main
+                                      dst, dst_stride,
+                                      0, 0,
+                                      //dst_aux
+                                      dst_uv, dst_stride,
+                                      0, 0,
+                                      *out_rects, num_rects);
         
     }
     else if (dst_format == XRDP_nv12_709fr)
