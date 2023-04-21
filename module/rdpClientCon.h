@@ -114,6 +114,9 @@ struct _rdpClientCon
     int rect_id_ack;
     enum shared_memory_status shmemstatus;
 
+    int cursor_shmemid;
+    uint8_t *cursor_shmemptr;
+
     OsTimerPtr updateTimer;
     CARD32 lastUpdateTime; /* millisecond timestamp */
     int updateScheduled; /* boolean */
@@ -183,5 +186,10 @@ extern _X_EXPORT int
 rdpClientConSetCursorEx(rdpPtr dev, rdpClientCon *clientCon,
                         short x, short y, uint8_t *cur_data,
                         uint8_t *cur_mask, int bpp);
+extern _X_EXPORT int
+rdpClientConSetCursorShm(rdpPtr dev, rdpClientCon *clientCon,
+                         short x, short y,
+                         uint8_t *cur_data, uint8_t *cur_mask, int bpp,
+                         int width, int height);
 
 #endif

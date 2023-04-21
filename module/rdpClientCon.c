@@ -415,6 +415,10 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     {
         shmdt(clientCon->shmemptr);
     }
+    if (clientCon->cursor_shmemptr != NULL)
+    {
+        shmdt(clientCon->cursor_shmemptr);
+    }
     free(clientCon);
     return 0;
 }
@@ -687,6 +691,22 @@ rdpClientConProcessMsgVersion(rdpPtr dev, rdpClientCon *clientCon,
 static void
 rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
 {
+    if (clientCon->cursor_shmemptr == NULL)
+    {
+        int cursor_shmembytes = 96 * 96 * 4 + 96 * 96 / 8;
+        clientCon->cursor_shmemid = shmget(IPC_PRIVATE,
+                                           cursor_shmembytes,
+                                           IPC_CREAT | 0777);
+        if (clientCon->cursor_shmemid != -1)
+        {
+            clientCon->cursor_shmemptr = shmat(clientCon->cursor_shmemid, 0, 0);
+            if (clientCon->cursor_shmemptr == (void *) -1)
+            {
+                clientCon->cursor_shmemptr = NULL;
+            }
+            shmctl(clientCon->cursor_shmemid, IPC_RMID, NULL);
+        }
+    }
     if (clientCon->shmemptr != NULL && clientCon->shmem_bytes == bytes)
     {
         LLOGLN(0, ("rdpClientConAllocateSharedMemory: reusing shmemid %d",
@@ -1972,6 +1992,50 @@ rdpClientConSetCursorEx(rdpPtr dev, rdpClientCon *clientCon,
         out_uint8a(clientCon->out_s, cur_mask, 32 * (32 / 8));
     }
 
+    return 0;
+}
+
+/******************************************************************************/
+int
+rdpClientConSetCursorShm(rdpPtr dev, rdpClientCon *clientCon,
+                         short x, short y,
+                         uint8_t *cur_data, uint8_t *cur_mask, int bpp,
+                         int width, int height)
+{
+    int size;
+    int Bpp;
+    uint8_t *shmemptr;
+
+    if (clientCon->connected)
+    {
+        LLOGLN(10, ("rdpClientConSetCursorShm:"));
+        if (clientCon->cursor_shmemptr == NULL)
+        {
+            LLOGLN(0, ("rdpClientConSetCursorShm: cursor_shmemptr is nil"));
+            return 0;
+        }
+        Bpp = (bpp == 0) ? 3 : (bpp + 7) / 8;
+        size = 22;
+        rdpClientConPreCheck(dev, clientCon, size);
+        out_uint16_le(clientCon->out_s, 63); /* set cursor shm */
+        out_uint16_le(clientCon->out_s, size); /* size */
+        clientCon->count++;
+        x = max(0, x);
+        x = min(width - 1, x);
+        y = max(0, y);
+        y = min(height - 1, y);
+        out_uint16_le(clientCon->out_s, x);
+        out_uint16_le(clientCon->out_s, y);
+        out_uint16_le(clientCon->out_s, bpp);
+        out_uint16_le(clientCon->out_s, width);
+        out_uint16_le(clientCon->out_s, height);
+        out_uint32_le(clientCon->out_s, clientCon->cursor_shmemid);
+        out_uint32_le(clientCon->out_s, 0); /* shmem offset */
+        shmemptr = clientCon->cursor_shmemptr;
+        memcpy(shmemptr, cur_data, width * height * Bpp);
+        shmemptr += width * height * Bpp;
+        memcpy(shmemptr, cur_mask, width * height / 8);
+    }
     return 0;
 }
 
