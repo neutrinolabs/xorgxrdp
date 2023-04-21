@@ -1977,6 +1977,56 @@ rdpClientConSetCursorEx(rdpPtr dev, rdpClientCon *clientCon,
 
 /******************************************************************************/
 int
+rdpClientConSetCursorShmFd(rdpPtr dev, rdpClientCon *clientCon,
+                           short x, short y,
+                           uint8_t *cur_data, uint8_t *cur_mask, int bpp,
+                           int width, int height)
+{
+    int size;
+    int Bpp;
+    int fd = -1;
+    int rv = 0;
+    void *addr = NULL;
+    uint8_t *shmemptr;
+    size_t shmsize;
+
+    if (clientCon->connected)
+    {
+        LLOGLN(10, ("rdpClientConSetCursorShm:"));
+        Bpp = (bpp == 0) ? 3 : (bpp + 7) / 8;
+        shmsize = width * height * Bpp + width * height / 8;
+        if (g_alloc_shm_map_fd(&addr, &fd, shmsize) != 0)
+        {
+            LLOGLN(0, ("rdpClientConSetCursorShmFd: rdpGetShmFd failed"));
+            return 0;
+        }
+        shmemptr = (uint8_t *)addr;
+        size = 14;
+        rdpClientConPreCheck(dev, clientCon, size);
+        out_uint16_le(clientCon->out_s, 63); /* set cursor shmfd */
+        out_uint16_le(clientCon->out_s, size); /* size */
+        clientCon->count++;
+        x = max(0, x);
+        x = min(width - 1, x);
+        y = max(0, y);
+        y = min(height - 1, y);
+        out_uint16_le(clientCon->out_s, x);
+        out_uint16_le(clientCon->out_s, y);
+        out_uint16_le(clientCon->out_s, bpp);
+        out_uint16_le(clientCon->out_s, width);
+        out_uint16_le(clientCon->out_s, height);
+        memcpy(shmemptr, cur_data, width * height * Bpp);
+        memcpy(shmemptr + width * height * Bpp, cur_mask, width * height / 8);
+        rdpClientConSendPending(clientCon->dev, clientCon);
+        rv = g_sck_send_fd_set(clientCon->sck, "int", 4, &fd, 1);
+        LLOGLN(10, ("rdpClientConSetCursorShmFd: g_sck_send_fd_set rv %d", rv));
+        g_free_unmap_fd(shmemptr, fd, shmsize);
+    }
+    return rv;
+}
+
+/******************************************************************************/
+int
 rdpClientConCreateOsSurface(rdpPtr dev, rdpClientCon *clientCon,
                             int rdpindex, int width, int height)
 {
