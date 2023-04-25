@@ -280,13 +280,12 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
     client_max_height = 32;
     sending_bpp = 0;
     can_do_new = clientCon->client_info.pointer_flags & 1;
-    can_do_large = 0;
-#if defined(CLIENT_INFO_CURRENT_VERSION) && defined(LARGE_CURSOR_FLAG_96x96)
-#if CLIENT_INFO_CURRENT_VERSION >= 20230423
+#if (CLIENT_INFO_CURRENT_VERSION >= 20230423) && defined(LARGE_CURSOR_FLAG_96x96)
     can_do_large = (clientCon->cursor_shmemptr != NULL) &&
                    (clientCon->client_info.large_pointer_support_flags &
                     LARGE_CURSOR_FLAG_96x96);
-#endif
+#else
+    can_do_large = 0;
 #endif
     if (can_do_new || can_do_large)
     {
