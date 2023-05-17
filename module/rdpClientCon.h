@@ -183,5 +183,10 @@ extern _X_EXPORT int
 rdpClientConSetCursorEx(rdpPtr dev, rdpClientCon *clientCon,
                         short x, short y, uint8_t *cur_data,
                         uint8_t *cur_mask, int bpp);
+extern _X_EXPORT int
+rdpClientConSetCursorShmFd(rdpPtr dev, rdpClientCon *clientCon,
+                           short x, short y,
+                           uint8_t *cur_data, uint8_t *cur_mask, int bpp,
+                           int width, int height);
 
 #endif

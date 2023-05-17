@@ -46,6 +46,8 @@ cursor
 
 #include <X11/Xarch.h>
 
+#include <ms-rdpbcgr.h>
+
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
@@ -228,21 +230,27 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
                       DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs,
                       int x, int y)
 {
-    uint8_t cur_data[32 * (32 * 4)];
-    uint8_t cur_mask[32 * (32 / 8)];
+    uint8_t *cur_data;
+    uint8_t *cur_mask;
     uint8_t *mask;
     uint8_t *data;
-    int i;
-    int j;
-    int w;
-    int h;
-    int p;
+    int index;
+    int jndex;
+    int server_width;
+    int server_height;
+    int pixel;
     int xhot;
     int yhot;
     int paddedRowBytes;
     int fgcolor;
     int bgcolor;
-    int bpp;
+    int client_max_width;
+    int client_max_height;
+    int sending_width;
+    int sending_height;
+    int sending_bpp;
+    int can_do_new;
+    int can_do_large;
 
     LLOGLN(10, ("rdpSpriteSetCursorCon:"));
     if (clientCon->suppress_output)
@@ -250,32 +258,82 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
         LLOGLN(10, ("rdpSpriteSetCursorCon: suppress_output set"));
         return;
     }
-    w = pCurs->bits->width;
-    h = pCurs->bits->height;
-    if ((pCurs->bits->argb != 0) &&
-        (clientCon->client_info.pointer_flags & 1))
+    if (pCurs == NULL)
     {
-        bpp = 32;
-        paddedRowBytes = PixmapBytePad(w, 32);
+        return;
+    }
+    if (pCurs->bits == NULL)
+    {
+        return;
+    }
+    if (clientCon->client_info.size == 0)
+    {
+        return;
+    }
+    cur_data = (uint8_t *)calloc(1, 96 * 96 * 4 + 96 * 96 / 8);
+    if (cur_data == NULL)
+    {
+        return;
+    }
+    cur_mask = cur_data + 96 * 96 * 4;
+    client_max_width = 32;
+    client_max_height = 32;
+    sending_bpp = 0;
+    can_do_new = clientCon->client_info.pointer_flags & 1;
+#if CLIENT_INFO_CURRENT_VERSION >= 20230425
+    can_do_large = (clientCon->client_info.large_pointer_support_flags &
+                    LARGE_POINTER_FLAG_96x96);
+#else
+    can_do_large = 0;
+#endif
+    if (can_do_new || can_do_large)
+    {
+        if (pCurs->bits->argb != NULL)
+        {
+            sending_bpp = 32;
+        }
+    }
+    server_width = pCurs->bits->width;
+    server_height = pCurs->bits->height;
+    if ((server_width > 32) || (server_height > 32))
+    {
+        if (sending_bpp == 32)
+        {
+            if (can_do_large)
+            {
+                client_max_width = 96;
+                client_max_height = 96;
+            }
+        }
+    }
+    sending_width = server_width > 32 ? client_max_width : 32;
+    sending_height = server_height > 32 ? client_max_height : 32;
+    LLOGLN(10, ("rdpSpriteSetCursorCon: sending_width %d sending_height %d "
+           "server_width %d server_height %d sending_bpp %d",
+           sending_width, sending_height, server_width, server_height,
+           sending_bpp));
+    if (sending_bpp == 32)
+    {
+        paddedRowBytes = PixmapBytePad(server_width, 32);
         xhot = pCurs->bits->xhot;
         yhot = pCurs->bits->yhot;
         data = (uint8_t *)(pCurs->bits->argb);
-        memset(cur_data, 0, sizeof(cur_data));
-        memset(cur_mask, 0, sizeof(cur_mask));
-
-        for (j = 0; j < 32; j++)
+        memset(cur_data, 0, 96 * 96 * 4);
+        memset(cur_mask, 0, 96 * 96 / 8);
+        for (jndex = 0; jndex < sending_height; jndex++)
         {
-            for (i = 0; i < 32; i++)
+            for (index = 0; index < sending_width; index++)
             {
-                p = get_pixel_safe(data, i, j, paddedRowBytes / 4, h, 32);
-                set_pixel_safe(cur_data, i, 31 - j, 32, 32, 32, p);
+                pixel = get_pixel_safe(data, index, jndex, paddedRowBytes / 4,
+                                   server_height, 32);
+                set_pixel_safe(cur_data, index, (sending_height - 1) - jndex,
+                               sending_width, sending_height, 32, pixel);
             }
         }
     }
     else
     {
-        bpp = 0;
-        paddedRowBytes = PixmapBytePad(w, 1);
+        paddedRowBytes = PixmapBytePad(server_width, 1);
         xhot = pCurs->bits->xhot;
         yhot = pCurs->bits->yhot;
         data = (uint8_t *)(pCurs->bits->source);
@@ -286,31 +344,45 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
         bgcolor = (((pCurs->backRed >> 8) & 0xff) << 16) |
                   (((pCurs->backGreen >> 8) & 0xff) << 8) |
                   ((pCurs->backBlue >> 8) & 0xff);
-        memset(cur_data, 0, sizeof(cur_data));
-        memset(cur_mask, 0, sizeof(cur_mask));
-
-        for (j = 0; j < 32; j++)
+        memset(cur_data, 0, 96 * 96 * 4);
+        memset(cur_mask, 0, 96 * 96 / 8);
+        for (jndex = 0; jndex < sending_height; jndex++)
         {
-            for (i = 0; i < 32; i++)
+            for (index = 0; index < sending_width; index++)
             {
-                p = get_pixel_safe(mask, i, j, paddedRowBytes * 8, h, 1);
-                set_pixel_safe(cur_mask, i, 31 - j, 32, 32, 1, !p);
-
-                if (p != 0)
+                pixel = get_pixel_safe(mask, index, jndex,
+                                       paddedRowBytes * 8,
+                                       server_height, 1);
+                set_pixel_safe(cur_mask, index,
+                               (sending_height - 1) - jndex,
+                               sending_width, sending_height, 1, !pixel);
+                if (pixel != 0)
                 {
-                    p = get_pixel_safe(data, i, j, paddedRowBytes * 8, h, 1);
-                    p = p ? fgcolor : bgcolor;
-                    set_pixel_safe(cur_data, i, 31 - j, 32, 32, 24, p);
+                    pixel = get_pixel_safe(data, index, jndex,
+                                           paddedRowBytes * 8,
+                                           server_height, 1);
+                    pixel = pixel ? fgcolor : bgcolor;
+                    set_pixel_safe(cur_data, index,
+                                   (sending_height - 1) - jndex,
+                                   sending_width, sending_height, 24, pixel);
                 }
             }
         }
     }
-
     rdpClientConBeginUpdate(clientCon->dev, clientCon);
-    rdpClientConSetCursorEx(clientCon->dev, clientCon, xhot, yhot,
-                            cur_data, cur_mask, bpp);
+    if ((sending_width == 32) && (sending_height == 32))
+    {
+        rdpClientConSetCursorEx(clientCon->dev, clientCon, xhot, yhot,
+                                cur_data, cur_mask, sending_bpp);
+    }
+    else
+    {
+        rdpClientConSetCursorShmFd(clientCon->dev, clientCon, xhot, yhot,
+                                   cur_data, cur_mask, sending_bpp,
+                                   sending_width, sending_height);
+    }
     rdpClientConEndUpdate(clientCon->dev, clientCon);
-
+    free(cur_data);
 }
 
 /******************************************************************************/

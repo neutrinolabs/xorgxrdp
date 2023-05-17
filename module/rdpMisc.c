@@ -31,10 +31,12 @@ the rest
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <sys/un.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
@@ -521,4 +523,114 @@ g_hexdump(const void *p, long len)
         offset += thisline;
         line += thisline;
     }
+}
+
+/*****************************************************************************/
+int
+g_sck_send_fd_set(int sck, const void *ptr, unsigned int len,
+                  int fds[], unsigned int fdcount)
+{
+    int rv = -1;
+    struct msghdr msg = {0};
+
+    /* Set up descriptor for vanilla data */
+    struct iovec iov[1] = { {(void *)ptr, len} };
+    msg.msg_iov = &iov[0];
+    msg.msg_iovlen = 1;
+    if (fdcount > 0)
+    {
+        unsigned int fdsize = sizeof(fds[0]) * fdcount; /* Payload size */
+        /* Allocate ancillary data structure */
+        msg.msg_controllen  = CMSG_SPACE(fdsize);
+        msg.msg_control = (struct cmsghdr *)calloc(1, msg.msg_controllen);
+        if (msg.msg_control == NULL)
+        {
+            /* Memory allocation failure */
+            ErrorF("Error allocating buffer for %u fds\n", fdcount);
+            return -1;
+        }
+        /* Fill in the ancillary data structure */
+        struct cmsghdr *cmptr = CMSG_FIRSTHDR(&msg);
+        cmptr->cmsg_len = CMSG_LEN(fdsize);
+        cmptr->cmsg_level = SOL_SOCKET;
+        cmptr->cmsg_type = SCM_RIGHTS;
+        memcpy(CMSG_DATA(cmptr), fds, fdsize);
+    }
+    rv = sendmsg(sck, &msg, 0);
+    free(msg.msg_control);
+    return rv;
+}
+
+/******************************************************************************/
+int
+g_alloc_shm_map_fd(void **addr, int *fd, size_t size)
+{
+    int lfd = -1;
+    void *laddr;
+    char name[128];
+    static unsigned int autoinc;
+
+    snprintf(name, 128, "/%8.8X%8.8X", getpid(), autoinc++);
+    lfd = shm_open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (lfd == -1)
+    {
+        return 1;
+    }
+    shm_unlink(name);
+    if (ftruncate(lfd, size) == -1)
+    {
+        close(lfd);
+        return 2;
+    }
+    /* map fd to address space */
+    laddr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, lfd, 0);
+    if (laddr == MAP_FAILED)
+    {
+        close(lfd);
+        return 3;
+    }
+    *addr = laddr;
+    *fd = lfd;
+    return 0;
+}
+
+/******************************************************************************/
+int
+g_alloc_map_fd(void **addr, int *fd, size_t size)
+{
+    int lfd = -1;
+    void *laddr;
+    char name[128];
+    static unsigned int autoinc;
+
+    snprintf(name, 128, "/tmp/%8.8X%8.8X", getpid(), autoinc++);
+    lfd = open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (lfd == -1)
+    {
+        return 1;
+    }
+    unlink(name);
+    if (ftruncate(lfd, size) == -1)
+    {
+        close(lfd);
+        return 2;
+    }
+    /* map fd to address space */
+    laddr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, lfd, 0);
+    if (laddr == MAP_FAILED)
+    {
+        close(lfd);
+        return 3;
+    }
+    *addr = laddr;
+    *fd = lfd;
+    return 0;
+}
+
+/******************************************************************************/
+void
+g_free_unmap_fd(void *addr, int fd, size_t size)
+{
+    munmap(addr, size);
+    close(fd);
 }
