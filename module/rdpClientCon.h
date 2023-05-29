@@ -68,8 +68,6 @@ struct _rdpClientCon
     struct stream *out_s;
     struct stream *in_s;
 
-    int rectIdAck;
-    int rectId;
     int connected; /* boolean. Set to False when I/O fails */
     int begin; /* boolean */
     int count;
@@ -137,9 +135,6 @@ extern _X_EXPORT int
 rdpClientConEndUpdate(rdpPtr dev, rdpClientCon *clientCon);
 extern _X_EXPORT int
 rdpClientConSetFgcolor(rdpPtr dev, rdpClientCon *clientCon, int fgcolor);
-extern _X_EXPORT void
-rdpClientConSendArea(rdpPtr dev, rdpClientCon *clientCon,
-                     struct image_data *id, int x, int y, int w, int h);
 extern _X_EXPORT int
 rdpClientConFillRect(rdpPtr dev, rdpClientCon *clientCon,
                      short x, short y, int cx, int cy);
