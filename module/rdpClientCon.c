@@ -215,6 +215,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     clientCon->shmemstatus = SHM_UNINITIALIZED;
     clientCon->updateRetries = 0;
     clientCon->dev = dev;
+    clientCon->shmemfd = -1;
     dev->last_event_time_ms = GetTimeInMillis();
     dev->do_dirty_ons = 1;
 
@@ -413,7 +414,9 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     free_stream(clientCon->in_s);
     if (clientCon->shmemptr != NULL)
     {
-        shmdt(clientCon->shmemptr);
+        g_free_unmap_fd(clientCon->shmemptr,
+                        clientCon->shmemfd,
+                        clientCon->shmem_bytes);
     }
     free(clientCon);
     return 0;
@@ -687,25 +690,41 @@ rdpClientConProcessMsgVersion(rdpPtr dev, rdpClientCon *clientCon,
 static void
 rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
 {
+    void *shmemptr;
+    int shmemfd;
+
     if (clientCon->shmemptr != NULL && clientCon->shmem_bytes == bytes)
     {
-        LLOGLN(0, ("rdpClientConAllocateSharedMemory: reusing shmemid %d",
-               clientCon->shmemid));
+        LLOGLN(0, ("rdpClientConAllocateSharedMemory: reusing shmemfd %d",
+               clientCon->shmemfd));
         return;
     }
-
-    if (clientCon->shmemptr != 0)
+    if (clientCon->shmemptr != NULL)
     {
-        shmdt(clientCon->shmemptr);
+        g_free_unmap_fd(clientCon->shmemptr,
+                        clientCon->shmemfd,
+                        clientCon->shmem_bytes);
+        clientCon->shmemptr = NULL;
+        clientCon->shmemfd = -1;
+        clientCon->shmem_bytes = 0;
     }
-    clientCon->shmemid = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0777);
-    clientCon->shmemptr = shmat(clientCon->shmemid, 0, 0);
-    clientCon->shmem_bytes = bytes;
-    shmctl(clientCon->shmemid, IPC_RMID, NULL);
-    LLOGLN(0, ("rdpClientConAllocateSharedMemory: shmemid %d shmemptr %p bytes %d",
-           clientCon->shmemid, clientCon->shmemptr,
-           clientCon->shmem_bytes));
+    if (g_alloc_shm_map_fd(&shmemptr, &shmemfd, bytes) == 0)
+    {
+        clientCon->shmemptr = shmemptr;
+        clientCon->shmemfd = shmemfd;
+        clientCon->shmem_bytes = bytes;
+        LLOGLN(0, ("rdpClientConAllocateSharedMemory: shmemfd %d shmemptr %p "
+               "bytes %d",
+               clientCon->shmemfd, clientCon->shmemptr,
+               clientCon->shmem_bytes));
+    }
+    else
+    {
+        LLOGLN(0, ("rdpClientConAllocateSharedMemory: g_alloc_shm_map_fd "
+               "failed"));
+    }
 }
+
 /******************************************************************************/
 /*
     this from miScreenInit
@@ -2380,7 +2399,7 @@ rdpClientConCheckDirtyScreen(rdpPtr dev, rdpClientCon *clientCon)
 
 /******************************************************************************/
 static int
-rdpClientConSendPaintRectShmEx(rdpPtr dev, rdpClientCon *clientCon,
+rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
                                struct image_data *id,
                                RegionPtr dirtyReg,
                                BoxPtr copyRects, int numCopyRects)
@@ -2402,15 +2421,15 @@ rdpClientConSendPaintRectShmEx(rdpPtr dev, rdpClientCon *clientCon,
     num_rects_c = numCopyRects;
     if ((num_rects_c < 1) || (num_rects_d < 1))
     {
-        LLOGLN(10, ("rdpClientConSendPaintRectShmEx: nothing to send"));
+        LLOGLN(10, ("rdpClientConSendPaintRectShmFd: nothing to send"));
         return 0;
     }
     size = 2 + 2 + 2 + num_rects_d * 8 + 2 + num_rects_c * 8;
-    size += 4 + 4 + 4 + 4 + 2 + 2;
+    size += 4 + 4 + 4 + 4 + 2 + 2 + 2 + 2;
     rdpClientConPreCheck(dev, clientCon, size);
 
     s = clientCon->out_s;
-    out_uint16_le(s, 61);
+    out_uint16_le(s, 64);
     out_uint16_le(s, size);
     clientCon->count++;
 
@@ -2445,10 +2464,15 @@ rdpClientConSendPaintRectShmEx(rdpPtr dev, rdpClientCon *clientCon,
     out_uint32_le(s, 0);
     clientCon->rect_id++;
     out_uint32_le(s, clientCon->rect_id);
-    out_uint32_le(s, id->shmem_id);
+    out_uint32_le(s, id->shmem_bytes);
     out_uint32_le(s, id->shmem_offset);
+    out_uint16_le(s, clientCon->cap_left);
+    out_uint16_le(s, clientCon->cap_top);
     out_uint16_le(s, clientCon->cap_width);
     out_uint16_le(s, clientCon->cap_height);
+
+    rdpClientConSendPending(clientCon->dev, clientCon);
+    g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
 
     rdpClientConEndUpdate(dev, clientCon);
 
@@ -2492,7 +2516,7 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
         if (rdpCapture(clientCon, cap_dirty, &rects, &num_rects, id))
         {
             LLOGLN(10, ("rdpCapRect: num_rects %d", num_rects));
-            rdpClientConSendPaintRectShmEx(clientCon->dev, clientCon, id,
+            rdpClientConSendPaintRectShmFd(clientCon->dev, clientCon, id,
                                            cap_dirty, rects, num_rects);
             free(rects);
         }
@@ -2739,7 +2763,8 @@ rdpClientConGetScreenImageRect(rdpPtr dev, rdpClientCon *clientCon,
     id->lineBytes = dev->paddedWidthInBytes;
     id->pixels = dev->pfbMemory;
     id->shmem_pixels = clientCon->shmemptr;
-    id->shmem_id = clientCon->shmemid;
+    id->shmem_fd = clientCon->shmemfd;
+    id->shmem_bytes = clientCon->shmem_bytes;
     id->shmem_offset = 0;
     id->shmem_lineBytes = clientCon->shmem_lineBytes;
 }
