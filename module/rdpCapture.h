@@ -35,7 +35,8 @@ capture
 
 extern _X_EXPORT Bool
 rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
-           int *num_out_rects, struct image_data *id);
+           int *num_out_rects, BoxPtr scroll_rect, short *scroll_offset,
+           struct image_data *id);
 
 extern _X_EXPORT int
 a8r8g8b8_to_a8b8g8r8_box(const uint8_t *s8, int src_stride,

@@ -77,6 +77,7 @@ noinst_HEADERS = \
   rdpXv.h \
   amd64/funcs_amd64.h \
   x86/funcs_x86.h \
+  wyhash.h \
   $(EXTRA_HEADERS)
 
 libxorgxrdp_la_LTLIBRARIES = libxorgxrdp.la

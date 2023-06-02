@@ -373,7 +373,7 @@ rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int heigh
     RROutputPtr output;
     xRRModeInfo modeInfo;
     char name[64];
-    const int vfreq = 50;
+    const int vfreq = 25;
     int i;
 
     sprintf (name, "%dx%d", width, height);
@@ -444,7 +444,7 @@ rdpRRUpdateOutput(RROutputPtr output, RRCrtcPtr crtc,
     RRModePtr mode;
     xRRModeInfo modeInfo;
     char name[64];
-    const int vfreq = 50;
+    const int vfreq = 25;
 
     LLOGLN(0, ("rdpRRUpdateOutput:"));
     sprintf (name, "%dx%d", width, height);
