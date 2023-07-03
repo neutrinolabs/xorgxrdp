@@ -18,6 +18,7 @@
 #include "rdpDraw.h"
 #include "rdpMisc.h"
 #include "rdpReg.h"
+#include "rdpLRandR.h"
 
 #if defined(XORGXRDP_GLAMOR)
 #include <glamor.h>
