@@ -1372,7 +1372,7 @@ rdpCapture3(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         /* copy vmem to vmem */
         rv = rdpCopyBoxList(clientCon, clientCon->helperPixmaps[0],
                             *out_rects, *num_out_rects);
-        id->flags |= 1;
+        id->flags |= ENCODE_COMPLETE;
         return rv;
         /* helper will do the rest */
     }
