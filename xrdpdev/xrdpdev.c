@@ -125,7 +125,7 @@ rdpAllocRec(ScrnInfoPtr pScrn)
         return TRUE;
     }
     /* xnfcalloc exits if alloc failed */
-    pScrn->driverPrivate = xnfcalloc(sizeof(rdpRec), 1);
+    pScrn->reservedPtr[0] = xnfcalloc(sizeof(rdpRec), 1);
     return TRUE;
 }
 
@@ -491,8 +491,12 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
     }
 
     RRScreenSetSizeRange(pScreen, 256, 256, 16 * 1024, 16 * 1024);
+#if defined(XORGXRDP_LRANDR)
+    rdpLRRSetRdpOutputs(dev);
+#else
     rdpRRSetRdpOutputs(dev);
     RRTellChanged(pScreen);
+#endif
 
     return 0;
 }

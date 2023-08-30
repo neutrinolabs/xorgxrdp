@@ -25,6 +25,12 @@ EXTRA_HEADERS += rdpEgl.h
 EGLLIB += -lepoxy
 endif
 
+if WITH_LRANDR
+EXTRA_FLAGS += -DXORGXRDP_LRANDR
+EXTRA_SOURCES += rdpLRandR.c
+EXTRA_HEADERS += rdpLRandR.h
+endif
+
 AM_CFLAGS = \
   $(XORG_SERVER_CFLAGS) \
   $(XRDP_CFLAGS) \
@@ -77,6 +83,7 @@ noinst_HEADERS = \
   rdpXv.h \
   amd64/funcs_amd64.h \
   x86/funcs_x86.h \
+  wyhash.h \
   $(EXTRA_HEADERS)
 
 libxorgxrdp_la_LTLIBRARIES = libxorgxrdp.la

@@ -34,5 +34,5 @@ xrdpdev_drv_la_LIBADD =
 xrdpdevsysconfdir=$(sysconfdir)/X11/xrdp
 
 dist_xrdpdevsysconf_DATA = \
-  xorg.conf
+  xorg.conf xorg_nvidia.conf
 

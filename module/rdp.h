@@ -82,6 +82,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* XRDP_nv12 */
 #define XRDP_i420 \
 ((12 << 24) | (65 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
+/* XRDP_nv12_709fr */
+#define XRDP_nv12_709fr \
+((12 << 24) | (66 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
+/* XRDP_yuv444_709fr */
+#define XRDP_yuv444_709fr \
+((32 << 24) | (67 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
 
 #define PixelToMM(_size, _dpi) (((_size) * 254 + (_dpi) * 5) / ((_dpi) * 10))
 
@@ -90,6 +96,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RDPCLAMP(_val, _lo, _hi) \
     ((_val) < (_lo) ? (_lo) : (_val) > (_hi) ? (_hi) : (_val))
 #define RDPALIGN(_val, _al) ((((uintptr_t)(_val)) + ((_al) - 1)) & ~((_al) - 1))
+
+#define XRDP_RFX_ALIGN 64
+#define XRDP_H264_ALIGN 16
 
 #define XRDP_CD_NODRAW 0
 #define XRDP_CD_NOCLIP 1
@@ -122,6 +131,7 @@ struct image_data
     int bpp;
     int Bpp;
     int lineBytes;
+    int flags;
     uint8_t *pixels;
     uint8_t *shmem_pixels;
     int shmem_id;
@@ -313,6 +323,7 @@ struct _rdpRec
 
     copy_box_proc a8r8g8b8_to_a8b8g8r8_box;
     copy_box_dst2_proc a8r8g8b8_to_nv12_box;
+    copy_box_dst2_proc a8r8g8b8_to_nv12_709fr_box;
 
     /* multimon */
     struct monitor_info minfo[16]; /* client monitor data */
@@ -320,6 +331,7 @@ struct _rdpRec
     int monitorCount;
     /* glamor */
     Bool glamor;
+    Bool nvidia;
     PixmapPtr screenSwPixmap;
     void *xvPutImage;
     /* dri */
@@ -330,7 +342,7 @@ struct _rdpRec
 };
 typedef struct _rdpRec rdpRec;
 typedef struct _rdpRec * rdpPtr;
-#define XRDPPTR(_p) ((rdpPtr)((_p)->driverPrivate))
+#define XRDPPTR(_p) ((rdpPtr)((_p)->reservedPtr[0]))
 
 struct _rdpGCRec
 {

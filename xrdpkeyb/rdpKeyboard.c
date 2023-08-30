@@ -52,6 +52,7 @@ xrdp keyboard module
 #include "rdpInput.h"
 #include "rdpDraw.h"
 #include "rdpMisc.h"
+#include "rdpMain.h"
 
 /******************************************************************************/
 #define LOG_LEVEL 1
@@ -789,6 +790,7 @@ rdpkeybPlug(pointer module, pointer options, int *errmaj, int *errmin)
 {
     LLOGLN(0, ("rdpkeybPlug:"));
     xf86AddInputDriver(&rdpkeyb, module, 0);
+    xorgxrdpCheckWrap();
     return module;
 }
 

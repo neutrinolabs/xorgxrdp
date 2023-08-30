@@ -573,7 +573,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
         /* resize the crc list */
         clientCon->num_rfx_crcs_alloc = num_crcs;
         free(clientCon->rfx_crcs);
-        clientCon->rfx_crcs = g_new0(int, num_crcs);
+        clientCon->rfx_crcs = g_new0(uint64_t, num_crcs);
     }
     tile_extents_stride = (tile_extents_rect->x2 - tile_extents_rect->x1) / 64;
     out_rect_index = 0;

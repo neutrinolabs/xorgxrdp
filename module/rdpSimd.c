@@ -62,6 +62,126 @@ int g_simd_use_accel = 1;
 #define LLOGLN(_level, _args) \
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
+#if SIMD_USE_ACCEL
+#if defined(__x86_64__) || defined(__AMD64__) || defined (_M_AMD64)
+/******************************************************************************/
+static int
+a8r8g8b8_to_nv12_box_amd64_sse2_wrap(const uint8_t *s8, int src_stride,
+                                     uint8_t *d8_y, int dst_stride_y,
+                                     uint8_t *d8_uv, int dst_stride_uv,
+                                     int width, int height)
+{
+    int awidth;
+    int lwidth;
+
+    awidth = width & ~7;
+    lwidth = width - awidth;
+    if (awidth > 0)
+    {
+        a8r8g8b8_to_nv12_box_amd64_sse2(s8, src_stride,
+                                        d8_y, dst_stride_y,
+                                        d8_uv, dst_stride_uv,
+                                        awidth, height);
+    }
+    if (lwidth > 0)
+    {
+        a8r8g8b8_to_nv12_box(s8 + awidth * 4, src_stride,
+                             d8_y + awidth, dst_stride_y,
+                             d8_uv + awidth, dst_stride_uv,
+                             lwidth, height);
+    }
+    return 0;
+}
+
+/******************************************************************************/
+static int
+a8r8g8b8_to_nv12_709fr_box_amd64_sse2_wrap(const uint8_t *s8, int src_stride,
+                                           uint8_t *d8_y, int dst_stride_y,
+                                           uint8_t *d8_uv, int dst_stride_uv,
+                                           int width, int height)
+{
+    int awidth;
+    int lwidth;
+
+    awidth = width & ~7;
+    lwidth = width - awidth;
+    if (awidth > 0)
+    {
+        a8r8g8b8_to_nv12_709fr_box_amd64_sse2(s8, src_stride,
+                                              d8_y, dst_stride_y,
+                                              d8_uv, dst_stride_uv,
+                                              awidth, height);
+    }
+    if (lwidth > 0)
+    {
+        a8r8g8b8_to_nv12_709fr_box(s8 + awidth * 4, src_stride,
+                                   d8_y + awidth, dst_stride_y,
+                                   d8_uv + awidth, dst_stride_uv,
+                                   lwidth, height);
+    }
+    return 0;
+}
+#elif defined(__x86__) || defined(_M_IX86) || defined(__i386__)
+/******************************************************************************/
+static int
+a8r8g8b8_to_nv12_box_x86_sse2_wrap(const uint8_t *s8, int src_stride,
+                                   uint8_t *d8_y, int dst_stride_y,
+                                   uint8_t *d8_uv, int dst_stride_uv,
+                                   int width, int height)
+{
+    int awidth;
+    int lwidth;
+
+    awidth = width & ~7;
+    lwidth = width - awidth;
+    if (awidth > 0)
+    {
+        a8r8g8b8_to_nv12_box_x86_sse2(s8, src_stride,
+                                      d8_y, dst_stride_y,
+                                      d8_uv, dst_stride_uv,
+                                      awidth, height);
+    }
+    if (lwidth > 0)
+    {
+        a8r8g8b8_to_nv12_box(s8 + awidth * 4, src_stride,
+                             d8_y + awidth, dst_stride_y,
+                             d8_uv + awidth, dst_stride_uv,
+                             lwidth, height);
+    }
+    return 0;
+}
+
+/******************************************************************************/
+static int
+a8r8g8b8_to_nv12_709fr_box_x86_sse2_wrap(const uint8_t *s8, int src_stride,
+                                         uint8_t *d8_y, int dst_stride_y,
+                                         uint8_t *d8_uv, int dst_stride_uv,
+                                         int width, int height)
+{
+    int awidth;
+    int lwidth;
+
+    awidth = width & ~7;
+    lwidth = width - awidth;
+    if (awidth > 0)
+    {
+        a8r8g8b8_to_nv12_709fr_box_x86_sse2(s8, src_stride,
+                                            d8_y, dst_stride_y,
+                                            d8_uv, dst_stride_uv,
+                                            awidth, height);
+    }
+    if (lwidth > 0)
+    {
+        a8r8g8b8_to_nv12_709fr_box(s8 + awidth * 4, src_stride,
+                                   d8_y + awidth, dst_stride_y,
+                                   d8_uv + awidth, dst_stride_uv,
+                                   lwidth, height);
+    }
+    return 0;
+}
+#endif
+#endif
+
 /*****************************************************************************/
 Bool
 rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
@@ -77,6 +197,7 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
     dev->uyvy_to_rgb32 = UYVY_to_RGB32;
     dev->a8r8g8b8_to_a8b8g8r8_box = a8r8g8b8_to_a8b8g8r8_box;
     dev->a8r8g8b8_to_nv12_box = a8r8g8b8_to_nv12_box;
+    dev->a8r8g8b8_to_nv12_709fr_box = a8r8g8b8_to_nv12_709fr_box;
 #if SIMD_USE_ACCEL
     if (g_simd_use_accel)
     {
@@ -92,7 +213,8 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
             dev->yuy2_to_rgb32 = yuy2_to_rgb32_amd64_sse2;
             dev->uyvy_to_rgb32 = uyvy_to_rgb32_amd64_sse2;
             dev->a8r8g8b8_to_a8b8g8r8_box = a8r8g8b8_to_a8b8g8r8_box_amd64_sse2;
-            dev->a8r8g8b8_to_nv12_box = a8r8g8b8_to_nv12_box_amd64_sse2;
+            dev->a8r8g8b8_to_nv12_box = a8r8g8b8_to_nv12_box_amd64_sse2_wrap;
+            dev->a8r8g8b8_to_nv12_709fr_box = a8r8g8b8_to_nv12_709fr_box_amd64_sse2_wrap;
             LLOGLN(0, ("rdpSimdInit: sse2 amd64 yuv functions assigned"));
         }
 #elif defined(__x86__) || defined(_M_IX86) || defined(__i386__)
@@ -107,7 +229,8 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
             dev->yuy2_to_rgb32 = yuy2_to_rgb32_x86_sse2;
             dev->uyvy_to_rgb32 = uyvy_to_rgb32_x86_sse2;
             dev->a8r8g8b8_to_a8b8g8r8_box = a8r8g8b8_to_a8b8g8r8_box_x86_sse2;
-            dev->a8r8g8b8_to_nv12_box = a8r8g8b8_to_nv12_box_x86_sse2;
+            dev->a8r8g8b8_to_nv12_box = a8r8g8b8_to_nv12_box_x86_sse2_wrap;
+            dev->a8r8g8b8_to_nv12_709fr_box = a8r8g8b8_to_nv12_709fr_box_x86_sse2_wrap;
             LLOGLN(0, ("rdpSimdInit: sse2 x86 yuv functions assigned"));
         }
 #endif
@@ -115,4 +238,3 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
 #endif
     return 1;
 }
-
