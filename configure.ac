@@ -12,9 +12,40 @@ AC_SUBST([package_version_patchlevel], [${package_version_patchlevel}])
 AC_CONFIG_HEADERS(config_ac.h:config_ac-h.in)
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-AC_PROG_CC
+AC_PROG_CC_C99
 AC_C_CONST
 AC_PROG_LIBTOOL
+
+case $host_os in
+        *linux*)
+                linux=yes
+                ;;
+        *kfreebsd*)
+                linux=yes # only used in instfiles/ so that’s ok for us for now
+                ;;
+        *freebsd*)
+                freebsd=yes
+                ;;
+        *netbsd*)
+                netbsd=yes
+                ;;
+        *openbsd*)
+                openbsd=yes
+                ;;
+        *darwin*)
+                macos=yes
+                ;;
+        *solaris*)
+                solaris=yes
+                ;;
+esac
+
+AM_CONDITIONAL(LINUX, [test "x$linux" = xyes])
+AM_CONDITIONAL(FREEBSD, [test "x$freebsd" = xyes])
+AM_CONDITIONAL(OPENBSD, [test "x$openbsd" = xyes])
+AM_CONDITIONAL(NETBSD, [test "x$netbsd" = xyes])
+AM_CONDITIONAL(MACOS, [test "x$macos" = xyes])
+AM_CONDITIONAL(SOLARIS, [test "x$solaris" = xyes])
 
 AC_CONFIG_MACRO_DIR([m4])
 AX_CFLAGS_WARN_ALL
@@ -29,6 +60,11 @@ if test "x${enable_glamor}" = "xyes"; then
   PKG_CHECK_MODULES([XORG_SERVER_EPOXY], [epoxy >= 0], [], [AC_MSG_ERROR([please install libepoxy-dev or libepoxy-devel])])
   PKG_CHECK_MODULES([XORG_SERVER_EGL], [egl >= 0], [], [AC_MSG_ERROR([please install libegl1-mesa-dev or mesa-libEGL-devel])])
 fi
+
+if test x$solaris = xyes; then
+    CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=600"
+    AC_SUBST(CFLAGS)
+fi 
 
 if test "x$XRDP_CFLAGS" = "x"; then
   PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.80])
