@@ -30,6 +30,7 @@ capture
 #include <stdlib.h>
 #include <string.h>
 
+
 /* this should be before all X11 .h files */
 #include <xorg-server.h>
 #include <xorgVersion.h>
@@ -53,6 +54,12 @@ capture
 #define LOG_LEVEL 1
 #define LLOGLN(_level, _args) \
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
+
+#define RGB_SPLIT(A, R, G, B, pixel) \
+    A = (pixel >> 24) & UCHAR_MAX; \
+    R = (pixel >> 16) & UCHAR_MAX; \
+    G = (pixel >>  8) & UCHAR_MAX; \
+    B = (pixel >>  0) & UCHAR_MAX;
 
 /******************************************************************************/
 /* copy rects with no error checking */
@@ -162,18 +169,15 @@ rdpCopyBox_a8r8g8b8_to_yuvalp(int ax, int ay,
             while (kndex < width)
             {
                 pixel = *(s32++);
-                a = (pixel >> 24) & 0xff;
-                r = (pixel >> 16) & 0xff;
-                g = (pixel >>  8) & 0xff;
-                b = (pixel >>  0) & 0xff;
+                RGB_SPLIT(a, r, g, b, pixel);
                 y = (r *  19595 + g *  38470 + b *   7471) >> 16;
                 u = (r * -11071 + g * -21736 + b *  32807) >> 16;
                 v = (r *  32756 + g * -27429 + b *  -5327) >> 16;
                 u = u + 128;
                 v = v + 128;
-                y = RDPCLAMP(y, 0, 255);
-                u = RDPCLAMP(u, 0, 255);
-                v = RDPCLAMP(v, 0, 255);
+                y = RDPCLAMP(y, 0, UCHAR_MAX);
+                u = RDPCLAMP(u, 0, UCHAR_MAX);
+                v = RDPCLAMP(v, 0, UCHAR_MAX);
                 *(yptr++) = y;
                 *(uptr++) = u;
                 *(vptr++) = v;
@@ -862,15 +866,14 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         return FALSE;
     }
     out_rect_index = 0;
-    extents_rect = *rdpRegionExtents(in_reg);
 
     src = id->pixels;
     dst = id->shmem_pixels;
     src_stride = id->lineBytes;
     dst_stride = clientCon->cap_stride_bytes;
 
-    crc_stride = (clientCon->dev->width + 63) / XRDP_RFX_ALIGN;
-    num_crcs = crc_stride * ((clientCon->dev->height + 63) / XRDP_RFX_ALIGN);
+    crc_stride = (clientCon->dev->width + 63) / 64.0;
+    num_crcs = crc_stride * ((clientCon->dev->height + 63) / 64.0);
     if (num_crcs != clientCon->num_rfx_crcs_alloc)
     {
         /* resize the crc list */
@@ -879,6 +882,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         clientCon->rfx_crcs = g_new0(int, num_crcs);
     }
 
+    extents_rect = *rdpRegionExtents(in_reg);
     y = extents_rect.y1 & ~63;
     while (y < extents_rect.y2)
     {
@@ -887,8 +891,8 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         {
             rect.x1 = x;
             rect.y1 = y;
-            rect.x2 = rect.x1 + XRDP_RFX_ALIGN;
-            rect.y2 = rect.y1 + XRDP_RFX_ALIGN;
+            rect.x2 = rect.x1 + 64;
+            rect.y2 = rect.y1 + 64;
             rcode = rdpRegionContainsRect(in_reg, &rect);
             LLOGLN(10, ("rdpCapture2: rcode %d", rcode));
 
@@ -943,9 +947,9 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     }
                 }
             }
-            x += XRDP_RFX_ALIGN;
+            x += 64;
         }
-        y += XRDP_RFX_ALIGN;
+        y += 64;
     }
     *num_out_rects = out_rect_index;
     return TRUE;
@@ -969,7 +973,7 @@ rdpCapture3(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int dst_stride;
     int dst_format;
 
-    LLOGLN(0, ("rdpCapture3:"));
+    LLOGLN(10, ("rdpCapture3:"));
 
     if (!isShmStatusActive(clientCon->shmemstatus))
     {
