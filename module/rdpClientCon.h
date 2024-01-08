@@ -52,6 +52,9 @@ struct rdpup_os_bitmap
 enum shared_memory_status {
     SHM_UNINITIALIZED = 0,
     SHM_RESIZING,
+    SHM_ACTIVE_PENDING,
+    SHM_RFX_ACTIVE_PENDING,
+    SHM_H264_ACTIVE_PENDING,
     SHM_ACTIVE,
     SHM_RFX_ACTIVE,
     SHM_H264_ACTIVE

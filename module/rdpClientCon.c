@@ -428,6 +428,7 @@ static int
 rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
 {
     int sent;
+    int retries = 0;
 
     LLOGLN(10, ("rdpClientConSend - sending %d bytes", len));
 
@@ -444,6 +445,13 @@ rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
         {
             if (g_sck_last_error_would_block(clientCon->sck))
             {
+                // Just because we couldn't after 100 retries
+                // does not mean we're disconnected.
+                if (retries > 100)
+                {
+                    return 0;
+                }
+                ++retries;
                 g_sleep(1);
             }
             else
@@ -708,21 +716,18 @@ rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
         clientCon->shmemfd = -1;
         clientCon->shmem_bytes = 0;
     }
-    if (g_alloc_shm_map_fd(&shmemptr, &shmemfd, bytes) == 0)
-    {
-        clientCon->shmemptr = shmemptr;
-        clientCon->shmemfd = shmemfd;
-        clientCon->shmem_bytes = bytes;
-        LLOGLN(0, ("rdpClientConAllocateSharedMemory: shmemfd %d shmemptr %p "
-               "bytes %d",
-               clientCon->shmemfd, clientCon->shmemptr,
-               clientCon->shmem_bytes));
-    }
-    else
+    if (g_alloc_shm_map_fd(&shmemptr, &shmemfd, bytes) != 0)
     {
         LLOGLN(0, ("rdpClientConAllocateSharedMemory: g_alloc_shm_map_fd "
                "failed"));
     }
+    clientCon->shmemptr = shmemptr;
+    clientCon->shmemfd = shmemfd;
+    clientCon->shmem_bytes = bytes;
+    LLOGLN(0, ("rdpClientConAllocateSharedMemory: shmemfd %d shmemptr %p "
+            "bytes %d",
+            clientCon->shmemfd, clientCon->shmemptr,
+            clientCon->shmem_bytes));
 }
 
 /******************************************************************************/
@@ -805,6 +810,21 @@ rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
 }
 
 /******************************************************************************/
+static enum shared_memory_status
+convertSharedMemoryStatusToActive(enum shared_memory_status status) {
+    switch (status) {
+        case SHM_ACTIVE_PENDING:
+            return SHM_ACTIVE;
+        case SHM_RFX_ACTIVE_PENDING:
+            return SHM_RFX_ACTIVE;
+        case SHM_H264_ACTIVE_PENDING:
+            return SHM_H264_ACTIVE;
+        default:
+            return status;
+    }
+}
+
+/******************************************************************************/
 static int
 rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
 {
@@ -867,6 +887,52 @@ rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
 
 /******************************************************************************/
 static int
+rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon)
+{
+    int len;
+    int rv;
+    int width = dev->width;
+    int height = dev->height;
+    int alignment = 0;
+    const int layer_size = 8;
+
+    switch (clientCon->client_info.capture_code)
+    {
+        case 2:
+            alignment = XRDP_RFX_ALIGN;
+            break;
+        case 3:
+            alignment = XRDP_H264_ALIGN;
+            break;
+        default:
+            break;
+    }
+    if (alignment != 0)
+    {
+        width = RDPALIGN(dev->width, alignment);
+        height = RDPALIGN(dev->height, alignment);
+    }
+
+    rdpClientConSendPending(dev, clientCon);
+    init_stream(clientCon->out_s, 0);
+    s_push_layer(clientCon->out_s, iso_hdr, layer_size);
+    clientCon->count++;
+    out_uint16_le(clientCon->out_s, 3); /* code: memory allocation complete */
+    out_uint16_le(clientCon->out_s, 8); /* size */
+    out_uint16_le(clientCon->out_s, width);
+    out_uint16_le(clientCon->out_s, height);
+    s_mark_end(clientCon->out_s);
+    len = (int) (clientCon->out_s->end - clientCon->out_s->data);
+    s_pop_layer(clientCon->out_s, iso_hdr);
+    out_uint16_le(clientCon->out_s, 100); /* Metadata message to xrdp (or if using helper, helper signal) */
+    out_uint16_le(clientCon->out_s, clientCon->count);
+    out_uint32_le(clientCon->out_s, len - layer_size);
+    rv = rdpClientConSend(dev, clientCon, clientCon->out_s->data, len);
+    return rv;
+}
+
+/******************************************************************************/
+static int
 rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
 {
     struct stream *s;
@@ -874,7 +940,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     int i1;
     int index;
     BoxRec box;
-    enum shared_memory_status shmemstatus = SHM_ACTIVE;
+    enum shared_memory_status shmemstatus = SHM_ACTIVE_PENDING;
 
     LLOGLN(0, ("rdpClientConProcessMsgClientInfo:"));
     s = clientCon->in_s;
@@ -906,8 +972,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     if (clientCon->client_info.capture_code == 2) /* RFX */
     {
         LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
-        clientCon->cap_width = RDPALIGN(clientCon->rdp_width, 64);
-        clientCon->cap_height = RDPALIGN(clientCon->rdp_height, 64);
+        clientCon->cap_width = RDPALIGN(clientCon->rdp_width, XRDP_RFX_ALIGN);
+        clientCon->cap_height = RDPALIGN(clientCon->rdp_height, XRDP_RFX_ALIGN);
         LLOGLN(0, ("  cap_width %d cap_height %d",
                clientCon->cap_width, clientCon->cap_height));
         bytes = clientCon->cap_width * clientCon->cap_height *
@@ -915,7 +981,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         rdpClientConAllocateSharedMemory(clientCon, bytes);
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
-        shmemstatus = SHM_RFX_ACTIVE;
+        shmemstatus = SHM_RFX_ACTIVE_PENDING;
     }
     else if (clientCon->client_info.capture_code == 3) /* H264 */
     {
@@ -928,7 +994,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         rdpClientConAllocateSharedMemory(clientCon, bytes);
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
-        shmemstatus = SHM_H264_ACTIVE;
+        shmemstatus = SHM_H264_ACTIVE_PENDING;
     }
 
     if (clientCon->client_info.capture_format != 0)
@@ -1066,11 +1132,16 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     rdpInputKeyboardEvent(dev, 18, (long)(&(clientCon->client_info)),
                           0, 0, 0);
 
-    if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
-        clientCon->shmemstatus = shmemstatus;
+    if (clientCon->shmemstatus == SHM_UNINITIALIZED
+       || clientCon->shmemstatus == SHM_RESIZING)
+    {
+        clientCon->shmemstatus
+            = convertSharedMemoryStatusToActive(shmemstatus);
     }
 
-    rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, clientCon->rdp_width, clientCon->rdp_height);
+    rdpSendMemoryAllocationComplete(dev, clientCon);
+    rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, clientCon->rdp_width,
+                               clientCon->rdp_height);
 
     return 0;
 }
@@ -2415,6 +2486,8 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
     struct stream *s;
     BoxRec box;
 
+    LLOGLN(10, ("rdpClientConSendPaintRectShmFd:"));
+
     rdpClientConBeginUpdate(dev, clientCon);
 
     num_rects_d = REGION_NUM_RECTS(dirtyReg);
@@ -2461,7 +2534,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint16_le(s, cy);
     }
 
-    out_uint32_le(s, 0);
+    out_uint32_le(s, id->flags);
     clientCon->rect_id++;
     out_uint32_le(s, clientCon->rect_id);
     out_uint32_le(s, id->shmem_bytes);
