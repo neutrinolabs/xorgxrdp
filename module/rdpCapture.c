@@ -891,12 +891,19 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         {
             rect.x1 = x;
             rect.y1 = y;
-            rect.x2 = rect.x1 + 64;
-            rect.y2 = rect.y1 + 64;
+            rect.x2 = rect.x1 + XRDP_RFX_ALIGN;
+            rect.y2 = rect.y1 + XRDP_RFX_ALIGN;
             rcode = rdpRegionContainsRect(in_reg, &rect);
             LLOGLN(10, ("rdpCapture2: rcode %d", rcode));
 
-            if (rcode != rgnOUT)
+            if (rcode == rgnOUT)
+            {
+                LLOGLN(0, ("rdpCapture2: rgnOUT"));
+                rdpRegionInit(&tile_reg, &rect, 0);
+                rdpRegionSubtract(in_reg, in_reg, &tile_reg);
+                rdpRegionUninit(&tile_reg);
+            }
+            else
             {
                 crc = crc_start();
                 if (rcode == rgnPART)
@@ -933,6 +940,9 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 if (crc == clientCon->rfx_crcs[crc_offset])
                 {
                     LLOGLN(10, ("rdpCapture2: crc skip at x %d y %d", x, y));
+                    rdpRegionInit(&tile_reg, &rect, 0);
+                    rdpRegionSubtract(in_reg, in_reg, &tile_reg);
+                    rdpRegionUninit(&tile_reg);
                 }
                 else
                 {
@@ -947,9 +957,9 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     }
                 }
             }
-            x += 64;
+            x += XRDP_RFX_ALIGN;
         }
-        y += 64;
+        y += XRDP_RFX_ALIGN;
     }
     *num_out_rects = out_rect_index;
     return TRUE;
