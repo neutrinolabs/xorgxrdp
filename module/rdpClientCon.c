@@ -2589,6 +2589,11 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
         if (rdpCapture(clientCon, cap_dirty, &rects, &num_rects, id))
         {
             LLOGLN(10, ("rdpCapRect: num_rects %d", num_rects));
+            if (clientCon->rect_id_ack == INT_MAX)
+            {
+                id->flags = (enum xrdp_encoder_flags)
+                            ((int)id->flags | KEY_FRAME_REQUESTED);
+            }
             rdpClientConSendPaintRectShmFd(clientCon->dev, clientCon, id,
                                            cap_dirty, rects, num_rects);
             free(rects);
