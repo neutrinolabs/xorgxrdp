@@ -65,6 +65,12 @@ moduledir="$top_builddir/xrdpkeyb/.libs,$moduledir"
 moduledir="$top_builddir/xrdpmouse/.libs,$moduledir"
 
 # Run Xorg with compiled modules as a background task
+#
+# [Linux]   Set LD_BIND_NOW (see dlopen(3)) to disable lazy symbol
+#           resolution so we check the modules for undefined symbols.
+# [FreeBSD] Setting LD_BIND_NOW does not affect the operation of
+#           dlopen()
+LD_BIND_NOW=1 \
 $XORG \
   -modulepath $moduledir \
   -config $top_srcdir/xrdpdev/xorg.conf \
