@@ -545,6 +545,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     int out_rect_index;
     int status;
     BoxRec rect;
+    RegionRec tile_reg;
     uint8_t *dst;
     uint8_t *tile_dst;
     int crc_offset;
@@ -590,7 +591,14 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
             LLOGLN(10, ("rdpEglOut: x1 %d y1 %d x2 %d y2 %d",
                    rect.x1, rect.y1, rect.x2, rect.y2));
             rcode = rdpRegionContainsRect(in_reg, &rect);
-            if (rcode != rgnOUT)
+            if (rcode == rgnOUT)
+            {
+                LLOGLN(10, ("rdpEglOut: rgnOUT"));
+                rdpRegionInit(&tile_reg, &rect, 0);
+                rdpRegionSubtract(in_reg, in_reg, &tile_reg);
+                rdpRegionUninit(&tile_reg);
+            }
+            else
             {
                 lx = x - tile_extents_rect->x1;
                 ly = y - tile_extents_rect->y1;
@@ -614,6 +622,9 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                 if (crc == clientCon->rfx_crcs[crc_offset])
                 {
                     LLOGLN(10, ("rdpEglOut: crc skip at x %d y %d", x, y));
+                    rdpRegionInit(&tile_reg, &rect, 0);
+                    rdpRegionSubtract(in_reg, in_reg, &tile_reg);
+                    rdpRegionUninit(&tile_reg);
                 }
                 else
                 {
