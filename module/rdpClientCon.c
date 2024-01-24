@@ -1225,11 +1225,12 @@ rdpClientConProcessMsgClientSuppressOutput(rdpPtr dev, rdpClientCon *clientCon)
     LLOGLN(10, ("rdpClientConProcessMsgClientSuppressOutput: "
            "suppress %d left %d top %d right %d bottom %d",
            suppress, left, top, right, bottom));
-    clientCon->suppress_output = suppress;
+    clientCon->suppress_output = suppress == 0 ? 0 : 1;
     if (suppress == 0)
     {
         rdpClientConAddDirtyScreen(dev, clientCon, left, top,
                                    right - left, bottom - top);
+        clientCon->suppress_output = 2;
     }
     return 0;
 }
@@ -2631,10 +2632,15 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     clientCon->updateScheduled = FALSE;
     clientCon->lastUpdateTime = now;
 
-    if (clientCon->suppress_output)
+    if (clientCon->suppress_output == 1)
     {
         LLOGLN(10, ("rdpDeferredUpdateCallback: suppress_output set"));
         return 0;
+    }
+    else if (clientCon->suppress_output == 2)
+    {
+        id.flags = KEY_FRAME_REQUESTED;
+        clientCon->suppress_output = 0;
     }
     if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
         LLOGLN(10, ("rdpDeferredUpdateCallback: clientCon->shmemstatus "
