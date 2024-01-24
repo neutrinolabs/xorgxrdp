@@ -97,6 +97,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct image_data
 {
+    int left;
+    int top;
     int width;
     int height;
     int bpp;
