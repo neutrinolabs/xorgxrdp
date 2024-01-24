@@ -885,6 +885,133 @@ rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
     return 0;
 }
 
+int
+rdpClientConPreCheck(rdpPtr dev, rdpClientCon *clientCon, int in_size);
+
+/******************************************************************************/
+static int
+rdpSendGfxMonitors(rdpPtr dev, rdpClientCon *clientCon)
+{
+    int x;
+    int y;
+    int width;
+    int height;
+    int index;
+    int size;
+    int monitor_count;
+    int reset_bytes;
+    int create_surface_bytes;
+    int map_surface_bytes;
+    int surface_id;
+    int pixel_format;
+    int total_cmd_bytes;
+    struct monitor_info lmi;
+    struct monitor_info *mi;
+    struct monitor_info *vmi;
+    struct stream *s;
+
+    rdpClientConBeginUpdate(dev, clientCon);
+
+    monitor_count = clientCon->client_info.display_sizes.monitorCount;
+    width = clientCon->client_info.display_sizes.session_width;
+    height = clientCon->client_info.display_sizes.session_height;
+    pixel_format = 0x20; /* XR_PIXEL_FORMAT_XRGB_8888 */
+
+    if (monitor_count < 1)
+    {
+        memset(&lmi, 0, sizeof(struct monitor_info));
+        lmi.right = width - 1;
+        lmi.bottom = height - 1;
+        lmi.is_primary = 1;
+        vmi = &lmi;
+        monitor_count = 1;
+    }
+    else
+    {
+        vmi = clientCon->client_info.display_sizes.minfo_wm;
+    }
+
+    LLOGLN(0, ("rdpSendGfxMonitors: monitor_count %d width %d height %d",
+           monitor_count, width, height));
+
+    reset_bytes = 8 + 12 + monitor_count * 20;
+    create_surface_bytes = 8 + 7;
+    map_surface_bytes = 8 + 10;
+
+    size = 2 + 2;                   /* header */
+    size += 4;                      /* message 62 cmd_bytes */
+    size += reset_bytes;            /* reset gfx message */
+    size += monitor_count *         /* create surface message(s) */
+            create_surface_bytes;
+    size += monitor_count *         /* map surface message(s) */
+            map_surface_bytes;
+    size += 4;                      /* message 62 data_bytes */
+
+    LLOGLN(0, ("rdpSendGfxMonitors: reset_bytes %d create_surface_bytes %d "
+           "map_surface_bytes %d size %d",
+           reset_bytes, create_surface_bytes, map_surface_bytes, size));
+
+    rdpClientConPreCheck(dev, clientCon, size);
+    s = clientCon->out_s;
+    out_uint16_le(s, 62);
+    out_uint16_le(s, size);
+    clientCon->count++;
+
+    total_cmd_bytes = reset_bytes +
+                  monitor_count * create_surface_bytes +
+                  monitor_count * map_surface_bytes;
+    out_uint32_le(s, total_cmd_bytes);
+
+    /* XR_RDPGFX_CMDID_RESETGRAPHICS */
+    out_uint16_le(s, 0x000E);
+    out_uint16_le(s, 0);                    /* flags */
+    out_uint32_le(s, reset_bytes);          /* cmd_bytes */
+    out_uint32_le(s, width);
+    out_uint32_le(s, height);
+    out_uint32_le(s, monitor_count);
+    for (index = 0; index < monitor_count; index++)
+    {
+        mi = vmi + index;
+        out_uint32_le(s, mi->left);
+        out_uint32_le(s, mi->top);
+        out_uint32_le(s, mi->right);
+        out_uint32_le(s, mi->bottom);
+        out_uint32_le(s, mi->is_primary);
+    }
+
+    for (index = 0; index < monitor_count; index++)
+    {
+        surface_id = index;
+        mi = vmi + index;
+        x = mi->left;
+        y = mi->top;
+        width = (mi->right - mi->left) + 1;
+        height = (mi->bottom - mi->top) + 1;
+
+        /* XR_RDPGFX_CMDID_CREATESURFACE */
+        out_uint16_le(s, 0x0009);
+        out_uint16_le(s, 0);                    /* flags */
+        out_uint32_le(s, create_surface_bytes); /* cmd_bytes */
+        out_uint16_le(s, surface_id);
+        out_uint16_le(s, width);
+        out_uint16_le(s, height);
+        out_uint8(s, pixel_format);
+
+        /* XR_RDPGFX_CMDID_MAPSURFACETOOUTPUT */
+        out_uint16_le(s, 0x000F);
+        out_uint16_le(s, 0);                    /* flags */
+        out_uint32_le(s, map_surface_bytes);    /* cmd_bytes */
+        out_uint16_le(s, surface_id);
+        out_uint32_le(s, x);
+        out_uint32_le(s, y);
+    }
+
+    out_uint32_le(s, 0);                        /* data_bytes */
+
+    rdpClientConEndUpdate(dev, clientCon);
+    return 0;
+}
+
 /******************************************************************************/
 static int
 rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon)
@@ -899,9 +1026,11 @@ rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon)
     switch (clientCon->client_info.capture_code)
     {
         case 2:
+        case 4:
             alignment = XRDP_RFX_ALIGN;
             break;
         case 3:
+        case 5:
             alignment = XRDP_H264_ALIGN;
             break;
         default:
@@ -969,7 +1098,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     i1 = clientCon->client_info.offscreen_cache_entries;
     LLOGLN(0, ("  offscreen entries %d", i1));
 
-    if (clientCon->client_info.capture_code == 2) /* RFX */
+    if ((clientCon->client_info.capture_code == 2) || /* RFX */
+        (clientCon->client_info.capture_code == 4))
     {
         LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
         clientCon->cap_width = RDPALIGN(clientCon->rdp_width, XRDP_RFX_ALIGN);
@@ -983,7 +1113,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         clientCon->cap_stride_bytes = clientCon->cap_width * 4;
         shmemstatus = SHM_RFX_ACTIVE_PENDING;
     }
-    else if (clientCon->client_info.capture_code == 3) /* H264 */
+    else if ((clientCon->client_info.capture_code == 3) || /* H264 */
+             (clientCon->client_info.capture_code == 5))
     {
         LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got H264 capture"));
         clientCon->cap_width = clientCon->rdp_width;
@@ -1142,6 +1273,12 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     rdpSendMemoryAllocationComplete(dev, clientCon);
     rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, clientCon->rdp_width,
                                clientCon->rdp_height);
+
+    if ((clientCon->client_info.capture_code == 4) ||
+        (clientCon->client_info.capture_code == 5))
+    {
+        rdpSendGfxMonitors(dev, clientCon);
+    }
 
     return 0;
 }
@@ -2470,25 +2607,78 @@ rdpClientConCheckDirtyScreen(rdpPtr dev, rdpClientCon *clientCon)
 
 /******************************************************************************/
 static int
+out_rects_dr(struct stream *s,
+             BoxPtr rects_d, int num_rects_d,
+             BoxPtr rects_c, int num_rects_c)
+{
+    int index;
+    BoxRec box;
+    short x;
+    short y;
+    short cx;
+    short cy;
+
+    out_uint16_le(s, num_rects_d);
+    for (index = 0; index < num_rects_d; index++)
+    {
+        box = rects_d[index];
+        x = box.x1;
+        y = box.y1;
+        cx = box.x2 - box.x1;
+        cy = box.y2 - box.y1;
+        out_uint16_le(s, x);
+        out_uint16_le(s, y);
+        out_uint16_le(s, cx);
+        out_uint16_le(s, cy);
+        LLOGLN(10, ("out_rects_dr: rects_d index %d x %d y %d cx %d cy %d",
+               index, x, y, cx, cy));
+    }
+    out_uint16_le(s, num_rects_c);
+    for (index = 0; index < num_rects_c; index++)
+    {
+        box = rects_c[index];
+        x = box.x1;
+        y = box.y1;
+        cx = box.x2 - box.x1;
+        cy = box.y2 - box.y1;
+        out_uint16_le(s, x);
+        out_uint16_le(s, y);
+        out_uint16_le(s, cx);
+        out_uint16_le(s, cy);
+        LLOGLN(10, ("out_rects_dr: rects_c index %d x %d y %d cx %d cy %d",
+               index, x, y, cx, cy));
+    }
+    return 0;
+}
+
+/******************************************************************************/
+static int
 rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
                                struct image_data *id,
                                RegionPtr dirtyReg,
                                BoxPtr copyRects, int numCopyRects)
 {
-    int index;
     int size;
     int num_rects_d;
     int num_rects_c;
-    short x;
-    short y;
-    short cx;
-    short cy;
     struct stream *s;
-    BoxRec box;
+    int capture_code;
+    int start_frame_bytes;
+    int wiretosurface1_bytes;
+    int wiretosurface2_bytes;
+    int end_frame_bytes;
+    int surface_id;
 
     LLOGLN(10, ("rdpClientConSendPaintRectShmFd:"));
+    LLOGLN(10, ("rdpClientConSendPaintRectShmFd: cap_left %d cap_top %d "
+           "cap_width %d cap_height %d",
+           clientCon->cap_left, clientCon->cap_top,
+           clientCon->cap_width, clientCon->cap_height));
+    LLOGLN(10, ("rdpClientConSendPaintRectShmFd: id->flags 0x%8.8X "
+           "id->left %d id->top %d id->width %d id->height %d",
+           id->flags, id->left, id->top, id->width, id->height));
 
-    rdpClientConBeginUpdate(dev, clientCon);
+    capture_code = clientCon->client_info.capture_code;
 
     num_rects_d = REGION_NUM_RECTS(dirtyReg);
     num_rects_c = numCopyRects;
@@ -2497,55 +2687,185 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         LLOGLN(10, ("rdpClientConSendPaintRectShmFd: nothing to send"));
         return 0;
     }
-    size = 2 + 2 + 2 + num_rects_d * 8 + 2 + num_rects_c * 8;
-    size += 4 + 4 + 4 + 4 + 2 + 2 + 2 + 2;
-    rdpClientConPreCheck(dev, clientCon, size);
 
-    s = clientCon->out_s;
-    out_uint16_le(s, 64);
-    out_uint16_le(s, size);
-    clientCon->count++;
+    rdpClientConBeginUpdate(dev, clientCon);
 
-    out_uint16_le(s, num_rects_d);
-    for (index = 0; index < num_rects_d; index++)
+    if (capture_code < 4)
     {
-        box = REGION_RECTS(dirtyReg)[index];
-        x = box.x1;
-        y = box.y1;
-        cx = box.x2 - box.x1;
-        cy = box.y2 - box.y1;
-        out_uint16_le(s, x);
-        out_uint16_le(s, y);
-        out_uint16_le(s, cx);
-        out_uint16_le(s, cy);
-    }
+        /* non gfx */
+        size = 2 + 2 + 2 + num_rects_d * 8 + 2 + num_rects_c * 8;
+        size += 4 + 4 + 4 + 4 + 2 + 2 + 2 + 2 + 2 + 2;
+        rdpClientConPreCheck(dev, clientCon, size);
 
-    out_uint16_le(s, num_rects_c);
-    for (index = 0; index < num_rects_c; index++)
+        s = clientCon->out_s;
+        out_uint16_le(s, 64);
+        out_uint16_le(s, size);
+        clientCon->count++;
+
+        out_rects_dr(s, REGION_RECTS(dirtyReg), num_rects_d,
+                     copyRects, num_rects_c);
+
+        out_uint32_le(s, id->flags);
+        ++clientCon->rect_id;
+        out_uint32_le(s, clientCon->rect_id);
+        out_uint32_le(s, id->shmem_bytes);
+        out_uint32_le(s, id->shmem_offset);
+        out_uint16_le(s, id->left);
+        out_uint16_le(s, id->top);
+        out_uint16_le(s, id->width);
+        out_uint16_le(s, id->height);
+        out_uint16_le(s, clientCon->cap_width);
+        out_uint16_le(s, clientCon->cap_height);
+        rdpClientConSendPending(clientCon->dev, clientCon);
+        g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
+    }
+    else if (capture_code == 4) /* gfx pro rfx */
     {
-        box = copyRects[index];
-        x = box.x1;
-        y = box.y1;
-        cx = box.x2 - box.x1;
-        cy = box.y2 - box.y1;
-        out_uint16_le(s, x);
-        out_uint16_le(s, y);
-        out_uint16_le(s, cx);
-        out_uint16_le(s, cy);
+        start_frame_bytes = 8 + 8;
+        wiretosurface2_bytes = 8 + 13 +
+                               2 + num_rects_d * 8 +
+                               2 + num_rects_c * 8 +
+                               12;
+        end_frame_bytes = 8 + 4;
+
+        size = 2 + 2;                   /* header */
+        size += 4;                      /* message 62 cmd_bytes */
+        size += start_frame_bytes;      /* start frame message */
+        size += wiretosurface2_bytes;   /* frame message */
+        size += end_frame_bytes;        /* end frame message */
+        size += 4;                      /* message 62 data_bytes */
+
+        rdpClientConPreCheck(dev, clientCon, size);
+        s = clientCon->out_s;
+        out_uint16_le(s, 62);
+        out_uint16_le(s, size);
+        clientCon->count++;
+
+        out_uint32_le(s, start_frame_bytes +
+                        wiretosurface2_bytes +
+                        end_frame_bytes); /* total of cmd_bytes */
+
+        ++clientCon->rect_id;
+
+        /* XR_RDPGFX_CMDID_STARTFRAME */
+        out_uint16_le(s, 0x000B);
+        out_uint16_le(s, 0);                    /* flags */
+        out_uint32_le(s, start_frame_bytes);    /* cmd_bytes */
+        out_uint32_le(s, clientCon->rect_id);   /* frame_id */
+        out_uint32_le(s, 0);                    /* time_stamp */
+
+        surface_id = (id->flags >> 28) & 0xF;
+        /* XR_RDPGFX_CMDID_WIRETOSURFACE_2 */
+        out_uint16_le(s, 0x0002);
+        out_uint16_le(s, 0);                    /* flags */
+        out_uint32_le(s, wiretosurface2_bytes); /* cmd_bytes */
+        out_uint16_le(s, surface_id);           /* surface_id */
+        out_uint16_le(s, 0x0009);               /* codec_id */
+        out_uint32_le(s, 0);                    /* codec_context_id */
+        out_uint8(s, 0x20);                     /* pixel_format */
+
+        out_uint32_le(s, id->flags);            /* flags */
+
+        out_rects_dr(s, REGION_RECTS(dirtyReg), num_rects_d,
+                     copyRects, num_rects_c);
+
+        out_uint16_le(s, id->left);
+        out_uint16_le(s, id->top);
+        out_uint16_le(s, id->width);
+        out_uint16_le(s, id->height);
+        out_uint16_le(s, clientCon->cap_width);
+        out_uint16_le(s, clientCon->cap_height);
+
+        /* XR_RDPGFX_CMDID_ENDFRAME */
+        out_uint16_le(s, 0x000C);
+        out_uint16_le(s, 0);                    /* flags */
+        out_uint32_le(s, end_frame_bytes);      /* cmd_bytes */
+        out_uint32_le(s, clientCon->rect_id);   /* frame_id */
+
+        if ((id->shmem_bytes > 0) && ((id->flags & 1) == 0))
+        {
+            out_uint32_le(s, id->shmem_bytes);  /* shmem_bytes */
+            rdpClientConSendPending(clientCon->dev, clientCon);
+            g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
+        }
+        else
+        {
+            out_uint32_le(s, 0);                /* shmem_bytes */
+        }
     }
+    else if (capture_code == 5) /* gfx h264 */
+    {
+        start_frame_bytes = 8 + 8;
+        wiretosurface1_bytes = 8 + 9 +
+                               2 + num_rects_d * 8 +
+                               2 + num_rects_c * 8 +
+                               12;
+        end_frame_bytes = 8 + 4;
 
-    out_uint32_le(s, id->flags);
-    clientCon->rect_id++;
-    out_uint32_le(s, clientCon->rect_id);
-    out_uint32_le(s, id->shmem_bytes);
-    out_uint32_le(s, id->shmem_offset);
-    out_uint16_le(s, clientCon->cap_left);
-    out_uint16_le(s, clientCon->cap_top);
-    out_uint16_le(s, clientCon->cap_width);
-    out_uint16_le(s, clientCon->cap_height);
+        size = 2 + 2;                   /* header */
+        size += 4;                      /* message 62 cmd_bytes */
+        size += start_frame_bytes;      /* start frame message */
+        size += wiretosurface1_bytes;   /* frame message */
+        size += end_frame_bytes;        /* end frame message */
+        size += 4;                      /* message 62 data_bytes */
 
-    rdpClientConSendPending(clientCon->dev, clientCon);
-    g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
+        rdpClientConPreCheck(dev, clientCon, size);
+        s = clientCon->out_s;
+        out_uint16_le(s, 62);
+        out_uint16_le(s, size);
+        clientCon->count++;
+
+        out_uint32_le(s, start_frame_bytes +
+                        wiretosurface1_bytes +
+                        end_frame_bytes); /* total of cmd_bytes */
+
+        ++clientCon->rect_id;
+
+        /* XR_RDPGFX_CMDID_STARTFRAME */
+        out_uint16_le(s, 0x000B);
+        out_uint16_le(s, 0);                    /* flags */
+        out_uint32_le(s, start_frame_bytes);    /* cmd_bytes */
+        out_uint32_le(s, clientCon->rect_id);   /* frame_id */
+        out_uint32_le(s, 0);                    /* time_stamp */
+
+        surface_id = (id->flags >> 28) & 0xF;
+        /* XR_RDPGFX_CMDID_WIRETOSURFACE_1 */
+        out_uint16_le(s, 0x0001);
+        out_uint16_le(s, 0);                    /* flags */
+        out_uint32_le(s, wiretosurface1_bytes); /* cmd_bytes */
+        out_uint16_le(s, surface_id);           /* surface_id */
+        out_uint16_le(s, 0x000B);               /* codec_id */
+        out_uint8(s, 0x20);                     /* pixel_format */
+
+        out_uint32_le(s, id->flags);            /* flags */
+
+        out_rects_dr(s, REGION_RECTS(dirtyReg), num_rects_d,
+                     copyRects, num_rects_c);
+
+        out_uint16_le(s, id->left);
+        out_uint16_le(s, id->top);
+        out_uint16_le(s, id->width);
+        out_uint16_le(s, id->height);
+        out_uint16_le(s, clientCon->cap_width);
+        out_uint16_le(s, clientCon->cap_height);
+
+        /* XR_RDPGFX_CMDID_ENDFRAME */
+        out_uint16_le(s, 0x000C);
+        out_uint16_le(s, 0);                    /* flags */
+        out_uint32_le(s, end_frame_bytes);      /* cmd_bytes */
+        out_uint32_le(s, clientCon->rect_id);   /* frame_id */
+
+        if ((id->shmem_bytes > 0) && ((id->flags & 1) == 0))
+        {
+            out_uint32_le(s, id->shmem_bytes);  /* shmem_bytes */
+            rdpClientConSendPending(clientCon->dev, clientCon);
+            g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
+        }
+        else
+        {
+            out_uint32_le(s, 0);                /* shmem_bytes */
+        }
+    }
 
     rdpClientConEndUpdate(dev, clientCon);
 
@@ -2563,7 +2883,7 @@ static int
 rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
 {
     RegionPtr cap_dirty;
-    BoxRec rect;
+    RegionPtr cap_dirty_save;
     BoxPtr rects;
     int num_rects;
 
@@ -2571,17 +2891,12 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
     LLOGLN(10, ("rdpCapRect: cap_rect x1 %d y1 %d x2 %d y2 %d",
                cap_rect->x1, cap_rect->y1, cap_rect->x2, cap_rect->y2));
     rdpRegionIntersect(cap_dirty, cap_dirty, clientCon->dirtyRegion);
+    /* make a copy of cap_dirty because it may get altered */
+    cap_dirty_save = rdpRegionCreate(NullBox, 0);
+    rdpRegionCopy(cap_dirty_save, cap_dirty);
     num_rects = REGION_NUM_RECTS(cap_dirty);
     if (num_rects > 0)
     {
-        if (num_rects > MAX_CAPTURE_RECTS)
-        {
-            /* the dirty region is too complex, just get a rect that
-               covers the whole region */
-            rect = *rdpRegionExtents(cap_dirty);
-            rdpRegionDestroy(cap_dirty);
-            cap_dirty = rdpRegionCreate(&rect, 0);
-        }
         rects = 0;
         num_rects = 0;
         LLOGLN(10, ("rdpCapRect: capture_code %d",
@@ -2604,8 +2919,9 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
         }
     }
     rdpRegionSubtract(clientCon->dirtyRegion, clientCon->dirtyRegion,
-                      cap_dirty);
+                      cap_dirty_save);
     rdpRegionDestroy(cap_dirty);
+    rdpRegionDestroy(cap_dirty_save);
     return 0;
 }
 
@@ -2729,6 +3045,12 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
             cap_rect.y1 = clientCon->dev->minfo[index].top;
             cap_rect.x2 = clientCon->dev->minfo[index].right + 1;
             cap_rect.y2 = clientCon->dev->minfo[index].bottom + 1;
+            rdpClientConGetScreenImageRect(clientCon->dev, clientCon, &id);
+            id.left = cap_rect.x1;
+            id.top = cap_rect.y1;
+            id.width = cap_rect.x2 - cap_rect.x1;
+            id.height = cap_rect.y2 - cap_rect.y1;
+            id.flags = (index & 0xF) << 28;
             rdpCapRect(clientCon, &cap_rect, &id);
             monitor_index++;
         }
@@ -2834,11 +3156,14 @@ void
 rdpClientConGetScreenImageRect(rdpPtr dev, rdpClientCon *clientCon,
                                struct image_data *id)
 {
+    id->left = 0;
+    id->top = 0;
     id->width = dev->width;
     id->height = dev->height;
     id->bpp = clientCon->rdp_bpp;
     id->Bpp = clientCon->rdp_Bpp;
     id->lineBytes = dev->paddedWidthInBytes;
+    id->flags = 0;
     id->pixels = dev->pfbMemory;
     id->shmem_pixels = clientCon->shmemptr;
     id->shmem_fd = clientCon->shmemfd;

@@ -111,6 +111,9 @@ if test "x${with_simd}" != "xno"; then
   fi
 fi
 
+# shm_open may not be in the C library
+AC_SEARCH_LIBS([shm_open], [rt])
+
 AC_ARG_ENABLE(glamor, AS_HELP_STRING([--enable-glamor],
               [Use glamor(requires xorg server 1.19+) (default: no)]),
               [], [enable_glamor=no])
