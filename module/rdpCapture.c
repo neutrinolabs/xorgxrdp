@@ -898,7 +898,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
             if (rcode == rgnOUT)
             {
-                LLOGLN(0, ("rdpCapture2: rgnOUT"));
+                LLOGLN(10, ("rdpCapture2: rgnOUT"));
                 rdpRegionInit(&tile_reg, &rect, 0);
                 rdpRegionSubtract(in_reg, in_reg, &tile_reg);
                 rdpRegionUninit(&tile_reg);
