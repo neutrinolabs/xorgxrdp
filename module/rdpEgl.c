@@ -565,7 +565,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
         LLOGLN(0, ("rdpEglOut: glCheckFramebufferStatus error"));
     }
     dst = id->shmem_pixels;
-    dst_stride = id->shmem_lineBytes;
+    dst_stride = ((id->width + 63) & ~63) * 4;
     /* check crc list size */
     crc_stride = (id->width + 63) / 64;
     num_crcs = crc_stride * ((id->height + 63) / 64);

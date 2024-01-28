@@ -873,7 +873,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     src = id->pixels;
     dst = id->shmem_pixels;
     src_stride = id->lineBytes;
-    dst_stride = id->shmem_lineBytes;
+    dst_stride = ((id->width + 63) & ~63) * 4;
 
     src = src + src_stride * id->top + id->left * 4;
 

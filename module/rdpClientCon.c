@@ -1320,7 +1320,6 @@ rdpClientConProcessMsgClientRegion(rdpPtr dev, rdpClientCon *clientCon)
            box.x1, box.y1, box.x2, box.y2));
     rdpRegionSubtract(clientCon->shmRegion, clientCon->shmRegion, &reg);
     rdpRegionUninit(&reg);
-
     return 0;
 }
 
@@ -2694,7 +2693,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
     {
         /* non gfx */
         size = 2 + 2 + 2 + num_rects_d * 8 + 2 + num_rects_c * 8;
-        size += 4 + 4 + 4 + 4 + 2 + 2 + 2 + 2 + 2 + 2;
+        size += 4 + 4 + 4 + 4 + 2 + 2 + 2 + 2;
         rdpClientConPreCheck(dev, clientCon, size);
 
         s = clientCon->out_s;
@@ -2710,12 +2709,20 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint32_le(s, clientCon->rect_id);
         out_uint32_le(s, id->shmem_bytes);
         out_uint32_le(s, id->shmem_offset);
-        out_uint16_le(s, id->left);
-        out_uint16_le(s, id->top);
-        out_uint16_le(s, id->width);
-        out_uint16_le(s, id->height);
-        out_uint16_le(s, clientCon->cap_width);
-        out_uint16_le(s, clientCon->cap_height);
+		if (capture_code == 2) /* rfx */
+		{
+            out_uint16_le(s, id->left);
+            out_uint16_le(s, id->top);
+            out_uint16_le(s, id->width);
+            out_uint16_le(s, id->height);
+		}
+		else
+		{
+            out_uint16_le(s, 0);
+            out_uint16_le(s, 0);
+            out_uint16_le(s, clientCon->cap_width);
+            out_uint16_le(s, clientCon->cap_height);
+        }
         rdpClientConSendPending(clientCon->dev, clientCon);
         g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
     }
@@ -2725,7 +2732,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         wiretosurface2_bytes = 8 + 13 +
                                2 + num_rects_d * 8 +
                                2 + num_rects_c * 8 +
-                               12;
+                               8;
         end_frame_bytes = 8 + 4;
 
         size = 2 + 2;                   /* header */
@@ -2773,8 +2780,6 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint16_le(s, id->top);
         out_uint16_le(s, id->width);
         out_uint16_le(s, id->height);
-        out_uint16_le(s, clientCon->cap_width);
-        out_uint16_le(s, clientCon->cap_height);
 
         /* XR_RDPGFX_CMDID_ENDFRAME */
         out_uint16_le(s, 0x000C);
@@ -2799,7 +2804,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         wiretosurface1_bytes = 8 + 9 +
                                2 + num_rects_d * 8 +
                                2 + num_rects_c * 8 +
-                               12;
+                               8;
         end_frame_bytes = 8 + 4;
 
         size = 2 + 2;                   /* header */
@@ -2846,8 +2851,6 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint16_le(s, id->top);
         out_uint16_le(s, id->width);
         out_uint16_le(s, id->height);
-        out_uint16_le(s, clientCon->cap_width);
-        out_uint16_le(s, clientCon->cap_height);
 
         /* XR_RDPGFX_CMDID_ENDFRAME */
         out_uint16_le(s, 0x000C);
@@ -3086,7 +3089,6 @@ rdpScheduleDeferredUpdate(rdpClientCon *clientCon)
                     " Overriding rect_id_ack to INT_MAX.", clientCon->updateRetries, UPDATE_RETRY_TIMEOUT));
         clientCon->rect_id_ack = INT_MAX;
     }
-
     curTime = (uint32_t) GetTimeInMillis();
     /* use two separate delays in order to limit the update rate and wait a bit
        for more changes before sending an update. Always waiting the longer
