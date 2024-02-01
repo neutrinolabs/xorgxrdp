@@ -850,6 +850,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     int crc_stride;
     int crc;
     int num_crcs;
+    int mon_index;
 
     LLOGLN(10, ("rdpCapture2:"));
 
@@ -867,19 +868,26 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     }
     out_rect_index = 0;
 
+    rdpRegionTranslate(in_reg, -id->left, -id->top);
+
     src = id->pixels;
     dst = id->shmem_pixels;
     src_stride = id->lineBytes;
-    dst_stride = clientCon->cap_stride_bytes;
+    dst_stride = ((id->width + 63) & ~63) * 4;
 
-    crc_stride = (clientCon->dev->width + 63) / 64.0;
-    num_crcs = crc_stride * ((clientCon->dev->height + 63) / 64.0);
-    if (num_crcs != clientCon->num_rfx_crcs_alloc)
+    src = src + src_stride * id->top + id->left * 4;
+
+    mon_index = (id->flags >> 28) & 0xF;
+    crc_stride = (id->width + 63) / 64;
+    num_crcs = crc_stride * ((id->height + 63) / 64);
+    if (num_crcs != clientCon->num_rfx_crcs_alloc[mon_index])
     {
+        LLOGLN(0, ("rdpCapture2: resize the crc list was %d now %d",
+               clientCon->num_rfx_crcs_alloc[mon_index], num_crcs));
         /* resize the crc list */
-        clientCon->num_rfx_crcs_alloc = num_crcs;
-        free(clientCon->rfx_crcs);
-        clientCon->rfx_crcs = g_new0(int, num_crcs);
+        clientCon->num_rfx_crcs_alloc[mon_index] = num_crcs;
+        free(clientCon->rfx_crcs[mon_index]);
+        clientCon->rfx_crcs[mon_index] = g_new0(int, num_crcs);
     }
 
     extents_rect = *rdpRegionExtents(in_reg);
@@ -936,8 +944,8 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 crc_offset = (y / XRDP_RFX_ALIGN) * crc_stride 
                              + (x / XRDP_RFX_ALIGN);
                 LLOGLN(10, ("rdpCapture2: crc 0x%8.8x 0x%8.8x",
-                       crc, clientCon->rfx_crcs[crc_offset]));
-                if (crc == clientCon->rfx_crcs[crc_offset])
+                       crc, clientCon->rfx_crcs[mon_index][crc_offset]));
+                if (crc == clientCon->rfx_crcs[mon_index][crc_offset])
                 {
                     LLOGLN(10, ("rdpCapture2: crc skip at x %d y %d", x, y));
                     rdpRegionInit(&tile_reg, &rect, 0);
@@ -946,7 +954,7 @@ rdpCapture2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 }
                 else
                 {
-                    clientCon->rfx_crcs[crc_offset] = crc;
+                    clientCon->rfx_crcs[mon_index][crc_offset] = crc;
                     (*out_rects)[out_rect_index] = rect;
                     out_rect_index++;
                     if (out_rect_index >= RDP_MAX_TILES)
@@ -1126,7 +1134,7 @@ rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     if (clientCon->dev->glamor)
     {
 #if defined(XORGXRDP_GLAMOR)
-        if (mode == 2)
+        if ((mode == 2) || (mode == 4))
         {
             return rdpEglCaptureRfx(clientCon, in_reg, out_rects,
                                     num_out_rects, id);
@@ -1141,9 +1149,11 @@ rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         case 1:
             return rdpCapture1(clientCon, in_reg, out_rects, num_out_rects, id);
         case 2:
+        case 4:
             /* used for remotefx capture */
             return rdpCapture2(clientCon, in_reg, out_rects, num_out_rects, id);
         case 3:
+        case 5:
             /* used for even align capture */
             return rdpCapture3(clientCon, in_reg, out_rects, num_out_rects, id);
         default:
