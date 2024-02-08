@@ -545,6 +545,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     int out_rect_index;
     int status;
     BoxRec rect;
+    RegionRec tile_reg;
     uint8_t *dst;
     uint8_t *tile_dst;
     int crc_offset;
@@ -552,7 +553,9 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     int crc;
     int num_crcs;
     int tile_extents_stride;
+    int mon_index;
 
+    mon_index = (id->flags >> 28) & 0xF;
     glBindFramebuffer(GL_FRAMEBUFFER, egl->fb[0]);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                            GL_TEXTURE_2D, tex, 0);
@@ -562,18 +565,18 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
         LLOGLN(0, ("rdpEglOut: glCheckFramebufferStatus error"));
     }
     dst = id->shmem_pixels;
-    dst_stride = clientCon->cap_stride_bytes;
+    dst_stride = ((id->width + 63) & ~63) * 4;
     /* check crc list size */
-    crc_stride = (clientCon->dev->width + 63) / 64;
-    num_crcs = crc_stride * ((clientCon->dev->height + 63) / 64);
-    if (num_crcs != clientCon->num_rfx_crcs_alloc)
+    crc_stride = (id->width + 63) / 64;
+    num_crcs = crc_stride * ((id->height + 63) / 64);
+    if (num_crcs != clientCon->num_rfx_crcs_alloc[mon_index])
     {
         LLOGLN(0, ("rdpEglOut: resize the crc list was %d now %d",
-               clientCon->num_rfx_crcs_alloc, num_crcs));
+               clientCon->num_rfx_crcs_alloc[mon_index], num_crcs));
         /* resize the crc list */
-        clientCon->num_rfx_crcs_alloc = num_crcs;
-        free(clientCon->rfx_crcs);
-        clientCon->rfx_crcs = g_new0(int, num_crcs);
+        clientCon->num_rfx_crcs_alloc[mon_index] = num_crcs;
+        free(clientCon->rfx_crcs[mon_index]);
+        clientCon->rfx_crcs[mon_index] = g_new0(int, num_crcs);
     }
     tile_extents_stride = (tile_extents_rect->x2 - tile_extents_rect->x1) / 64;
     out_rect_index = 0;
@@ -590,7 +593,14 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
             LLOGLN(10, ("rdpEglOut: x1 %d y1 %d x2 %d y2 %d",
                    rect.x1, rect.y1, rect.x2, rect.y2));
             rcode = rdpRegionContainsRect(in_reg, &rect);
-            if (rcode != rgnOUT)
+            if (rcode == rgnOUT)
+            {
+                LLOGLN(10, ("rdpEglOut: rgnOUT"));
+                rdpRegionInit(&tile_reg, &rect, 0);
+                rdpRegionSubtract(in_reg, in_reg, &tile_reg);
+                rdpRegionUninit(&tile_reg);
+            }
+            else
             {
                 lx = x - tile_extents_rect->x1;
                 ly = y - tile_extents_rect->y1;
@@ -611,15 +621,18 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
 #endif
                 crc = crcs[(ly / 64) * tile_extents_stride + (lx / 64)];
                 crc_offset = (y / 64) * crc_stride + (x / 64);
-                if (crc == clientCon->rfx_crcs[crc_offset])
+                if (crc == clientCon->rfx_crcs[mon_index][crc_offset])
                 {
                     LLOGLN(10, ("rdpEglOut: crc skip at x %d y %d", x, y));
+                    rdpRegionInit(&tile_reg, &rect, 0);
+                    rdpRegionSubtract(in_reg, in_reg, &tile_reg);
+                    rdpRegionUninit(&tile_reg);
                 }
                 else
                 {
                     glReadPixels(lx, ly, 64, 64, GL_BGRA,
                                  GL_UNSIGNED_INT_8_8_8_8_REV, tile_dst);
-                    clientCon->rfx_crcs[crc_offset] = crc;
+                    clientCon->rfx_crcs[mon_index][crc_offset] = crc;
                     out_rects[out_rect_index] = rect;
                     if (out_rect_index < RDP_MAX_TILES)
                     {
@@ -633,9 +646,9 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                 }
 
             }
-            x += 64;
+            x += XRDP_RFX_ALIGN;
         }
-        y += 64;
+        y += XRDP_RFX_ALIGN;
     }
     *num_out_rects = out_rect_index;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -699,6 +712,9 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     {
         return FALSE;
     }
+
+    rdpRegionTranslate(in_reg, -id->left, -id->top);
+
     extents_rect = *rdpRegionExtents(in_reg);
     tile_extents_rect.x1 = extents_rect.x1 & ~63;
     tile_extents_rect.y1 = extents_rect.y1 & ~63;
@@ -741,8 +757,8 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                     yuv_tex = glamor_get_pixmap_texture(yuv_pixmap);
                     rfxGC->ops->CopyArea(&(screen_pixmap->drawable),
                                          &(pixmap->drawable), rfxGC,
-                                         tile_extents_rect.x1,
-                                         tile_extents_rect.y1,
+                                         tile_extents_rect.x1 + id->left,
+                                         tile_extents_rect.y1 + id->top,
                                          width, height, 0, 0);
                     rdpEglRfxRgbToYuv(egl, tex, yuv_tex, width, height);
                     rdpEglRfxClear(rfxGC, yuv_pixmap, &tile_extents_rect,

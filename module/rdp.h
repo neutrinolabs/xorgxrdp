@@ -60,29 +60,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         b = (c) & 0xff; \
     } while (0)
 
-/* PIXMAN_a8b8g8r8 */
-#define XRDP_a8b8g8r8 \
-((32 << 24) | (3 << 16) | (8 << 12) | (8 << 8) | (8 << 4) | 8)
-/* PIXMAN_a8r8g8b8 */
-#define XRDP_a8r8g8b8 \
-((32 << 24) | (2 << 16) | (8 << 12) | (8 << 8) | (8 << 4) | 8)
-/* PIXMAN_r5g6b5 */
-#define XRDP_r5g6b5 \
-((16 << 24) | (2 << 16) | (0 << 12) | (5 << 8) | (6 << 4) | 5)
-/* PIXMAN_a1r5g5b5 */
-#define XRDP_a1r5g5b5 \
-((16 << 24) | (2 << 16) | (1 << 12) | (5 << 8) | (5 << 4) | 5)
-/* PIXMAN_r3g3b2 */
-#define XRDP_r3g3b2 \
-((8 << 24) | (2 << 16) | (0 << 12) | (3 << 8) | (3 << 4) | 2)
-
-/* XRDP_nv12 */
-#define XRDP_nv12 \
-((12 << 24) | (64 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
-/* XRDP_nv12 */
-#define XRDP_i420 \
-((12 << 24) | (65 << 16) | (0 << 12) | (0 << 8) | (0 << 4) | 0)
-
 #define PixelToMM(_size, _dpi) (((_size) * 254 + (_dpi) * 5) / ((_dpi) * 10))
 
 #define RDPMIN(_val1, _val2) ((_val1) < (_val2) ? (_val1) : (_val2))
@@ -90,6 +67,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RDPCLAMP(_val, _lo, _hi) \
     ((_val) < (_lo) ? (_lo) : (_val) > (_hi) ? (_hi) : (_val))
 #define RDPALIGN(_val, _al) ((((uintptr_t)(_val)) + ((_al) - 1)) & ~((_al) - 1))
+
+#define XRDP_RFX_ALIGN 64
+#define XRDP_H264_ALIGN 16
 
 #define XRDP_CD_NODRAW 0
 #define XRDP_CD_NOCLIP 1
@@ -117,11 +97,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct image_data
 {
+    int left;
+    int top;
     int width;
     int height;
     int bpp;
     int Bpp;
     int lineBytes;
+    int flags;
     uint8_t *pixels;
     uint8_t *shmem_pixels;
     int shmem_fd;
