@@ -1102,27 +1102,32 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         box.x2 = dev->minfo[0].right;
         box.y2 = dev->minfo[0].bottom;
         /* adjust monitor info so it's not negative */
-        for (index = 1; index < dev->monitorCount; index++)
+        for (index = 1; index < dev->monitorCount; ++index)
         {
             box.x1 = min(box.x1, dev->minfo[index].left);
             box.y1 = min(box.y1, dev->minfo[index].top);
             box.x2 = max(box.x2, dev->minfo[index].right);
             box.y2 = max(box.y2, dev->minfo[index].bottom);
         }
-        for (index = 0; index < dev->monitorCount; index++)
+        for (index = 0; index < dev->monitorCount; ++index)
         {
             dev->minfo[index].left -= box.x1;
             dev->minfo[index].top -= box.y1;
             dev->minfo[index].right -= box.x1;
             dev->minfo[index].bottom -= box.y1;
-            LLOGLN(0, ("    left %d top %d right %d bottom %d",
+
+            LLOGLN(0, ("    left %d top %d right %d bottom %d pWidth %d pHeight %d "
+                   "orientation %d",
                    dev->minfo[index].left,
                    dev->minfo[index].top,
                    dev->minfo[index].right,
-                   dev->minfo[index].bottom));
+                   dev->minfo[index].bottom,
+                   dev->minfo[index].physical_width,
+                   dev->minfo[index].physical_height,
+                   dev->minfo[index].orientation));
         }
 
-        rdpRRSetRdpOutputs(dev);
+        rdpRRSetRdpOutputs(dev, clientCon);
         RRTellChanged(dev->pScreen);
     }
     else
@@ -1131,7 +1136,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         clientCon->doMultimon = 0;
         dev->doMultimon = 0;
         dev->monitorCount = 0;
-        rdpRRSetRdpOutputs(dev);
+        rdpRRSetRdpOutputs(dev, clientCon);
         RRTellChanged(dev->pScreen);
     }
 
