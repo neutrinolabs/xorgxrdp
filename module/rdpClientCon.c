@@ -766,12 +766,14 @@ static void
 rdpClientSetSharedMemoryParameters(rdpPtr dev, rdpClientCon *clientCon)
 {
     int bytes;
+    int width = clientCon->client_info.display_sizes.session_width;
+    int height = clientCon->client_info.display_sizes.session_height;
 
     enum shared_memory_status shmemstatus;
 
     // Updare the rdp size from the client size
-    clientCon->rdp_width = clientCon->client_info.display_sizes.session_width;
-    clientCon->rdp_height = clientCon->client_info.display_sizes.session_height;
+    clientCon->rdp_width = width;
+    clientCon->rdp_height = height;
 
     /* Set the capture parameters */
     if ((clientCon->client_info.capture_code == 2) || /* RFX */
@@ -779,8 +781,8 @@ rdpClientSetSharedMemoryParameters(rdpPtr dev, rdpClientCon *clientCon)
     {
         LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
         /* RFX capture needs fixed-size rectangles */
-        clientCon->cap_width = RDPALIGN(clientCon->rdp_width, XRDP_RFX_ALIGN);
-        clientCon->cap_height = RDPALIGN(clientCon->rdp_height, XRDP_RFX_ALIGN);
+        clientCon->cap_width = RDPALIGN(width, XRDP_RFX_ALIGN);
+        clientCon->cap_height = RDPALIGN(height, XRDP_RFX_ALIGN);
         LLOGLN(0, ("  cap_width %d cap_height %d",
                clientCon->cap_width, clientCon->cap_height));
 
@@ -795,8 +797,8 @@ rdpClientSetSharedMemoryParameters(rdpPtr dev, rdpClientCon *clientCon)
              (clientCon->client_info.capture_code == 5))
     {
         LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got H264 capture"));
-        clientCon->cap_width = clientCon->rdp_width;
-        clientCon->cap_height = clientCon->rdp_height;
+        clientCon->cap_width = width;
+        clientCon->cap_height = height;
 
         bytes = clientCon->cap_width * clientCon->cap_height * 2;
 
@@ -806,11 +808,10 @@ rdpClientSetSharedMemoryParameters(rdpPtr dev, rdpClientCon *clientCon)
     }
     else
     {
-        clientCon->cap_width = clientCon->rdp_width;
-        clientCon->cap_height = clientCon->rdp_height;
+        clientCon->cap_width = width;
+        clientCon->cap_height = height;
 
-        bytes = clientCon->rdp_width * clientCon->rdp_height *
-                clientCon->rdp_Bpp;
+        bytes = width * height * clientCon->rdp_Bpp;
 
         clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
         clientCon->cap_stride_bytes = clientCon->cap_width * clientCon->rdp_Bpp;
@@ -862,6 +863,20 @@ rdpClientSetSharedMemoryParameters(rdpPtr dev, rdpClientCon *clientCon)
         rdpRegionDestroy(clientCon->shmRegion);
     }
     clientCon->shmRegion = rdpRegionCreate(NullBox, 0);
+
+    if ((dev->width != width) || (dev->height != height))
+    {
+        /* Set the device size, regardless of the 'allow_screen_resize'
+         * setting */
+        ScrnInfoPtr pScrn = xf86Screens[dev->pScreen->myNum];
+        int mmwidth = PixelToMM(width, pScrn->xDpi);
+        int mmheight = PixelToMM(height, pScrn->yDpi);
+        int ok;
+        dev->allow_screen_resize = 1;
+        ok = RRScreenSizeSet(dev->pScreen, width, height, mmwidth, mmheight);
+        dev->allow_screen_resize = 0;
+        LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: RRScreenSizeSet ok=[%d]", ok));
+    }
 
     if (clientCon->shmemstatus == SHM_UNINITIALIZED
        || clientCon->shmemstatus == SHM_RESIZING)
