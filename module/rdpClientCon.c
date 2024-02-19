@@ -2872,7 +2872,7 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
 static CARD32
 rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
 {
-    rdpClientCon *clientCon;
+    rdpClientCon *clientCon = (rdpClientCon *)arg;
     struct image_data id;
     int index;
     int monitor_index;
@@ -2884,9 +2884,9 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     BoxRec dirty_extents;
     int de_width;
     int de_height;
+    int entry_rect_id = clientCon->rect_id;
 
     LLOGLN(10, ("rdpDeferredUpdateCallback:"));
-    clientCon = (rdpClientCon *) arg;
     clientCon->updateScheduled = FALSE;
     if (clientCon->suppress_output)
     {
@@ -3002,6 +3002,15 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     if (rdpRegionNotEmpty(clientCon->dirtyRegion))
     {
         rdpScheduleDeferredUpdate(clientCon);
+    }
+
+    // The user can request all frames be ack'd by sending INT_MAX as
+    // an acknowledgement frame number. If this has happened, reset the
+    // ack frame to a sensible value to prevent us overwriting the
+    // shared memory buffer while it's being copied.
+    if (clientCon->rect_id_ack == INT_MAX)
+    {
+        clientCon->rect_id_ack = entry_rect_id;
     }
     return 0;
 }
