@@ -751,8 +751,8 @@ convertSharedMemoryStatusToActive(enum shared_memory_status status) {
 
 /******************************************************************************/
 /**
- * Sets all the parameters relating to the shared memory, and
- * resizes it.
+ * Resizes all memory areas following a change in client geometry or
+ * capture format.
  *
  * Call this when any of the following are changed:-
  * - clientCon->client_info.display_sizes.session_width
@@ -763,7 +763,7 @@ convertSharedMemoryStatusToActive(enum shared_memory_status status) {
  * All the remaining memory and capture parameters are adjusted
  */
 static void
-rdpClientSetSharedMemoryParameters(rdpPtr dev, rdpClientCon *clientCon)
+rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
 {
     int bytes;
     int width = clientCon->client_info.display_sizes.session_width;
@@ -878,6 +878,8 @@ rdpClientSetSharedMemoryParameters(rdpPtr dev, rdpClientCon *clientCon)
         LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: RRScreenSizeSet ok=[%d]", ok));
     }
 
+    rdpCaptureResetState(clientCon);
+
     if (clientCon->shmemstatus == SHM_UNINITIALIZED
        || clientCon->shmemstatus == SHM_RESIZING)
     {
@@ -907,7 +909,7 @@ rdpClientConProcessMonitorUpdateMsg(rdpPtr dev, rdpClientCon *clientCon,
     clientCon->client_info.display_sizes.session_width = width;
     clientCon->client_info.display_sizes.session_height = height;
 
-    rdpClientSetSharedMemoryParameters(dev, clientCon);
+    rdpClientConResizeAllMemoryAreas(dev, clientCon);
     rdpClientConProcessClientInfoMonitors(dev, clientCon);
 
     /* Tell xrdp we're done */
@@ -1159,7 +1161,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
         clientCon->rdp_Bpp_mask = 0xffffff;
     }
 
-    rdpClientSetSharedMemoryParameters(dev, clientCon);
+    rdpClientConResizeAllMemoryAreas(dev, clientCon);
     rdpClientConProcessClientInfoMonitors(dev, clientCon);
 
     if (clientCon->client_info.offscreen_support_level > 0)
