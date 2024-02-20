@@ -1162,3 +1162,30 @@ rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     }
     return FALSE;
 }
+
+/**
+ * Reset any capture state fields following a memory resize
+ *****************************************************************************/
+void
+rdpCaptureResetState(rdpClientCon *clientCon)
+{
+    int mode;
+    int i;
+
+    LLOGLN(10, ("rdpCapReset:"));
+    mode = clientCon->client_info.capture_code;
+    switch (mode)
+    {
+        case 2:
+        case 4:
+            for (i = 0 ; i < 16; ++i)
+            {
+                free(clientCon->rfx_crcs[i]);
+                clientCon->rfx_crcs[i] = NULL;
+                clientCon->num_rfx_crcs_alloc[i] = 0;
+            }
+            break;
+        default:
+            break;
+    }
+}
