@@ -106,6 +106,10 @@ static CARD32
 rdpDeferredIdleDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg);
 static void
 rdpScheduleDeferredUpdate(rdpClientCon *clientCon);
+static void
+rdpClientConProcessClientInfoMonitors(rdpPtr dev, rdpClientCon *clientCon);
+static int
+rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon);
 
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
 
@@ -731,85 +735,6 @@ rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
 }
 
 /******************************************************************************/
-/*
-    this from miScreenInit
-    pScreen->mmWidth = (xsize * 254 + dpix * 5) / (dpix * 10);
-    pScreen->mmHeight = (ysize * 254 + dpiy * 5) / (dpiy * 10);
-*/
-static int
-rdpClientConProcessScreenSizeMsg(rdpPtr dev, rdpClientCon *clientCon,
-                                 int width, int height, int bpp)
-{
-    ScrnInfoPtr pScrn;
-    int mmwidth;
-    int mmheight;
-    int bytes;
-    Bool ok;
-
-    LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: set width %d height %d "
-           "bpp %d", width, height, bpp));
-    clientCon->shmemstatus = SHM_RESIZING;
-    clientCon->rdp_width = width;
-    clientCon->rdp_height = height;
-    clientCon->rdp_bpp = bpp;
-    clientCon->cap_width = width;
-    clientCon->cap_height = height;
-
-    if (bpp < 15)
-    {
-        clientCon->rdp_Bpp = 1;
-        clientCon->rdp_Bpp_mask = 0xff;
-        clientCon->rdp_format = XRDP_r3g3b2;
-    }
-    else if (bpp == 15)
-    {
-        clientCon->rdp_Bpp = 2;
-        clientCon->rdp_Bpp_mask = 0x7fff;
-        clientCon->rdp_format = XRDP_a1r5g5b5;
-    }
-    else if (bpp == 16)
-    {
-        clientCon->rdp_Bpp = 2;
-        clientCon->rdp_Bpp_mask = 0xffff;
-        clientCon->rdp_format = XRDP_r5g6b5;
-    }
-    else if (bpp > 16)
-    {
-        clientCon->rdp_Bpp = 4;
-        clientCon->rdp_Bpp_mask = 0xffffff;
-        clientCon->rdp_format = XRDP_a8r8g8b8;
-    }
-
-    clientCon->cap_stride_bytes = clientCon->rdp_width * clientCon->rdp_Bpp;
-
-    bytes = clientCon->rdp_width * clientCon->rdp_height *
-            clientCon->rdp_Bpp;
-    rdpClientConAllocateSharedMemory(clientCon, bytes);
-    clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->rdp_width;
-
-    if (clientCon->shmRegion != 0)
-    {
-        rdpRegionDestroy(clientCon->shmRegion);
-    }
-    clientCon->shmRegion = rdpRegionCreate(NullBox, 0);
-
-    pScrn = xf86Screens[dev->pScreen->myNum];
-    mmwidth = PixelToMM(width, pScrn->xDpi);
-    mmheight = PixelToMM(height, pScrn->yDpi);
-
-    if ((dev->width != width) || (dev->height != height))
-    {
-        dev->allow_screen_resize = 1;
-        ok = RRScreenSizeSet(dev->pScreen, width, height, mmwidth, mmheight);
-        dev->allow_screen_resize = 0;
-        LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: RRScreenSizeSet ok=[%d]", ok));
-        RRTellChanged(dev->pScreen);
-    }
-
-    return 0;
-}
-
-/******************************************************************************/
 static enum shared_memory_status
 convertSharedMemoryStatusToActive(enum shared_memory_status status) {
     switch (status) {
@@ -822,6 +747,176 @@ convertSharedMemoryStatusToActive(enum shared_memory_status status) {
         default:
             return status;
     }
+}
+
+/******************************************************************************/
+/**
+ * Resizes all memory areas following a change in client geometry or
+ * capture format.
+ *
+ * Call this when any of the following are changed:-
+ * - clientCon->client_info.display_sizes.session_width
+ * - clientCon->client_info.display_sizes.session_height
+ * - clientCon->client_info.capture_code
+ * - clientCon->client_info.capture_format
+ *
+ * All the remaining memory and capture parameters are adjusted
+ */
+static void
+rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
+{
+    int bytes;
+    int width = clientCon->client_info.display_sizes.session_width;
+    int height = clientCon->client_info.display_sizes.session_height;
+
+    enum shared_memory_status shmemstatus;
+
+    // Updare the rdp size from the client size
+    clientCon->rdp_width = width;
+    clientCon->rdp_height = height;
+
+    /* Set the capture parameters */
+    if ((clientCon->client_info.capture_code == 2) || /* RFX */
+        (clientCon->client_info.capture_code == 4))
+    {
+        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
+        /* RFX capture needs fixed-size rectangles */
+        clientCon->cap_width = RDPALIGN(width, XRDP_RFX_ALIGN);
+        clientCon->cap_height = RDPALIGN(height, XRDP_RFX_ALIGN);
+        LLOGLN(0, ("  cap_width %d cap_height %d",
+               clientCon->cap_width, clientCon->cap_height));
+
+        bytes = clientCon->cap_width * clientCon->cap_height *
+                clientCon->rdp_Bpp;
+
+        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
+        clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+        shmemstatus = SHM_RFX_ACTIVE_PENDING;
+    }
+    else if ((clientCon->client_info.capture_code == 3) || /* H264 */
+             (clientCon->client_info.capture_code == 5))
+    {
+        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got H264 capture"));
+        clientCon->cap_width = width;
+        clientCon->cap_height = height;
+
+        bytes = clientCon->cap_width * clientCon->cap_height * 2;
+
+        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
+        clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+        shmemstatus = SHM_H264_ACTIVE_PENDING;
+    }
+    else
+    {
+        clientCon->cap_width = width;
+        clientCon->cap_height = height;
+
+        bytes = width * height * clientCon->rdp_Bpp;
+
+        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
+        clientCon->cap_stride_bytes = clientCon->cap_width * clientCon->rdp_Bpp;
+        shmemstatus = SHM_ACTIVE_PENDING;
+    }
+    rdpClientConAllocateSharedMemory(clientCon, bytes);
+
+    if (clientCon->client_info.capture_format != 0)
+    {
+        clientCon->rdp_format = clientCon->client_info.capture_format;
+        switch (clientCon->rdp_format)
+        {
+            case XRDP_a8r8g8b8:
+            case XRDP_a8b8g8r8:
+                clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+                break;
+            case XRDP_r5g6b5:
+            case XRDP_a1r5g5b5:
+                clientCon->cap_stride_bytes = clientCon->cap_width * 2;
+                break;
+            default:
+                clientCon->cap_stride_bytes = clientCon->cap_width * 1;
+                break;
+        }
+    }
+    else
+    {
+        int bpp = clientCon->client_info.bpp;
+        if (bpp < 15)
+        {
+            clientCon->rdp_format = XRDP_r3g3b2;
+        }
+        else if (bpp == 15)
+        {
+            clientCon->rdp_format = XRDP_a1r5g5b5;
+        }
+        else if (bpp == 16)
+        {
+            clientCon->rdp_format = XRDP_r5g6b5;
+        }
+        else if (bpp > 16)
+        {
+            clientCon->rdp_format = XRDP_a8r8g8b8;
+        }
+    }
+
+    if (clientCon->shmRegion != 0)
+    {
+        rdpRegionDestroy(clientCon->shmRegion);
+    }
+    clientCon->shmRegion = rdpRegionCreate(NullBox, 0);
+
+    if ((dev->width != width) || (dev->height != height))
+    {
+        /* Set the device size, regardless of the 'allow_screen_resize'
+         * setting */
+        ScrnInfoPtr pScrn = xf86Screens[dev->pScreen->myNum];
+        int mmwidth = PixelToMM(width, pScrn->xDpi);
+        int mmheight = PixelToMM(height, pScrn->yDpi);
+        int ok;
+        dev->allow_screen_resize = 1;
+        ok = RRScreenSizeSet(dev->pScreen, width, height, mmwidth, mmheight);
+        dev->allow_screen_resize = 0;
+        LLOGLN(0, ("rdpClientConProcessScreenSizeMsg: RRScreenSizeSet ok=[%d]", ok));
+    }
+
+    rdpCaptureResetState(clientCon);
+
+    if (clientCon->shmemstatus == SHM_UNINITIALIZED
+       || clientCon->shmemstatus == SHM_RESIZING)
+    {
+        clientCon->shmemstatus
+            = convertSharedMemoryStatusToActive(shmemstatus);
+    }
+}
+
+/******************************************************************************/
+static int
+rdpClientConProcessMonitorUpdateMsg(rdpPtr dev, rdpClientCon *clientCon,
+                                    int width, int height, int num_monitors,
+                                    struct monitor_info monitors[])
+{
+    int i;
+    LLOGLN(0, ("rdpClientConProcessMonitorUpdateMsg: (%dx%d) #%d",
+           width, height, num_monitors));
+
+
+    // Update the client_info we have
+    clientCon->client_info.display_sizes.monitorCount = num_monitors;
+    for (i = 0; i < num_monitors; ++i)
+    {
+        clientCon->client_info.display_sizes.minfo[i] = monitors[i];
+        clientCon->client_info.display_sizes.minfo_wm[i] = monitors[i];
+    }
+    clientCon->client_info.display_sizes.session_width = width;
+    clientCon->client_info.display_sizes.session_height = height;
+
+    rdpClientConResizeAllMemoryAreas(dev, clientCon);
+    rdpClientConProcessClientInfoMonitors(dev, clientCon);
+
+    /* Tell xrdp we're done */
+    rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, width, height);
+    rdpSendMemoryAllocationComplete(dev, clientCon);
+
+    return 0;
 }
 
 /******************************************************************************/
@@ -869,13 +964,28 @@ rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
     }
     else if (msg == 300) /* resize desktop */
     {
-        rdpClientConProcessScreenSizeMsg(dev, clientCon, param1,
-                                         param2, param3);
+        LLOGLN(0, ("rdpClientConProcessMsgClientInput: obsolete msg %d", msg));
     }
     else if (msg == 301) /* version */
     {
         rdpClientConProcessMsgVersion(dev, clientCon,
                                       param1, param2, param3, param4);
+    }
+    else if (msg == 302) /* monitor update */
+    {
+        if (param3 > 0 && param3 < CLIENT_MONITOR_DATA_MAXIMUM_MONITORS)
+        {
+            struct monitor_info monitors[CLIENT_MONITOR_DATA_MAXIMUM_MONITORS];
+            in_uint8a(s, monitors, param3 * sizeof(monitors[0]));
+
+            rdpClientConProcessMonitorUpdateMsg(dev, clientCon,
+                                                param1, param2, param3,
+                                                monitors);
+        }
+        else
+        {
+            LLOGLN(0, ("rdpClientConProcessMsgClientInput: bad monitor count %d", param3));
+        }
     }
     else
     {
@@ -937,15 +1047,69 @@ rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon)
 }
 
 /******************************************************************************/
+/**
+ * Process the monitors in the client_info
+ * @param dev RDP device
+ * @param clientCon Client connection
+ */
+static void
+rdpClientConProcessClientInfoMonitors(rdpPtr dev, rdpClientCon *clientCon)
+{
+    int index;
+    BoxRec box;
+    if (clientCon->client_info.display_sizes.monitorCount > 0)
+    {
+        LLOGLN(0, ("  client can do multimon"));
+        LLOGLN(0, ("  client monitor data, monitorCount=%d", clientCon->client_info.display_sizes.monitorCount));
+        clientCon->doMultimon = 1;
+        dev->doMultimon = 1;
+        memcpy(dev->minfo, clientCon->client_info.display_sizes.minfo, sizeof(dev->minfo));
+        dev->monitorCount = clientCon->client_info.display_sizes.monitorCount;
+
+        box.x1 = dev->minfo[0].left;
+        box.y1 = dev->minfo[0].top;
+        box.x2 = dev->minfo[0].right;
+        box.y2 = dev->minfo[0].bottom;
+        /* adjust monitor info so it's not negative */
+        for (index = 1; index < dev->monitorCount; index++)
+        {
+            box.x1 = min(box.x1, dev->minfo[index].left);
+            box.y1 = min(box.y1, dev->minfo[index].top);
+            box.x2 = max(box.x2, dev->minfo[index].right);
+            box.y2 = max(box.y2, dev->minfo[index].bottom);
+        }
+        for (index = 0; index < dev->monitorCount; index++)
+        {
+            dev->minfo[index].left -= box.x1;
+            dev->minfo[index].top -= box.y1;
+            dev->minfo[index].right -= box.x1;
+            dev->minfo[index].bottom -= box.y1;
+            LLOGLN(0, ("    left %d top %d right %d bottom %d",
+                   dev->minfo[index].left,
+                   dev->minfo[index].top,
+                   dev->minfo[index].right,
+                   dev->minfo[index].bottom));
+        }
+    }
+    else
+    {
+        LLOGLN(0, ("  client can not do multimon"));
+        clientCon->doMultimon = 0;
+        dev->doMultimon = 0;
+        dev->monitorCount = 0;
+    }
+
+    rdpRRSetRdpOutputs(dev);
+    RRTellChanged(dev->pScreen);
+}
+
+/******************************************************************************/
 static int
 rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
 {
     struct stream *s;
     int bytes;
     int i1;
-    int index;
-    BoxRec box;
-    enum shared_memory_status shmemstatus = SHM_ACTIVE_PENDING;
 
     LLOGLN(0, ("rdpClientConProcessMsgClientInfo:"));
     s = clientCon->in_s;
@@ -974,54 +1138,31 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     i1 = clientCon->client_info.offscreen_cache_entries;
     LLOGLN(0, ("  offscreen entries %d", i1));
 
-    if ((clientCon->client_info.capture_code == 2) || /* RFX */
-        (clientCon->client_info.capture_code == 4))
+    /* Monitor info */
+    int bpp = clientCon->client_info.bpp;
+    if (bpp < 15)
     {
-        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
-        clientCon->cap_width = RDPALIGN(clientCon->rdp_width, XRDP_RFX_ALIGN);
-        clientCon->cap_height = RDPALIGN(clientCon->rdp_height, XRDP_RFX_ALIGN);
-        LLOGLN(0, ("  cap_width %d cap_height %d",
-               clientCon->cap_width, clientCon->cap_height));
-        bytes = clientCon->cap_width * clientCon->cap_height *
-                clientCon->rdp_Bpp;
-        rdpClientConAllocateSharedMemory(clientCon, bytes);
-        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
-        clientCon->cap_stride_bytes = clientCon->cap_width * 4;
-        shmemstatus = SHM_RFX_ACTIVE_PENDING;
+        clientCon->rdp_Bpp = 1;
+        clientCon->rdp_Bpp_mask = 0xff;
     }
-    else if ((clientCon->client_info.capture_code == 3) || /* H264 */
-             (clientCon->client_info.capture_code == 5))
+    else if (bpp == 15)
     {
-        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got H264 capture"));
-        clientCon->cap_width = clientCon->rdp_width;
-        clientCon->cap_height = clientCon->rdp_height;
-        LLOGLN(0, ("  cap_width %d cap_height %d",
-               clientCon->cap_width, clientCon->cap_height));
-        bytes = clientCon->cap_width * clientCon->cap_height * 2;
-        rdpClientConAllocateSharedMemory(clientCon, bytes);
-        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
-        clientCon->cap_stride_bytes = clientCon->cap_width * 4;
-        shmemstatus = SHM_H264_ACTIVE_PENDING;
+        clientCon->rdp_Bpp = 2;
+        clientCon->rdp_Bpp_mask = 0x7fff;
+    }
+    else if (bpp == 16)
+    {
+        clientCon->rdp_Bpp = 2;
+        clientCon->rdp_Bpp_mask = 0xffff;
+    }
+    else if (bpp > 16)
+    {
+        clientCon->rdp_Bpp = 4;
+        clientCon->rdp_Bpp_mask = 0xffffff;
     }
 
-    if (clientCon->client_info.capture_format != 0)
-    {
-        clientCon->rdp_format = clientCon->client_info.capture_format;
-        switch (clientCon->rdp_format)
-        {
-            case XRDP_a8r8g8b8:
-            case XRDP_a8b8g8r8:
-                clientCon->cap_stride_bytes = clientCon->cap_width * 4;
-                break;
-            case XRDP_r5g6b5:
-            case XRDP_a1r5g5b5:
-                clientCon->cap_stride_bytes = clientCon->cap_width * 2;
-                break;
-            default:
-                clientCon->cap_stride_bytes = clientCon->cap_width * 1;
-                break;
-        }
-    }
+    rdpClientConResizeAllMemoryAreas(dev, clientCon);
+    rdpClientConProcessClientInfoMonitors(dev, clientCon);
 
     if (clientCon->client_info.offscreen_support_level > 0)
     {
@@ -1070,81 +1211,10 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     {
         LLOGLN(0, ("  client can not do new(color) cursor"));
     }
-/*
-    TODO: Temporary workaround intended to support two different versions of the xrdp_client_info.h
-    header due to a customer request. This should be removed as soon as convenient, probably before the next
-    release. See https://github.com/neutrinolabs/xorgxrdp/issues/217
-*/
-#if CLIENT_INFO_CURRENT_VERSION == 20210723
-    if (clientCon->client_info.monitorCount > 0)
-#else
-    if (clientCon->client_info.display_sizes.monitorCount > 0)
-#endif
-    {
-        LLOGLN(0, ("  client can do multimon"));
-#if CLIENT_INFO_CURRENT_VERSION == 20210723
-        LLOGLN(0, ("  client monitor data, monitorCount=%d", clientCon->client_info.monitorCount));
-#else
-        LLOGLN(0, ("  client monitor data, monitorCount=%d", clientCon->client_info.display_sizes.monitorCount));
-#endif
-        clientCon->doMultimon = 1;
-        dev->doMultimon = 1;
-#if CLIENT_INFO_CURRENT_VERSION == 20210723
-        memcpy(dev->minfo, clientCon->client_info.minfo, sizeof(dev->minfo));
-        dev->monitorCount = clientCon->client_info.monitorCount;
-#else
-        memcpy(dev->minfo, clientCon->client_info.display_sizes.minfo, sizeof(dev->minfo));
-        dev->monitorCount = clientCon->client_info.display_sizes.monitorCount;
-#endif
-
-        box.x1 = dev->minfo[0].left;
-        box.y1 = dev->minfo[0].top;
-        box.x2 = dev->minfo[0].right;
-        box.y2 = dev->minfo[0].bottom;
-        /* adjust monitor info so it's not negative */
-        for (index = 1; index < dev->monitorCount; index++)
-        {
-            box.x1 = min(box.x1, dev->minfo[index].left);
-            box.y1 = min(box.y1, dev->minfo[index].top);
-            box.x2 = max(box.x2, dev->minfo[index].right);
-            box.y2 = max(box.y2, dev->minfo[index].bottom);
-        }
-        for (index = 0; index < dev->monitorCount; index++)
-        {
-            dev->minfo[index].left -= box.x1;
-            dev->minfo[index].top -= box.y1;
-            dev->minfo[index].right -= box.x1;
-            dev->minfo[index].bottom -= box.y1;
-            LLOGLN(0, ("    left %d top %d right %d bottom %d",
-                   dev->minfo[index].left,
-                   dev->minfo[index].top,
-                   dev->minfo[index].right,
-                   dev->minfo[index].bottom));
-        }
-
-        rdpRRSetRdpOutputs(dev);
-        RRTellChanged(dev->pScreen);
-    }
-    else
-    {
-        LLOGLN(0, ("  client can not do multimon"));
-        clientCon->doMultimon = 0;
-        dev->doMultimon = 0;
-        dev->monitorCount = 0;
-        rdpRRSetRdpOutputs(dev);
-        RRTellChanged(dev->pScreen);
-    }
 
     /* rdpLoadLayout */
     rdpInputKeyboardEvent(dev, 18, (long)(&(clientCon->client_info)),
                           0, 0, 0);
-
-    if (clientCon->shmemstatus == SHM_UNINITIALIZED
-       || clientCon->shmemstatus == SHM_RESIZING)
-    {
-        clientCon->shmemstatus
-            = convertSharedMemoryStatusToActive(shmemstatus);
-    }
 
     rdpSendMemoryAllocationComplete(dev, clientCon);
     rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, clientCon->rdp_width,
@@ -2804,7 +2874,7 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
 static CARD32
 rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
 {
-    rdpClientCon *clientCon;
+    rdpClientCon *clientCon = (rdpClientCon *)arg;
     struct image_data id;
     int index;
     int monitor_index;
@@ -2816,9 +2886,9 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     BoxRec dirty_extents;
     int de_width;
     int de_height;
+    int entry_rect_id = clientCon->rect_id;
 
     LLOGLN(10, ("rdpDeferredUpdateCallback:"));
-    clientCon = (rdpClientCon *) arg;
     clientCon->updateScheduled = FALSE;
     if (clientCon->suppress_output)
     {
@@ -2934,6 +3004,15 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     if (rdpRegionNotEmpty(clientCon->dirtyRegion))
     {
         rdpScheduleDeferredUpdate(clientCon);
+    }
+
+    // The user can request all frames be ack'd by sending INT_MAX as
+    // an acknowledgement frame number. If this has happened, reset the
+    // ack frame to a sensible value to prevent us overwriting the
+    // shared memory buffer while it's being copied.
+    if (clientCon->rect_id_ack == INT_MAX)
+    {
+        clientCon->rect_id_ack = entry_rect_id;
     }
     return 0;
 }

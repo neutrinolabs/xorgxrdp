@@ -365,38 +365,15 @@ rdpRRSetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
 }
 
 /******************************************************************************/
-static RROutputPtr
-rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int height)
+static int
+rdpRRAddCrtc(rdpPtr dev)
 {
-    RRModePtr mode;
-    RRCrtcPtr crtc;
-    RROutputPtr output;
-    xRRModeInfo modeInfo;
-    char name[64];
-    const int vfreq = 50;
     int i;
-
-    sprintf (name, "%dx%d", width, height);
-    memset (&modeInfo, 0, sizeof(modeInfo));
-    modeInfo.width = width;
-    modeInfo.height = height;
-    modeInfo.hTotal = width;
-    modeInfo.vTotal = height;
-    modeInfo.dotClock = vfreq * width * height;
-    modeInfo.nameLength = strlen(name);
-    mode = RRModeGet(&modeInfo, name);
-    if (mode == 0)
-    {
-        LLOGLN(0, ("rdpRRAddOutput: RRModeGet failed"));
-        return 0;
-    }
-
-    crtc = RRCrtcCreate(dev->pScreen, NULL);
+    RRCrtcPtr crtc = RRCrtcCreate(dev->pScreen, NULL);
     if (crtc == 0)
     {
-        LLOGLN(0, ("rdpRRAddOutput: RRCrtcCreate failed"));
-        RRModeDestroy(mode);
-        return 0;
+        LLOGLN(0, ("rdpRRAddCrtc: RRCrtcCreate failed"));
+        return 1;
     }
     /* Create and initialise (unused) gamma ramps */
     RRCrtcGammaSetSize (crtc, 256);
@@ -407,48 +384,41 @@ rdpRRAddOutput(rdpPtr dev, const char *aname, int x, int y, int width, int heigh
         crtc->gammaGreen[i] = val;
         crtc->gammaBlue[i] = val;
     }
+    return 0;
+}
 
+
+/******************************************************************************/
+static int
+rdpRRAddOutput(rdpPtr dev, const char *aname)
+{
+    RROutputPtr output;
     output = RROutputCreate(dev->pScreen, aname, strlen(aname), NULL);
     if (output == 0)
     {
         LLOGLN(0, ("rdpRRAddOutput: RROutputCreate failed"));
-        RRCrtcDestroy(crtc);
-        RRModeDestroy(mode);
-        return 0;
+        return 1;
     }
     if (!RROutputSetClones(output, NULL, 0))
     {
         LLOGLN(0, ("rdpRRAddOutput: RROutputSetClones failed"));
+        return 1;
     }
-    if (!RROutputSetModes(output, &mode, 1, 0))
-    {
-        LLOGLN(0, ("rdpRRAddOutput: RROutputSetModes failed"));
-    }
-    if (!RROutputSetCrtcs(output, &crtc, 1))
-    {
-        LLOGLN(0, ("rdpRRAddOutput: RROutputSetCrtcs failed"));
-    }
-    if (!RROutputSetConnection(output, RR_Connected))
-    {
-        LLOGLN(0, ("rdpRRAddOutput: RROutputSetConnection failed"));
-    }
-    RRCrtcNotify(crtc, mode, x, y, RR_Rotate_0, NULL, 1, &output);
-    return output;
+    return 0;
 }
 
 /******************************************************************************/
-static RROutputPtr
-rdpRRUpdateOutput(RROutputPtr output, RRCrtcPtr crtc,
-                  int x, int y, int width, int height)
+static int
+rdpRRConnectOutput(RROutputPtr output, RRCrtcPtr crtc,
+                   int x, int y, int width, int height)
 {
     RRModePtr mode;
-    xRRModeInfo modeInfo;
+    xRRModeInfo modeInfo = {0};
     char name[64];
     const int vfreq = 50;
 
-    LLOGLN(0, ("rdpRRUpdateOutput:"));
+    LLOGLN(0, ("rdpRRConnectOutput:"));
     sprintf (name, "%dx%d", width, height);
-    memset (&modeInfo, 0, sizeof(modeInfo));
     modeInfo.width = width;
     modeInfo.height = height;
     modeInfo.hTotal = width;
@@ -458,16 +428,60 @@ rdpRRUpdateOutput(RROutputPtr output, RRCrtcPtr crtc,
     mode = RRModeGet(&modeInfo, name);
     if (mode == 0)
     {
-        LLOGLN(0, ("rdpRRUpdateOutput: RRModeGet failed"));
-        return 0;
+        LLOGLN(0, ("rdpRRConnectOutput: RRModeGet failed"));
+        return 1;
     }
-    if (!RROutputSetModes(output, &mode, 1, 0))
+    /* Don't set the mode for the output unless we need to */
+    if (output->numModes != 1 || output->numPreferred != 0 ||
+        output->modes[0] != mode)
     {
-        LLOGLN(0, ("rdpRRUpdateOutput: RROutputSetModes failed"));
+        if (!RROutputSetModes(output, &mode, 1, 0))
+        {
+            LLOGLN(0, ("rdpRRConnectOutput: RROutputSetModes failed"));
+            return 1;
+        }
+    }
+
+    /* Don't set the CRT controller for the output unless we need to */
+    if (output->numCrtcs != 1 || output->crtcs[0] != crtc)
+    {
+        if (!RROutputSetCrtcs(output, &crtc, 1))
+        {
+            LLOGLN(0, ("rdpRRConnectOutput: RROutputSetCrtcs failed"));
+            return 1;
+        }
+    }
+    if (!RROutputSetConnection(output, RR_Connected))
+    {
+        LLOGLN(0, ("rdpRRConnectOutput: RROutputSetConnection failed"));
+        return 1;
     }
     RRCrtcNotify(crtc, mode, x, y, RR_Rotate_0, NULL, 1, &output);
-    RROutputChanged(output, 1);
-    return output;
+    return 0;
+}
+
+
+/******************************************************************************/
+static int
+rdpRRDisconnectOutput(RROutputPtr output, RRCrtcPtr crtc)
+{
+    if (!RROutputSetModes(output, NULL, 0, 0))
+    {
+        LLOGLN(0, ("rdpRRDisconnectOutput: RROutputSetModes failed"));
+        return 1;
+    }
+    if (!RROutputSetCrtcs(output, NULL, 0))
+    {
+        LLOGLN(0, ("rdpRRDisconnectOutput: RROutputSetCrtcs failed"));
+        return 1;
+    }
+    if (!RROutputSetConnection(output, RR_Disconnected))
+    {
+        LLOGLN(0, ("rdpRRDisconnectOutput: RROutputSetConnection failed"));
+        return 1;
+    }
+    RRCrtcNotify(crtc, NULL, 0, 0, RR_Rotate_0, NULL, 0, NULL);
+    return 0;
 }
 
 /******************************************************************************/
@@ -494,27 +508,6 @@ RRSetPrimaryOutput(rrScrPrivPtr pScrPriv, RROutputPtr output)
 }
 
 /******************************************************************************/
-static int
-rdpRRRemoveExtra(rrScrPrivPtr pRRScrPriv, int count)
-{
-    int index;
-
-    while (pRRScrPriv->numCrtcs > count)
-    {
-        index = pRRScrPriv->numCrtcs - 1;
-        RRCrtcDestroy(pRRScrPriv->crtcs[index]);
-        pRRScrPriv->crtcs[index] = NULL;
-    }
-    while (pRRScrPriv->numOutputs > count)
-    {
-        index = pRRScrPriv->numOutputs - 1;
-        RROutputDestroy(pRRScrPriv->outputs[index]);
-        pRRScrPriv->outputs[index] = NULL;
-    }
-    return 0;
-}
-
-/******************************************************************************/
 int
 rdpRRSetRdpOutputs(rdpPtr dev)
 {
@@ -524,87 +517,78 @@ rdpRRSetRdpOutputs(rdpPtr dev)
     int top;
     int width;
     int height;
-    char text[256];
-    RROutputPtr output;
+    int rv = 0;
 
     pRRScrPriv = rrGetScrPriv(dev->pScreen);
     LLOGLN(0, ("rdpRRSetRdpOutputs: numCrtcs %d numOutputs %d monitorCount %d",
            pRRScrPriv->numCrtcs, pRRScrPriv->numOutputs, dev->monitorCount));
+    int count = (dev->monitorCount <= 0) ? 1 : dev->monitorCount;
+
+    /* Ensure we've got enough CRT controllers and outputs */
+    while (pRRScrPriv->numCrtcs < count && rv == 0)
+    {
+        rv = rdpRRAddCrtc(dev);
+    }
+    while (pRRScrPriv->numOutputs < count && rv == 0)
+    {
+        char text[32];
+        snprintf(text, sizeof(text), "rdp%d", pRRScrPriv->numOutputs);
+        rv = rdpRRAddOutput(dev, text);
+    }
+
+    if (rv != 0)
+    {
+        LLOGLN(0, ("rdpRRSetRdpOutputs: Failed to add CRTCs / Outputs"));
+        return rv;
+    }
+
     if (dev->monitorCount <= 0)
     {
         left = 0;
         top = 0;
         width = dev->width;
         height = dev->height;
-        if (pRRScrPriv->numCrtcs > 0)
-        {
-            /* update */
-            LLOGLN(0, ("rdpRRSetRdpOutputs: update output %d "
-                   "left %d top %d width %d height %d",
-                   0, left, top, width, height));
-            output = rdpRRUpdateOutput(pRRScrPriv->outputs[0],
-                                       pRRScrPriv->crtcs[0],
-                                       left, top, width, height);
-        }
-        else
-        {
-            /* add */
-            LLOGLN(0, ("rdpRRSetRdpOutputs: add output %d "
-                   "left %d top %d width %d height %d",
-                   0, left, top, width, height));
-            snprintf(text, 255, "rdp%d", 0);
-            output = rdpRRAddOutput(dev, text,
-                                    left, top, width, height);
-        }
-        if (output == NULL)
-        {
-            LLOGLN(0, ("rdpRRSetRdpOutputs: rdpRRUpdateOutput failed"));
-            return 1;
-        }
-        /* remove any entra */
-        rdpRRRemoveExtra(pRRScrPriv, 1);
+        LLOGLN(0, ("rdpRRSetRdpOutputs: update output %d "
+               "left %d top %d width %d height %d",
+               0, left, top, width, height));
+        rv = rdpRRConnectOutput(pRRScrPriv->outputs[0],
+                                pRRScrPriv->crtcs[0],
+                                left, top, width, height);
+        index = 1;
     }
     else
     {
-        for (index = 0; index < dev->monitorCount; index++)
+        for (index = 0 ; index < dev->monitorCount && rv == 0; ++index)
         {
             left = dev->minfo[index].left;
             top = dev->minfo[index].top;
             width = dev->minfo[index].right - dev->minfo[index].left + 1;
             height = dev->minfo[index].bottom - dev->minfo[index].top + 1;
-            if (index < pRRScrPriv->numCrtcs)
+            LLOGLN(0, ("rdpRRSetRdpOutputs: update output %d "
+                   "left %d top %d width %d height %d",
+                   index, left, top, width, height));
+            rv = rdpRRConnectOutput(pRRScrPriv->outputs[index],
+                                    pRRScrPriv->crtcs[index],
+                                    left, top, width, height);
+            if ((rv == 0) && (dev->minfo[index].is_primary))
             {
-                /* update */
-                LLOGLN(0, ("rdpRRSetRdpOutputs: update output %d "
-                       "left %d top %d width %d height %d",
-                       index, left, top, width, height));
-                output = rdpRRUpdateOutput(pRRScrPriv->outputs[index],
-                                           pRRScrPriv->crtcs[index],
-                                           left, top, width, height);
-            }
-            else
-            {
-                /* add */
-                LLOGLN(0, ("rdpRRSetRdpOutputs: add output %d "
-                       "left %d top %d width %d height %d",
-                       index, left, top, width, height));
-                snprintf(text, 255, "rdp%d", index);
-                output = rdpRRAddOutput(dev, text,
-                                        left, top, width, height);
-            }
-            if ((output != 0) && (dev->minfo[index].is_primary))
-            {
-                RRSetPrimaryOutput(pRRScrPriv, output);
-            }
-            if (output == NULL)
-            {
-                LLOGLN(0, ("rdpRRSetRdpOutputs: rdpRRUpdateOutput failed"));
-                return 1;
+                RRSetPrimaryOutput(pRRScrPriv, pRRScrPriv->outputs[index]);
             }
         }
-        /* remove any entra */
-        rdpRRRemoveExtra(pRRScrPriv, dev->monitorCount);
     }
-    return 0;
+    /* disconnect any extra */
+    while (index < pRRScrPriv->numCrtcs &&
+           index < pRRScrPriv->numOutputs && rv == 0)
+    {
+        rv = rdpRRDisconnectOutput(pRRScrPriv->outputs[index],
+                                   pRRScrPriv->crtcs[index]);
+        ++index;
+    }
+
+    if (rv != 0)
+    {
+        LLOGLN(0, ("rdpRRSetRdpOutputs: rdpRRSetRdpOutputs failed"));
+    }
+    return rv;
 }
 
