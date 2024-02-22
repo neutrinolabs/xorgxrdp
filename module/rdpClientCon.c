@@ -1276,6 +1276,11 @@ rdpClientConProcessMsgClientRegionEx(rdpPtr dev, rdpClientCon *clientCon)
 
     in_uint32_le(s, flags);
     in_uint32_le(s, clientCon->rect_id_ack);
+    if (clientCon->rect_id_ack == INT_MAX)
+    {
+        // Client just wishes to ack all in-flight frames
+        clientCon->rect_id_ack = clientCon->rect_id;
+    }
     LLOGLN(10, ("rdpClientConProcessMsgClientRegionEx: flags 0x%8.8x", flags));
     LLOGLN(10, ("rdpClientConProcessMsgClientRegionEx: rect_id %d "
            "rect_id_ack %d", clientCon->rect_id, clientCon->rect_id_ack));
@@ -2825,7 +2830,8 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
    after the capture, it sends the info to xrdp
    returns error */
 static int
-rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
+rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, int mon,
+           struct image_data *id)
 {
     RegionPtr cap_dirty;
     RegionPtr cap_dirty_save;
@@ -2849,8 +2855,9 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, struct image_data *id)
         if (rdpCapture(clientCon, cap_dirty, &rects, &num_rects, id))
         {
             LLOGLN(10, ("rdpCapRect: num_rects %d", num_rects));
-            if (clientCon->rect_id_ack == INT_MAX)
+            if (clientCon->send_key_frame[mon])
             {
+                clientCon->send_key_frame[mon] = 0;
                 id->flags = (enum xrdp_encoder_flags)
                             ((int)id->flags | KEY_FRAME_REQUESTED);
             }
@@ -2886,7 +2893,6 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     BoxRec dirty_extents;
     int de_width;
     int de_height;
-    int entry_rect_id = clientCon->rect_id;
 
     LLOGLN(10, ("rdpDeferredUpdateCallback:"));
     clientCon->updateScheduled = FALSE;
@@ -2950,7 +2956,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
                 cap_rect.x2 = dirty_extents.x2;
                 cap_rect.y2 = RDPMIN(cap_rect.y1 + band_height,
                                      dirty_extents.y2);
-                rdpCapRect(clientCon, &cap_rect, &id);
+                rdpCapRect(clientCon, &cap_rect, 0, &id);
                 band_index++;
             }
             if (band_index == band_count)
@@ -2973,6 +2979,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         monitor_count = clientCon->dev->monitorCount;
         while (monitor_index < monitor_count)
         {
+            // Did we get anything from the last monitor?
             if (clientCon->rect_id > clientCon->rect_id_ack)
             {
                 LLOGLN(10, ("rdpDeferredUpdateCallback: reschedule rect_id %d "
@@ -2980,6 +2987,8 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
                        clientCon->rect_id, clientCon->rect_id_ack));
                 break;
             }
+            // Offset the monitor index by the rectangle ID so we start
+            // the monitor scan on a different monitor each time.
             index = (clientCon->rect_id + monitor_index) % monitor_count;
             cap_rect.x1 = clientCon->dev->minfo[index].left;
             cap_rect.y1 = clientCon->dev->minfo[index].top;
@@ -2991,7 +3000,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
             id.width = cap_rect.x2 - cap_rect.x1;
             id.height = cap_rect.y2 - cap_rect.y1;
             id.flags = (index & 0xF) << 28;
-            rdpCapRect(clientCon, &cap_rect, &id);
+            rdpCapRect(clientCon, &cap_rect, index, &id);
             monitor_index++;
         }
         if (monitor_index == monitor_count)
@@ -3006,14 +3015,6 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         rdpScheduleDeferredUpdate(clientCon);
     }
 
-    // The user can request all frames be ack'd by sending INT_MAX as
-    // an acknowledgement frame number. If this has happened, reset the
-    // ack frame to a sensible value to prevent us overwriting the
-    // shared memory buffer while it's being copied.
-    if (clientCon->rect_id_ack == INT_MAX)
-    {
-        clientCon->rect_id_ack = entry_rect_id;
-    }
     return 0;
 }
 
