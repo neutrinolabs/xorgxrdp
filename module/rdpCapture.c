@@ -1183,6 +1183,7 @@ rdpCaptureResetState(rdpClientCon *clientCon)
                 free(clientCon->rfx_crcs[i]);
                 clientCon->rfx_crcs[i] = NULL;
                 clientCon->num_rfx_crcs_alloc[i] = 0;
+                clientCon->send_key_frame[i] = 1;
             }
             break;
         default:

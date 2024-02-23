@@ -124,6 +124,7 @@ struct _rdpClientCon
 
     int num_rfx_crcs_alloc[16];
     int *rfx_crcs[16];
+    int send_key_frame[16];
 
     /* true = skip drawing */
     int suppress_output;
