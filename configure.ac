@@ -2,7 +2,7 @@
 
 AC_PREREQ(2.65)
 # package version must be x.y.z
-AC_INIT([xorgxrdp], [0.9.80], [xrdp-devel@googlegroups.com])
+AC_INIT([xorgxrdp], [0.10.80], [xrdp-devel@googlegroups.com])
 package_version_major=$(echo ${PACKAGE_VERSION}|cut -d. -f1)
 package_version_minor=$(echo ${PACKAGE_VERSION}|cut -d. -f2)
 package_version_patchlevel=$(echo ${PACKAGE_VERSION}|cut -d. -f3)
@@ -67,7 +67,7 @@ if test x$solaris = xyes; then
 fi 
 
 if test "x$XRDP_CFLAGS" = "x"; then
-  PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.80])
+  PKG_CHECK_MODULES([XRDP], [xrdp >= 0.10.80])
   XRDP_CFLAGS=`pkg-config xrdp --cflags`
 fi
 
