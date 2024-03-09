@@ -64,7 +64,7 @@ fi
 if test x$solaris = xyes; then
     CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=600"
     AC_SUBST(CFLAGS)
-fi 
+fi
 
 if test "x$XRDP_CFLAGS" = "x"; then
   PKG_CHECK_MODULES([XRDP], [xrdp >= 0.9.90])
