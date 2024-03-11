@@ -1,7 +1,5 @@
 [![Build Status](https://github.com/neutrinolabs/xorgxrdp/actions/workflows/build.yml/badge.svg)](https://github.com/neutrinolabs/xorgxrdp/actions)
 
-*Current Version:* 0.9.19
-
 # xorgxrdp
 
 ## Overview
