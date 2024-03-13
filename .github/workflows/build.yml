@@ -29,6 +29,7 @@ jobs:
 
           - CC: gcc
             CONF_FLAGS: --enable-glamor
+            CHECK: 1
             name_extra: With glamor
 
           - CC: gcc
@@ -50,6 +51,7 @@ jobs:
 
           - CC: clang
             CONF_FLAGS: --enable-glamor
+            CHECK: 1
             name_extra: With glamor
 
           - CC: clang

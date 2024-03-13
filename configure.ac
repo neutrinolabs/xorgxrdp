@@ -56,9 +56,11 @@ PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
   [AC_MSG_ERROR([please install xserver-xorg-dev, xorg-x11-server-sdk or xorg-x11-server-devel])])
 if test "x${enable_glamor}" = "xyes"; then
   PKG_CHECK_MODULES([XORG_SERVER_GLAMOR], [xorg-server >= 1.19.0])
+  PKG_CHECK_MODULES([LIBDRM], [libdrm >= 0], [], [AC_MSG_ERROR([please install libdrm-dev or libdrm-devel])])
   PKG_CHECK_MODULES([XORG_SERVER_GBM], [gbm >= 0], [], [AC_MSG_ERROR([please install libgbm-dev or mesa-libgbm-devel])])
   PKG_CHECK_MODULES([XORG_SERVER_EPOXY], [epoxy >= 0], [], [AC_MSG_ERROR([please install libepoxy-dev or libepoxy-devel])])
   PKG_CHECK_MODULES([XORG_SERVER_EGL], [egl >= 0], [], [AC_MSG_ERROR([please install libegl1-mesa-dev or mesa-libEGL-devel])])
+  PKG_CHECK_VAR([XORG_SERVER_MODULES], [xorg-server], [moduledir])
 fi
 
 if test x$solaris = xyes; then
