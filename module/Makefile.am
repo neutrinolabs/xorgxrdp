@@ -5,6 +5,7 @@ EXTRA_HEADERS =
 SUBDIRS =
 ASMLIB =
 EGLLIB =
+LIB_SEARCH_PATH =
 
 if WITH_SIMD_AMD64
 EXTRA_FLAGS += -DSIMD_USE_ACCEL=1
@@ -19,10 +20,11 @@ ASMLIB += x86/libxorgxrdp-asm.la
 endif
 
 if WITH_GLAMOR
-EXTRA_FLAGS += -DXORGXRDP_GLAMOR -DGLAMOR_FOR_XORG
+EXTRA_FLAGS += $(LIBDRM_CFLAGS) -DXORGXRDP_GLAMOR -DGLAMOR_FOR_XORG
 EXTRA_SOURCES += rdpEgl.c
 EXTRA_HEADERS += rdpEgl.h
-EGLLIB += -lepoxy
+EGLLIB += -L$(XORG_SERVER_MODULES) -lglamoregl -lepoxy
+LIB_SEARCH_PATH += -R$(XORG_SERVER_MODULES)
 endif
 
 AM_CFLAGS = \
@@ -82,7 +84,7 @@ noinst_HEADERS = \
 
 libxorgxrdp_la_LTLIBRARIES = libxorgxrdp.la
 
-libxorgxrdp_la_LDFLAGS = -module -avoid-version
+libxorgxrdp_la_LDFLAGS = -module -avoid-version $(LIB_SEARCH_PATH)
 
 libxorgxrdp_ladir = $(moduledir)
 
