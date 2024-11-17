@@ -282,6 +282,8 @@ struct _rdpRec
     CARD32 last_event_time_ms;
     CARD32 last_wheel_time_ms;
 
+    CARD32 msFrameInterval;
+
     int conNumber;
 
     struct _rdpCounts counts;
