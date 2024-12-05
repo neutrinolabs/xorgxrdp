@@ -282,6 +282,8 @@ struct _rdpRec
     CARD32 last_event_time_ms;
     CARD32 last_wheel_time_ms;
 
+    CARD32 msFrameInterval;
+
     int conNumber;
 
     struct _rdpCounts counts;
@@ -297,6 +299,8 @@ struct _rdpRec
 
     copy_box_proc a8r8g8b8_to_a8b8g8r8_box;
     copy_box_dst2_proc a8r8g8b8_to_nv12_box;
+    copy_box_dst2_proc a8r8g8b8_to_nv12_709fr_box;
+    copy_box_proc a8r8g8b8_to_yuvalp_box;
 
     /* multimon */
     struct monitor_info minfo[16]; /* client monitor data */

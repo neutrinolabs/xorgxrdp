@@ -776,47 +776,57 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
     clientCon->rdp_height = height;
 
     /* Set the capture parameters */
-    if ((clientCon->client_info.capture_code == 2) || /* RFX */
-        (clientCon->client_info.capture_code == 4))
+    switch(clientCon->client_info.capture_code)
     {
-        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
-        /* RFX capture needs fixed-size rectangles */
-        clientCon->cap_width = RDPALIGN(width, XRDP_RFX_ALIGN);
-        clientCon->cap_height = RDPALIGN(height, XRDP_RFX_ALIGN);
-        LLOGLN(0, ("  cap_width %d cap_height %d",
-               clientCon->cap_width, clientCon->cap_height));
+        case CC_SUF_RFX: /* RFX */
+        case CC_GFX_PRO:
+            LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got RFX capture"));
+            /* RFX capture needs fixed-size rectangles */
+            clientCon->cap_width = RDPALIGN(width, XRDP_RFX_ALIGN);
+            clientCon->cap_height = RDPALIGN(height, XRDP_RFX_ALIGN);
+            LLOGLN(0, ("  cap_width %d cap_height %d",
+                   clientCon->cap_width, clientCon->cap_height));
 
-        bytes = clientCon->cap_width * clientCon->cap_height *
-                clientCon->rdp_Bpp;
+            bytes = clientCon->cap_width * clientCon->cap_height *
+                    clientCon->rdp_Bpp;
 
-        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
-        clientCon->cap_stride_bytes = clientCon->cap_width * 4;
-        shmemstatus = SHM_RFX_ACTIVE_PENDING;
+            clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
+            clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+            shmemstatus = SHM_RFX_ACTIVE_PENDING;
+
+            dev->msFrameInterval = clientCon->client_info.rfx_frame_interval;
+            break;
+        case CC_SUF_A2: /* H264 */
+        case CC_GFX_A2:
+            LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got H264 capture"));
+            clientCon->cap_width = width;
+            clientCon->cap_height = height;
+
+            bytes = clientCon->cap_width * clientCon->cap_height * 2;
+
+            clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
+            clientCon->cap_stride_bytes = clientCon->cap_width * 4;
+            shmemstatus = SHM_H264_ACTIVE_PENDING;
+
+            dev->msFrameInterval = clientCon->client_info.h264_frame_interval;
+            break;
+        default:
+            LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got normal capture"));
+            clientCon->cap_width = width;
+            clientCon->cap_width = width;
+            clientCon->cap_height = height;
+
+            bytes = width * height * clientCon->rdp_Bpp;
+
+            clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
+            clientCon->cap_stride_bytes = clientCon->cap_width * clientCon->rdp_Bpp;
+            shmemstatus = SHM_ACTIVE_PENDING;
+
+            dev->msFrameInterval = clientCon->client_info.normal_frame_interval;
+            break;
     }
-    else if ((clientCon->client_info.capture_code == 3) || /* H264 */
-             (clientCon->client_info.capture_code == 5))
-    {
-        LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got H264 capture"));
-        clientCon->cap_width = width;
-        clientCon->cap_height = height;
 
-        bytes = clientCon->cap_width * clientCon->cap_height * 2;
-
-        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
-        clientCon->cap_stride_bytes = clientCon->cap_width * 4;
-        shmemstatus = SHM_H264_ACTIVE_PENDING;
-    }
-    else
-    {
-        clientCon->cap_width = width;
-        clientCon->cap_height = height;
-
-        bytes = width * height * clientCon->rdp_Bpp;
-
-        clientCon->shmem_lineBytes = clientCon->rdp_Bpp * clientCon->cap_width;
-        clientCon->cap_stride_bytes = clientCon->cap_width * clientCon->rdp_Bpp;
-        shmemstatus = SHM_ACTIVE_PENDING;
-    }
+    LLOGLN(0, ("    msFrameInterval %ld", (long)dev->msFrameInterval));
     rdpClientConAllocateSharedMemory(clientCon, bytes);
 
     if (clientCon->client_info.capture_format != 0)
@@ -1011,12 +1021,12 @@ rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon)
 
     switch (clientCon->client_info.capture_code)
     {
-        case 2:
-        case 4:
+        case CC_SUF_RFX:
+        case CC_GFX_PRO:
             alignment = XRDP_RFX_ALIGN;
             break;
-        case 3:
-        case 5:
+        case CC_SUF_A2:
+        case CC_GFX_A2:
             alignment = XRDP_H264_ALIGN;
             break;
         default:
@@ -2539,7 +2549,7 @@ rdpClientConScheduleDeferredUpdate(rdpPtr dev)
     {
         dev->sendUpdateScheduled = TRUE;
         dev->sendUpdateTimer =
-                TimerSet(dev->sendUpdateTimer, 0, 40,
+                TimerSet(dev->sendUpdateTimer, 0, dev->msFrameInterval,
                          rdpClientConDeferredUpdateCallback, dev);
     }
 }
@@ -2608,7 +2618,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
     int num_rects_d;
     int num_rects_c;
     struct stream *s;
-    int capture_code;
+    enum xrdp_capture_code capture_code;
     int start_frame_bytes;
     int wiretosurface1_bytes;
     int wiretosurface2_bytes;
@@ -2625,6 +2635,8 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
            id->flags, id->left, id->top, id->width, id->height));
 
     capture_code = clientCon->client_info.capture_code;
+    LLOGLN(10, ("rdpClientConSendPaintRectShmFd: capture_code %d",
+           capture_code));
 
     num_rects_d = REGION_NUM_RECTS(dirtyReg);
     num_rects_c = numCopyRects;
@@ -2636,7 +2648,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
 
     rdpClientConBeginUpdate(dev, clientCon);
 
-    if (capture_code < 4)
+    if (capture_code < CC_GFX_PRO)
     {
         /* non gfx */
         size = 2 + 2 + 2 + num_rects_d * 8 + 2 + num_rects_c * 8;
@@ -2656,15 +2668,15 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint32_le(s, clientCon->rect_id);
         out_uint32_le(s, id->shmem_bytes);
         out_uint32_le(s, id->shmem_offset);
-		if (capture_code == 2) /* rfx */
-		{
+        if (capture_code == CC_SUF_RFX) /* rfx */
+        {
             out_uint16_le(s, id->left);
             out_uint16_le(s, id->top);
             out_uint16_le(s, id->width);
             out_uint16_le(s, id->height);
-		}
-		else
-		{
+        }
+        else
+        {
             out_uint16_le(s, 0);
             out_uint16_le(s, 0);
             out_uint16_le(s, clientCon->cap_width);
@@ -2673,7 +2685,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         rdpClientConSendPending(clientCon->dev, clientCon);
         g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
     }
-    else if (capture_code == 4) /* gfx pro rfx */
+    else if (capture_code == CC_GFX_PRO) /* gfx pro rfx */
     {
         start_frame_bytes = 8 + 8;
         wiretosurface2_bytes = 8 + 13 +
@@ -2745,7 +2757,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
             out_uint32_le(s, 0);                /* shmem_bytes */
         }
     }
-    else if (capture_code == 5) /* gfx h264 */
+    else if (capture_code == CC_GFX_A2) /* gfx h264 */
     {
         start_frame_bytes = 8 + 8;
         wiretosurface1_bytes = 8 + 9 +
@@ -2979,7 +2991,6 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
 
 
 /******************************************************************************/
-#define MIN_MS_BETWEEN_FRAMES 40
 #define MIN_MS_TO_WAIT_FOR_MORE_UPDATES 4
 #define UPDATE_RETRY_TIMEOUT 200 // After this number of retries, give up and perform the capture anyway. This prevents an infinite loop.
 static void
@@ -2998,7 +3009,7 @@ rdpScheduleDeferredUpdate(rdpClientCon *clientCon)
        for more changes before sending an update. Always waiting the longer
        delay would introduce unnecessarily much latency. */
     msToWait = MIN_MS_TO_WAIT_FOR_MORE_UPDATES;
-    minNextUpdateTime = clientCon->lastUpdateTime + MIN_MS_BETWEEN_FRAMES;
+    minNextUpdateTime = clientCon->lastUpdateTime + clientCon->dev->msFrameInterval;
     /* the first check is to gracefully handle the infrequent case of
        the time wrapping around */
     if(clientCon->lastUpdateTime < curTime &&

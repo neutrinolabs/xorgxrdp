@@ -120,6 +120,8 @@ struct _rdpClientCon
     int updateScheduled; /* boolean */
     int updateRetries;
 
+    CARD32 msFrameInterval;
+
     RegionPtr dirtyRegion;
 
     int num_rfx_crcs_alloc[16];
