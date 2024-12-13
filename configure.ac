@@ -66,7 +66,7 @@ if test x$solaris = xyes; then
 fi
 
 if test "x$XRDP_CFLAGS" = "x"; then
-  PKG_CHECK_MODULES([XRDP], [xrdp >= 0.10.0])
+  PKG_CHECK_MODULES([XRDP], [xrdp >= 0.10.2])
   XRDP_CFLAGS=`pkg-config xrdp --cflags`
 fi
 
