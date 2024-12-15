@@ -1,3 +1,35 @@
+# Release notes for xorgxrdp v0.10.3 (2024/12/15)
+
+## General announcements
+
+[Power Up Privacy](https://powerupprivacy.com/) and @CyberTrust sponsored H.264 encoding.  We greatly appreciate the sponsorship. 
+
+Please consider sponsoring or making a donation to the project if you like xrdp. We accept financial contributions via [Open Collective](https://opencollective.com/xrdp-project). Direct donations to each developer via GitHub Sponsors are also welcomed.
+
+## Security fixes
+None
+
+## New features
+- H.264 capture is now supported, see xrdp v0.10.2 release note for details (#355)
+- Frame capture interval (frame rate) can now be configured separately via xrdp for H.264 and RFX (#347 #353)
+
+## Bug fixes
+- Fix dependency when building without glamor (#330)
+- RandR is now aware of physical monitor sizes if these have been passed to the client (#337)
+- Glamor whitelist now supports `amdgpu` (#329) and `msm` (#346) drivers. Some users of this hardware had reported a regression following the introduction of #322 in v0.10.2
+
+## Internal changes
+None
+
+## Known issues
+None
+
+## Changes for packagers or developers
+
+- This version is intended to be used together with xrdp v0.10.2 or later. Please build against xrdp v0.10.2 and provide both xrdp v0.10.2 and xorgxrdp v0.10.3 at the same time.
+
+-----------------------
+
 # Release notes for xorgxrdp v0.10.2 (2024/07/30)
 
 ## General announcements
