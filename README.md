@@ -1,6 +1,6 @@
 [![Build Status](https://github.com/neutrinolabs/xorgxrdp/actions/workflows/build.yml/badge.svg)](https://github.com/neutrinolabs/xorgxrdp/actions)
 
-*Current Version:* 0.2.18
+[![Latest Version](https://img.shields.io/github/v/release/neutrinolabs/xorgxrdp.svg?label=Latest%20Version)](https://github.com/neutrinolabs/xorgxrdp/releases)
 
 # xorgxrdp
 
