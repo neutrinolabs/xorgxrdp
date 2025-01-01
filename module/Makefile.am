@@ -77,6 +77,7 @@ noinst_HEADERS = \
   rdpPushPixels.h \
   rdpPutImage.h \
   rdpRandR.h \
+  rdpRandRGrid.h \
   rdpReg.h \
   rdpSetSpans.h \
   rdpSimd.h \
@@ -101,6 +102,7 @@ rdpPolylines.c rdpPolySegment.c rdpPolyRectangle.c rdpPolyArc.c \
 rdpFillPolygon.c rdpPolyFillRect.c rdpPolyFillArc.c rdpPolyText8.c \
 rdpPolyText16.c rdpImageText8.c rdpImageText16.c rdpImageGlyphBlt.c \
 rdpPolyGlyphBlt.c rdpPushPixels.c rdpCursor.c rdpMain.c rdpRandR.c \
+rdpRandRGrid.c \
 rdpMisc.c rdpReg.c rdpComposite.c rdpGlyphs.c rdpPixmap.c rdpInput.c \
 rdpClientCon.c rdpCapture.c rdpTrapezoids.c rdpTriangles.c \
 rdpCompositeRects.c rdpXv.c rdpSimd.c $(EXTRA_SOURCES)

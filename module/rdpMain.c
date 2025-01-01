@@ -92,6 +92,7 @@ static DriverRec g_saved_driver;
 static OsTimerPtr g_timer = NULL;
 static xf86PreInitProc *g_orgPreInit;
 static xf86ScreenInitProc *g_orgScreenInit;
+static Bool g_nvidia_grid = 0;
 
 extern DriverPtr *xf86DriverList;
 extern int xf86NumDrivers;
@@ -101,14 +102,23 @@ static Bool
 xorgxrdpPreInit(ScrnInfoPtr pScrn, int flags)
 {
     Bool rv;
+    const char *env;
 
     LLOGLN(0, ("xorgxrdpPreInit:"));
+    env = getenv("XRDP_NVIDIA_GRID");
+    if (env != NULL)
+    {
+        g_nvidia_grid = atoi(env);
+    }
     rv = g_orgPreInit(pScrn, flags);
     if (rv)
     {
         pScrn->reservedPtr[0] = xnfcalloc(sizeof(rdpRec), 1);
 #if defined(RANDR) && defined(XORGXRDP_LRANDR)
-        noRRExtension = TRUE; /* do not use built in randr */
+        if (!g_nvidia_grid)
+        {
+            noRRExtension = TRUE; /* do not use built in randr */
+        }
 #endif
     }
     return rv;
@@ -264,7 +274,10 @@ xorgxrdpDeferredStartup(OsTimerPtr timer, CARD32 now, pointer arg)
     {
         dev = rdpGetDevFromScreen(pScreen);
 #if defined(XORGXRDP_LRANDR)
-        rdpLRRInit(dev);
+        if (!g_nvidia_grid)
+        {
+            rdpLRRInit(dev);
+        }
 #endif
         dev->damage = DamageCreate(xorgxrdpDamageReport, xorgxrdpDamageDestroy,
                                    DamageReportRawRegion, TRUE,
@@ -307,6 +320,8 @@ xorgxrdpScreenInit(ScreenPtr pScreen, int argc, char** argv)
         pScrn = xf86Screens[pScreen->myNum];
         dev = XRDPPTR(pScrn);
         dev->nvidia = TRUE;
+        dev->nvidia_grid = g_nvidia_grid;
+        LLOGLN(0, ("xorgxrdpScreenInit: nvidia_grid %d", dev->nvidia_grid));
         dev->pScreen = pScreen;
         dev->depth = pScrn->depth;
         dev->width = pScrn->virtualX;

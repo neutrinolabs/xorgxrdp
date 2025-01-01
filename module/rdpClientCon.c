@@ -56,8 +56,10 @@ Client connection to xrdp
 #if defined(XORGXRDP_LRANDR)
 #include "rdpRandR.h"
 #include "rdpLRandR.h"
+#include "rdpRandRGrid.h"
 #else
 #include "rdpRandR.h"
+#include "rdpRandRGrid.h"
 #endif
 
 #define LOG_LEVEL 1
@@ -1314,7 +1316,11 @@ rdpClientConProcessClientInfoMonitors(rdpPtr dev, rdpClientCon *clientCon)
         dev->monitorCount = 0;
     }
 #if defined(XORGXRDP_LRANDR)
-    if (dev->nvidia)
+    if (dev->nvidia && dev->nvidia_grid)
+    {
+        rdpRandRGridSetRdpOutputs(dev);
+    }
+    else if (dev->nvidia)
     {
         rdpLRRSetRdpOutputs(dev);
     }
@@ -1324,8 +1330,15 @@ rdpClientConProcessClientInfoMonitors(rdpPtr dev, rdpClientCon *clientCon)
         RRTellChanged(dev->pScreen);
     }
 #else
-    rdpRRSetRdpOutputs(dev);
-    RRTellChanged(dev->pScreen);
+    if (dev->nvidia && dev->nvidia_grid)
+    {
+        rdpRandRGridSetRdpOutputs(dev);
+    }
+    else
+    {
+        rdpRRSetRdpOutputs(dev);
+        RRTellChanged(dev->pScreen);
+    }
 #endif
 }
 

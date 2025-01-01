@@ -319,6 +319,7 @@ struct _rdpRec
     /* glamor */
     Bool glamor;
     Bool nvidia;
+    Bool nvidia_grid;
     PixmapPtr screenSwPixmap;
     void *xvPutImage;
     /* dri */
