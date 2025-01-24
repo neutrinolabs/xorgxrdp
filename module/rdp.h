@@ -125,6 +125,9 @@ struct _rdpPointer
     DeviceIntPtr device;
     int old_cursor_x;
     int old_cursor_y;
+    int is_absolute;
+    int cursor_delta_x;
+    int cursor_delta_y;
 };
 typedef struct _rdpPointer rdpPointer;
 

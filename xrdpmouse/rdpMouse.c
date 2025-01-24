@@ -99,10 +99,10 @@ l_bound_by(int val, int low, int high)
 
 /******************************************************************************/
 static void
-rdpEnqueueMotion(DeviceIntPtr device, int x, int y)
+rdpEnqueueMotion(DeviceIntPtr device, int is_absolute, int x, int y)
 {
     LLOGLN(10, ("rdpEnqueueMotion:"));
-    xf86PostMotionEvent(device, TRUE, 0, 2, x, y);
+    xf86PostMotionEvent(device, is_absolute, 0, 2, x, y);
 }
 
 /******************************************************************************/
@@ -123,12 +123,19 @@ PtrAddEvent(rdpPointer *pointer)
 
     LLOGLN(10, ("PtrAddEvent: x %d y %d", pointer->cursor_x, pointer->cursor_y));
 
-    if ((pointer->old_cursor_x != pointer->cursor_x) ||
-            (pointer->old_cursor_y != pointer->cursor_y))
+    if (pointer->is_absolute)
     {
-        rdpEnqueueMotion(pointer->device, pointer->cursor_x, pointer->cursor_y);
-        pointer->old_cursor_x = pointer->cursor_x;
-        pointer->old_cursor_y = pointer->cursor_y;
+        if ((pointer->old_cursor_x != pointer->cursor_x) ||
+                (pointer->old_cursor_y != pointer->cursor_y))
+        {
+            rdpEnqueueMotion(pointer->device, pointer->is_absolute, pointer->cursor_x, pointer->cursor_y);
+            pointer->old_cursor_x = pointer->cursor_x;
+            pointer->old_cursor_y = pointer->cursor_y;
+        }
+    }
+    else
+    {
+        rdpEnqueueMotion(pointer->device, pointer->is_absolute, pointer->cursor_delta_x, pointer->cursor_delta_y);
     }
 
     for (i = 0; i < NBUTTONS; i++)
@@ -203,6 +210,7 @@ rdpInputMouse(rdpPtr dev, int msg,
         case WM_MOUSEMOVE:
             /* without the minus 2, strange things happen when dragging
                past the width or height */
+            pointer->is_absolute = TRUE;
             pointer->cursor_x = l_bound_by(param1, 0, dev->width - 2);
             pointer->cursor_y = l_bound_by(param2, 0, dev->height - 2);
             PtrAddEvent(pointer);
@@ -277,6 +285,12 @@ rdpInputMouse(rdpPtr dev, int msg,
             break;
         case WM_BUTTON9DOWN:
             pointer->button_mask = pointer->button_mask | 256;
+            PtrAddEvent(pointer);
+            break;
+        case WM_MOUSERELMOVE:
+            pointer->is_absolute = FALSE;
+            pointer->cursor_delta_x = param1;
+            pointer->cursor_delta_y = param2;
             PtrAddEvent(pointer);
             break;
         case WM_TOUCH_VSCROLL:
