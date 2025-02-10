@@ -115,6 +115,16 @@ fi
 # shm_open may not be in the C library
 AC_SEARCH_LIBS([shm_open], [rt])
 
+# See if we need to use a getter function for the display name
+CFLAGS_sav="$CFLAGS"
+CFLAGS="$CFLAGS $XORG_SERVER_CFLAGS"
+AC_CHECK_DECL([dixGetDisplayName],
+    [AC_DEFINE([HAS_DIX_GET_DISPLAY_NAME], [1], [support display getter])],
+    [],
+    [[#include <dix.h>]])
+CFLAGS="$CFLAGS_sav"
+
+
 AC_ARG_ENABLE(glamor, AS_HELP_STRING([--enable-glamor],
               [Use glamor(requires xorg server 1.19+) (default: no)]),
               [], [enable_glamor=no])
