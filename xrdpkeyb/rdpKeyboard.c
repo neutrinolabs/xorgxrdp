@@ -485,13 +485,10 @@ rdpkeybUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 /******************************************************************************/
 static InputDriverRec rdpkeyb =
 {
-    PACKAGE_VERSION_MAJOR,  /* version   */
-    g_xrdp_keyb_name,       /* name      */
-    NULL,                   /* identify  */
-    rdpkeybPreInit,         /* preinit   */
-    rdpkeybUnInit,          /* uninit    */
-    NULL,                   /* module    */
-    0                       /* ref count */
+    .driverVersion = PACKAGE_VERSION_MAJOR,
+    .driverName = g_xrdp_keyb_name,
+    .PreInit = rdpkeybPreInit,
+    .UnInit = rdpkeybUnInit
 };
 
 /******************************************************************************/
@@ -634,24 +631,23 @@ rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info)
 /******************************************************************************/
 static XF86ModuleVersionInfo rdpkeybVersionRec =
 {
-    XRDP_KEYB_NAME,
-    MODULEVENDORSTRING,
-    MODINFOSTRING1,
-    MODINFOSTRING2,
-    XORG_VERSION_CURRENT,
-    PACKAGE_VERSION_MAJOR,
-    PACKAGE_VERSION_MINOR,
-    PACKAGE_VERSION_PATCHLEVEL,
-    ABI_CLASS_XINPUT,
-    ABI_XINPUT_VERSION,
-    MOD_CLASS_XINPUT,
-    { 0, 0, 0, 0 }
+    .modname = XRDP_KEYB_NAME,
+    .vendor = MODULEVENDORSTRING,
+    ._modinfo1_ = MODINFOSTRING1,
+    ._modinfo2_ = MODINFOSTRING2,
+    .xf86version = XORG_VERSION_CURRENT,
+    .majorversion = PACKAGE_VERSION_MAJOR,
+    .minorversion = PACKAGE_VERSION_MINOR,
+    .patchlevel = PACKAGE_VERSION_PATCHLEVEL,
+    .abiclass = ABI_CLASS_XINPUT,
+    .abiversion = ABI_XINPUT_VERSION,
+    .moduleclass = MOD_CLASS_XINPUT
 };
 
 /******************************************************************************/
 _X_EXPORT XF86ModuleData xrdpkeybModuleData =
 {
-    &rdpkeybVersionRec,
-    rdpkeybPlug,
-    rdpkeybUnplug
+    .vers = &rdpkeybVersionRec,
+    .setup = rdpkeybPlug,
+    .teardown = rdpkeybUnplug
 };

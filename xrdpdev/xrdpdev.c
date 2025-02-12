@@ -127,8 +127,8 @@ rdpAllocRec(ScrnInfoPtr pScrn)
     {
         return TRUE;
     }
-    /* xnfcalloc exits if alloc failed */
-    pScrn->driverPrivate = xnfcalloc(sizeof(rdpRec), 1);
+    /* XNFcallocarray exits if alloc failed */
+    pScrn->driverPrivate = XNFcallocarray(sizeof(rdpRec), 1);
     return TRUE;
 }
 
@@ -149,8 +149,8 @@ rdpFreeRec(ScrnInfoPtr pScrn)
 static Bool
 rdpPreInit(ScrnInfoPtr pScrn, int flags)
 {
-    rgb zeros1;
-    Gamma zeros2;
+    rgb zeros1 = {0};
+    Gamma zeros2 = {0};
     int got_res_match;
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 16, 0, 0, 0)
     char **modename;
@@ -263,14 +263,12 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
         return FALSE;
     }
     xf86PrintDepthBpp(pScrn);
-    g_memset(&zeros1, 0, sizeof(zeros1));
     if (!xf86SetWeight(pScrn, zeros1, zeros1))
     {
         LLOGLN(0, ("rdpPreInit: xf86SetWeight failed"));
         rdpFreeRec(pScrn);
         return FALSE;
     }
-    g_memset(&zeros2, 0, sizeof(zeros2));
     if (!xf86SetGamma(pScrn, zeros2))
     {
         LLOGLN(0, ("rdpPreInit: xf86SetGamma failed"));
@@ -368,12 +366,12 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
 static miPointerSpriteFuncRec g_rdpSpritePointerFuncs =
 {
     /* these are in rdpCursor.c */
-    rdpSpriteRealizeCursor,
-    rdpSpriteUnrealizeCursor,
-    rdpSpriteSetCursor,
-    rdpSpriteMoveCursor,
-    rdpSpriteDeviceCursorInitialize,
-    rdpSpriteDeviceCursorCleanup
+    .RealizeCursor = rdpSpriteRealizeCursor,
+    .UnrealizeCursor = rdpSpriteUnrealizeCursor,
+    .SetCursor = rdpSpriteSetCursor,
+    .MoveCursor = rdpSpriteMoveCursor,
+    .DeviceCursorInitialize = rdpSpriteDeviceCursorInitialize,
+    .DeviceCursorCleanup = rdpSpriteDeviceCursorCleanup
 };
 
 /******************************************************************************/
@@ -1053,14 +1051,12 @@ rdpIdentify(int flags)
 /*****************************************************************************/
 _X_EXPORT DriverRec g_DriverRec =
 {
-    XRDP_VERSION,
-    g_xrdp_driver_name,
-    rdpIdentify,
-    rdpProbe,
-    rdpAvailableOptions,
-    0,
-    0,
-    rdpDriverFunc
+    .driverVersion = XRDP_VERSION,
+    .driverName = g_xrdp_driver_name,
+    .Identify = rdpIdentify,
+    .Probe = rdpProbe,
+    .AvailableOptions = rdpAvailableOptions,
+    .driverFunc = rdpDriverFunc
 };
 
 /*****************************************************************************/
@@ -1094,7 +1090,7 @@ xrdpdevTearDown(pointer Module)
 /* <drivername>ModuleData */
 _X_EXPORT XF86ModuleData xrdpdevModuleData =
 {
-    &g_VersRec,
-    xrdpdevSetup,
-    xrdpdevTearDown
+    .vers = &g_VersRec,
+    .setup = xrdpdevSetup,
+    .teardown = xrdpdevTearDown
 };
