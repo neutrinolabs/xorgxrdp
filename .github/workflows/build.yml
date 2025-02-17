@@ -24,6 +24,11 @@ jobs:
             name_extra: Basic build and dist check
 
           - CC: gcc
+            CONF_FLAGS:
+            XORG_SRC: 1
+            name_extra: Basic build against Xorg sources
+
+          - CC: gcc
             CONF_FLAGS: --without-simd
             name_extra: Without simd
 
@@ -66,11 +71,19 @@ jobs:
       CC: ${{ matrix.CC }}
       CFLAGS: ${{matrix.CFLAGS }}
       XRDP_CFLAGS: -I${{ github.workspace }}/xrdp/common
+      # PKG_CONFIG_PATH only works if the directory is there. We use it to
+      # build against the Xorg server directly (XORG_SRC=1)
+      PKG_CONFIG_PATH: ${{ github.workspace }}/xorg-build/lib/pkgconfig
 
     steps:
       - uses: actions/checkout@v4
       - run: sudo scripts/install_xorgxrdp_build_dependencies_with_apt.sh ${{ matrix.arch }} --allow-downgrades --allow-remove-essential --allow-change-held-packages
       - run: git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git ${{ github.workspace}}/xrdp
+      - if: ${{ matrix.XORG_SRC }}
+        name: Replace xserver-xorg-dev with latest master
+        run: |
+          sudo apt-get remove -y xserver-xorg-dev
+          scripts/build_latest_xorg_apt.sh ${{ github.workspace }}/xorg-build
       - run: ./bootstrap
       - run: ./configure ${{ matrix.CONF_FLAGS }}
       - run: make CFLAGS="$CFLAGS -O2 -Wall -Wwrite-strings -Werror"
