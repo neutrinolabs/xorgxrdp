@@ -55,7 +55,8 @@ MODULAR_PKG_LIST="$MODULAR_PKG_LIST xserver"
 
 # Check the XDG_RUNTIME_DIR is specified, and use it for the autoresume file
 if [ -z "$XDG_RUNTIME_DIR" ]; then
-    export XDG_RUNTIME_DIR=/run/user/$(id -u)
+    XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    export XDG_RUNTIME_DIR
 fi
 AUTORESUME_FILE="$XDG_RUNTIME_DIR/xserver-autores.txt"
 
@@ -83,22 +84,23 @@ BUILD_DIR=
 create_build_modfile()
 {
     tmp=$(mktemp -t "modfile-XXXXXXXX")
-    $BUILDER -L >$tmp
-    while read mod; do
+    $BUILDER -L >"$tmp"
+    while read -r mod; do
         newlist=
         for m in "$@"; do
             if [ "$m" = "$mod" ]; then
-                echo $mod
+                echo "$mod"
             else
                 newlist="$newlist $m"
             fi
         done
+        # shellcheck disable=SC2086
         set -- $newlist
         if [ $# -eq 0 ]; then
             break
         fi
-    done <$tmp
-    rm $tmp
+    done <"$tmp"
+    rm "$tmp"
     if [ $# -gt 0 ]; then
         echo "** The following modules are not supported by build.sh: $*" >&2
     fi
@@ -122,7 +124,7 @@ install_sources()
         if ! [ -d "$mod" ]; then
             echo "$mod"
         fi
-    done >$tmp
+    done >"$tmp"
     if [ -s "$tmp" ]; then
         $BUILDER --modfile "$tmp" -a -m --clone "$BUILD_DIR"
         rv=$?
@@ -152,7 +154,7 @@ title()
 {
     echo
     echo '==============================================================================='
-    echo $(date +%T)": $*"
+    echo "$(date +%T): $*"
     echo '==============================================================================='
 }
 
@@ -196,11 +198,13 @@ cd "$SOURCE_DIR" || exit $?
 
 # Install all dependencies
 title "Installing dependencies"
+# shellcheck disable=SC2086
 sudo apt-get install -y $APT_PKG_LIST || exit $?
 if ! [ -d "$PYTHON_VENV" ]; then
     python3 -m venv "$PYTHON_VENV" || exit $?
 fi
 PATH="$PYTHON_VENV/bin:$PATH"
+# shellcheck disable=SC2086
 pip3 install $PIP_PKG_LIST || exit $?
 
 title "Installing modular build script"
@@ -209,18 +213,21 @@ if ! [ -x "$BUILDER" ]; then
 fi
 
 title "Creating module file"
-create_build_modfile $MODULAR_PKG_LIST >$MODFILE || exit $?
+# shellcheck disable=SC2086
+create_build_modfile $MODULAR_PKG_LIST >"$MODFILE" || exit $?
 
 title "Installing sources"
+# shellcheck disable=SC2086
 install_sources $MODULAR_PKG_LIST || exit $?
 
 # If there are meson builddir files without build.ninja files, delete them.
 # This can happen if a previous build failed in the configure stage with
 # missing dependencies.
 title "Removing failed meson build directories"
-for dir in $(find . -name builddir); do
-    if [ ! -e $dir/build.ninja ]; then
-        rm -rf $dir
+find . -name builddir | \
+while read -r dir; do
+    if [ ! -e "$dir/build.ninja" ]; then
+        rm -rf "$dir"
     fi
 done
 
