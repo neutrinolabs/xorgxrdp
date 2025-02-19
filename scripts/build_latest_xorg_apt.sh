@@ -72,6 +72,10 @@ PYTHON_VENV="$SOURCE_DIR/python"            ; # Used for meson/ninja
 # The build directory (set later)
 BUILD_DIR=
 
+# Dependencies within the BUILD_DIR. When we know the BUILD_DIR, it
+# is added as a prefix to these
+BUILD_TARGET=lib/pkgconfig/xorg-server.pc    ; # What we are trying to make
+
 # ------------------------------------------------------------------------------
 # C R E A T E   B U I L D   M O D F I L E
 #
@@ -182,6 +186,13 @@ if ! cd "$1" || ! [ -w . ]; then
     exit 1
 fi
 BUILD_DIR=$(pwd)
+BUILD_TARGET="$BUILD_DIR/$BUILD_TARGET"
+
+# Have we run this script before?
+if [ -e "$BUILD_TARGET" ]; then
+    echo "- Target $BUILD_TARGET exists. The script will not be run again" >&2
+    exit 0
+fi
 
 # Debian has an extra pkgconfig directory to consider in
 # lib/$(uname -p)-linux-gnu/, which meson from pip doesn't pick up on.
