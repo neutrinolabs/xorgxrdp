@@ -65,6 +65,7 @@ SOURCE_DIR="$HOME/xserver-src"
 
 # Dependencies in the source dir
 BUILDER="$SOURCE_DIR/util/modular/build.sh" ; # xorg modular build script
+                                              # (Installed below)
 MODFILE="$SOURCE_DIR/modfile.txt"           ; # Used by above
 PYTHON_VENV="$SOURCE_DIR/python"            ; # Used for meson/ninja
 
@@ -210,6 +211,10 @@ pip3 install $PIP_PKG_LIST || exit $?
 title "Installing modular build script"
 if ! [ -x "$BUILDER" ]; then
     git clone https://gitlab.freedesktop.org/xorg/util/modular.git util/modular || exit $?
+    if ! [ -x "$BUILDER" ]; then
+        echo "** Failed to install modular build script" >&2
+        exit 1
+    fi
 fi
 
 title "Creating module file"
