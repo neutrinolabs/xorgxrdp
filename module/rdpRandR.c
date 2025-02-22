@@ -146,12 +146,12 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     }
     dev->width = width;
     dev->height = height;
-    dev->paddedWidthInBytes = PixmapBytePad(dev->width, dev->depth);
-    dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
     pScreen->width = width;
     pScreen->height = height;
     pScreen->mmWidth = mmWidth;
     pScreen->mmHeight = mmHeight;
+    dev->paddedWidthInBytes = PixmapBytePad(dev->width, dev->depth);
+    dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
     screenPixmap = dev->screenSwPixmap;
     free(dev->pfbMemory_alloc);
     dev->pfbMemory_alloc = g_new0(uint8_t, dev->sizeInBytes + 16);
@@ -206,6 +206,11 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     xf86EnableDisableFBAccess(xf86Screens[pScreen->myNum], FALSE);
     xf86EnableDisableFBAccess(xf86Screens[pScreen->myNum], TRUE);
 #endif
+
+    LLOGLN(0, ("rdpRRScreenSetSize: screenInfo x %d y %d "
+           "width %d height %d", screenInfo.x, screenInfo.y,
+           screenInfo.width, screenInfo.height));
+
     return TRUE;
 }
 

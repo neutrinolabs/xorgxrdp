@@ -123,12 +123,12 @@ static Bool
 rdpAllocRec(ScrnInfoPtr pScrn)
 {
     LLOGLN(10, ("rdpAllocRec:"));
-    if (pScrn->driverPrivate != 0)
+    if (pScrn->reservedPtr[0] != NULL)
     {
         return TRUE;
     }
     /* XNFcallocarray exits if alloc failed */
-    pScrn->driverPrivate = XNFcallocarray(sizeof(rdpRec), 1);
+    pScrn->reservedPtr[0] = XNFcallocarray(sizeof(rdpRec), 1);
     return TRUE;
 }
 
@@ -137,12 +137,12 @@ static void
 rdpFreeRec(ScrnInfoPtr pScrn)
 {
     LLOGLN(10, ("rdpFreeRec:"));
-    if (pScrn->driverPrivate == 0)
+    if (pScrn->reservedPtr[0] == NULL)
     {
         return;
     }
-    free(pScrn->driverPrivate);
-    pScrn->driverPrivate = 0;
+    free(pScrn->reservedPtr[0]);
+    pScrn->reservedPtr[0] = NULL;
 }
 
 /*****************************************************************************/

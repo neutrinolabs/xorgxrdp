@@ -68,9 +68,69 @@ rdpPutImage(DrawablePtr pDst, GCPtr pGC, int depth, int x, int y,
     RegionRec reg;
     int cd;
     BoxRec box;
+    PixmapPtr pixmap;
+    int *pBits32;
+    rdpClientCon *clientCon;
+    ScreenPtr pScreen;
 
     LLOGLN(10, ("rdpPutImage:"));
+    pScreen = pGC->pScreen;
     dev = rdpGetDevFromScreen(pGC->pScreen);
+    if ((x == 0) && (y == 0) && (w == 4) && (h == 4) && (depth >= 24) &&
+        (pDst->type == DRAWABLE_PIXMAP))
+    {
+        pBits32 = (int *) pBits;
+        if (pBits32[0] == 0xDEADBEEF)
+        {
+            clientCon = dev->clientConHead;
+            while (clientCon != NULL)
+            {
+                if (clientCon->conNumber == pBits32[1])
+                {
+                    /* free old */
+                    int monitor_index = pBits32[2] & 0xF;
+                    pixmap = clientCon->accelAssistPixmaps[monitor_index];
+                    if (pixmap != NULL)
+                    {
+                        pScreen->DestroyPixmap(pixmap);
+                    }
+                    /* set new */
+                    pixmap = (PixmapPtr) pDst;
+                    LLOGLN(0, ("rdpPutImage: setting conNumber %d, monitor num %d "
+                           "to pixmap %p", pBits32[1], monitor_index, pixmap));
+                    clientCon->accelAssistPixmaps[monitor_index] = pixmap;
+                    /* so it can not get freed early */
+                    pixmap->refcnt++;
+                    /* invalidate */
+                    if (dev->monitorCount < 1)
+                    {
+                        LLOGLN(0, ("rdpPutImage: monitor_index %d "
+                               "invalidating 0 0 %d %d",
+                               monitor_index, dev->width, dev->height));
+                        rdpClientConAddDirtyScreen(dev, clientCon, 0, 0,
+                                                   dev->width, dev->height);
+                    }
+                    else if (monitor_index < dev->monitorCount)
+                    {
+                        int left = dev->minfo[monitor_index].left;
+                        int top = dev->minfo[monitor_index].top;
+                        int width = dev->minfo[monitor_index].right -
+                                    dev->minfo[monitor_index].left + 1;
+                        int height = dev->minfo[monitor_index].bottom -
+                                     dev->minfo[monitor_index].top + 1;
+                        LLOGLN(0, ("rdpPutImage: monitor_index %d "
+                               "invalidating %d %d %d %d",
+                               monitor_index, left, top, width, height));
+                        rdpClientConAddDirtyScreen(dev, clientCon,
+                                                   left, top , width, height);
+                    }
+                    break;
+                }
+                clientCon = clientCon->next;
+            }
+            return;
+        }
+    }
     dev->counts.rdpPutImageCallCount++;
     box.x1 = x + pDst->x;
     box.y1 = y + pDst->y;
