@@ -1,5 +1,5 @@
 /*
-Copyright 2013-2017 Jay Sorg
+Copyright 2024 Jay Sorg
 
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -17,20 +17,14 @@ OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-rdp module main
+NVidia Grid RandR
 
 */
 
-#ifndef __RDPMAIN_H
-#define __RDPMAIN_H
-
-#include <xorg-server.h>
-#include <xorgVersion.h>
-#include <xf86.h>
+#ifndef _RDPRANDRGRID_H
+#define _RDPRANDRGRID_H
 
 extern _X_EXPORT int
-xorgxrdpCheckWrap(void);
-extern _X_EXPORT void
-xorgxrdpDownDown(ScreenPtr pScreen);
+rdpRandRGridSetRdpOutputs(rdpPtr dev);
 
 #endif

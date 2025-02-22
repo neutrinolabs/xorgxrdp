@@ -101,16 +101,34 @@ l_bound_by(int val, int low, int high)
 static void
 rdpEnqueueMotion(DeviceIntPtr device, int x, int y)
 {
+    int flags;
+    ValuatorMask *mask;
+
     LLOGLN(10, ("rdpEnqueueMotion:"));
-    xf86PostMotionEvent(device, TRUE, 0, 2, x, y);
+    mask = valuator_mask_new(2);
+    if (mask != NULL)
+    {
+        flags = POINTER_ABSOLUTE | POINTER_SCREEN | POINTER_NORAW;
+        valuator_mask_set(mask, 0, x);
+        valuator_mask_set(mask, 1, y);
+        QueuePointerEvents(device, MotionNotify, 0, flags, mask);
+        valuator_mask_free(&mask);
+    }
 }
 
 /******************************************************************************/
 static void
 rdpEnqueueButton(DeviceIntPtr device, int type, int buttons)
 {
+    ValuatorMask *mask;
+
     LLOGLN(10, ("rdpEnqueueButton:"));
-    xf86PostButtonEvent(device, FALSE, buttons, type == ButtonPress, 0, 0);
+    mask = valuator_mask_new(0);
+    if (mask != NULL)
+    {
+        QueuePointerEvents(device, type, buttons, 0, mask);
+        valuator_mask_free(&mask);
+    }
 }
 
 /******************************************************************************/
