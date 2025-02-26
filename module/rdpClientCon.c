@@ -1125,7 +1125,11 @@ rdpStartAccelAssist(rdpPtr dev, rdpClientCon *clientCon)
         open("/dev/null", O_RDWR);
         open("/dev/null", O_RDWR);
         open("/dev/null", O_RDWR);
+#ifdef HAS_DIX_GET_DISPLAY_NAME
+        snprintf(text, 63, ":%s", dixGetDisplayName(&dev->pScreen));
+#else
         snprintf(text, 63, ":%s", display);
+#endif
         text[63] = 0;
         setenv("DISPLAY", text, 1);
         snprintf(text, 63, "%d", spair[0]);
