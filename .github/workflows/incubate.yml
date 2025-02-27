@@ -1,0 +1,34 @@
+name: Incubate
+
+on:
+  schedule:
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+
+jobs:
+  build_with_xorg_incubate:
+    name: Build with xorg Incubate branch
+    runs-on: ubuntu-latest
+    env:
+      CC: gcc
+      CONF_FLAGS: --enable-glamor
+      XRDP_CFLAGS: -I${{ github.workspace }}/xrdp/common
+      # Use a PKG_CONFIG_PATH to pick up the pkg-config file for Xorg
+      PKG_CONFIG_PATH: ${{ github.workspace }}/xorg-incubate-build/lib/pkgconfig
+      # This is used for the tests
+      XORG: ${{ github.workspace }}/xorg-incubate-build/bin/Xorg
+      # How to access the incubate branch
+      GIT_CLONE_INCUBATE: -b incubate https://gitlab.freedesktop.org/metux/xserver.git
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo scripts/install_xorgxrdp_build_dependencies_with_apt.sh ${{ matrix.arch }} --allow-downgrades --allow-remove-essential --allow-change-held-packages
+      - run: git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git ${{ github.workspace}}/xrdp
+      - name: Remove OS xserver-xorg-dev package
+        run: sudo apt-get remove -y xserver-xorg-dev
+      - name: Build xorg incubate branch
+        run: scripts/build_latest_xorg_apt.sh -x "$GIT_CLONE_INCUBATE" ${{ github.workspace }}/xorg-incubate-build
+      - run: ./bootstrap
+      - run: ./configure $CONF_FLAGS
+      - run: make CFLAGS="$CFLAGS -O2 -Wall -Wwrite-strings -Werror"
+      - run: make check

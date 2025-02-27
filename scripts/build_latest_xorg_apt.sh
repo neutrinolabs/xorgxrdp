@@ -4,12 +4,19 @@
 #
 # Builds the latest version of the xserver from gitlab.freedesktop.org
 #
-# (c) Matt Burt  2025
+# (c) Matt Burt 2025
 #
-# Usage ./build_with_latest_xorg_apt.sh [-r] <build_dir>
+# Usage ./build_with_latest_xorg_apt.sh [-r] [-x git.clone.args] <build_dir>
 #
-# Add [-r] to use an autoresume file. This can be useful when tracking down
-# problems with the build script. It can also make things very confusing!
+# Options:-
+# -r  Use an autoresume file. This can be useful when
+#     tracking down problems with the build script. It can also make
+#     things very confusing!
+# -x git.clone.args
+#     Use the specified arguments to the git clone command which
+#    fetches the xserver. This can be useful to get the xserver
+#    source from another repository (e.g.
+#    -x '-b incubate https://gitlab.freedesktop.org/metux/xserver.git')
 #
 # sudo is used to install build dependencies, plus a few package
 # dependencies.
@@ -46,8 +53,9 @@ MODULAR_PKG_LIST="util/macros"
 MODULAR_PKG_LIST="$MODULAR_PKG_LIST font/util"
 MODULAR_PKG_LIST="$MODULAR_PKG_LIST proto/xorgproto proto/xcbproto"
 MODULAR_PKG_LIST="$MODULAR_PKG_LIST lib/libxcvt lib/libxtrans lib/libXau"
-MODULAR_PKG_LIST="$MODULAR_PKG_LIST lib/libXdmcp lib/libxcb lib/libX11"
-MODULAR_PKG_LIST="$MODULAR_PKG_LIST lib/libfontenc lib/libXfont lib/libxkbfile"
+MODULAR_PKG_LIST="$MODULAR_PKG_LIST lib/libXdmcp lib/libxcb lib/libxcb-util"
+MODULAR_PKG_LIST="$MODULAR_PKG_LIST lib/libxcb-wm lib/libX11 lib/libfontenc"
+MODULAR_PKG_LIST="$MODULAR_PKG_LIST lib/libXfont lib/libxkbfile"
 MODULAR_PKG_LIST="$MODULAR_PKG_LIST lib/libxshmfence"
 MODULAR_PKG_LIST="$MODULAR_PKG_LIST mesa/drm"
 MODULAR_PKG_LIST="$MODULAR_PKG_LIST pixman/pixman"
@@ -60,21 +68,26 @@ if [ -z "$XDG_RUNTIME_DIR" ]; then
 fi
 AUTORESUME_FILE="$XDG_RUNTIME_DIR/xserver-autores.txt"
 
-# Our source dir. This is currently hard-coded
-SOURCE_DIR="$HOME/xserver-src"
+# Our source dir (set from the BUILD_DIR)
+SOURCE_DIR=
 
-# Dependencies in the source dir
-BUILDER="$SOURCE_DIR/util/modular/build.sh" ; # xorg modular build script
-                                              # (Installed below)
-MODFILE="$SOURCE_DIR/modfile.txt"           ; # Used by above
-PYTHON_VENV="$SOURCE_DIR/python"            ; # Used for meson/ninja
+# Dependencies within the SOURCE_DIR. These are evaluated when
+# the SOURCE_DIR is known (which is why the '$' is escaped)
+BUILDER="\$SOURCE_DIR/util/modular/build.sh" ; # xorg modular build script
+                                               # (Installed below)
+MODFILE="\$SOURCE_DIR/modfile.txt"           ; # Used by above
+PYTHON_VENV="\$SOURCE_DIR/python"            ; # Used for meson/ninja
 
 # The build directory (set later)
 BUILD_DIR=
 
-# Dependencies within the BUILD_DIR. When we know the BUILD_DIR, it
-# is added as a prefix to these
-BUILD_TARGET=lib/pkgconfig/xorg-server.pc    ; # What we are trying to make
+# Dependencies within the BUILD_DIR. These are evaluated when the
+# BUILD_DIR is known
+BUILD_TARGET="\$BUILD_DIR/lib/pkgconfig/xorg-server.pc"
+                                              # What we are trying to make
+
+# Command used to clone the xserver repository
+XSERVER_CLONE_ARGS=
 
 # ------------------------------------------------------------------------------
 # C R E A T E   B U I L D   M O D F I L E
@@ -125,28 +138,44 @@ install_sources()
 {
     rv=0
     tmp=$(mktemp -t "modfile-XXXXXXXX")
+    defer_xserver=
+
+    # Create a modfile for all the components. Defer the xserver
+    # if it's present, and we have a custom command
     for mod in "$@"; do
-        if ! [ -d "$mod" ]; then
+        if [ -n "$XSERVER_CLONE_ARGS" ] && [ "$mod" = xserver ]; then
+	       defer_xserver=1
+       elif ! [ -d "$mod" ]; then
             echo "$mod"
         fi
     done >"$tmp"
+
     if [ -s "$tmp" ]; then
         $BUILDER --modfile "$tmp" -a -m --clone "$BUILD_DIR"
         rv=$?
-
-        # Most autoconf-enabled modules required an 'm4' directory. If
-        # we fetch from git, these directories are only created if there
-        # are not empty. If the directory isn't present, the module
-        # builds can fail.
-        #
-        # Add m4 directories for autoconf-enabled modules
-        for mod in "$@"; do
-            if [ -f "$mod/configure.ac" ]; then
-                mkdir -p "$mod/m4"
-            fi
-        done
     fi
     rm -f "$tmp"
+
+    if [ "$rv" -eq 0 ] && [ "$defer_xserver" ] && ! [ -d xserver ]; then
+        echo "======================================================================"
+        echo "Processing: xserver (git clone $XSERVER_CLONE_ARGS)"
+        # shellcheck disable=SC2086
+        git clone $XSERVER_CLONE_ARGS
+	rv=$?
+    fi
+
+    # Most autoconf-enabled modules required an 'm4' directory. If
+    # we fetch from git, these directories are only created if there
+    # are not empty. If the directory isn't present, the module
+    # builds can fail.
+    #
+    # Add m4 directories for autoconf-enabled modules
+    for mod in "$@"; do
+        if [ -f "$mod/configure.ac" ]; then
+            mkdir -p "$mod/m4"
+        fi
+    done
+
     return $rv
 }
 
@@ -168,15 +197,27 @@ title()
 # ------------------------------------------------------------------------------
 
 # Check parameters
-if [ "$1" = "-r" ]; then
+use_autoresume=
+while [ $# -gt 1 ]; do
+    case "$1" in
+        -r) use_autoresume=1
+            ;;
+	-x) shift  ; # Next param is guaranteed to exist
+            XSERVER_CLONE_ARGS="$1"
+	    ;;
+        *)  echo "** Unexpected argument '$1'" >&2
+            exit 1
+    esac
     shift
-else
-    rm -f "$AUTORESUME_FILE"
-fi
+done
 
 if [ $# != 1 ]; then
-    echo "Usage : $0 [-r] <build-dir>" >&2
+    echo "Usage : $0 [-r] [-x git.clone.args] <build-dir>" >&2
     exit 1
+fi
+
+if ! [ "$use_autoresume" ]; then
+    rm -f "$AUTORESUME_FILE"
 fi
 
 # Set up the BUILD_DIR, after resolving it to an absolute path
@@ -186,7 +227,8 @@ if ! cd "$1" || ! [ -w . ]; then
     exit 1
 fi
 BUILD_DIR=$(pwd)
-BUILD_TARGET="$BUILD_DIR/$BUILD_TARGET"
+# Resolve BUILD_DIR dependencies
+eval BUILD_TARGET="$BUILD_TARGET"
 
 # Have we run this script before?
 if [ -e "$BUILD_TARGET" ]; then
@@ -204,14 +246,24 @@ if ! [ -L "$debian_extra_pkgconf" ]; then
     ln -sf ../pkgconfig "$debian_extra_pkgconf"
 fi
 
-# Set up the SOURCE_DIR, and work in it.
+# Base the SOURCE_DIR on the BUILD_DIR, and work in it.
+SOURCE_DIR="$BUILD_DIR.src"
+
 mkdir -p "$SOURCE_DIR"
 cd "$SOURCE_DIR" || exit $?
 
-# Install all dependencies
+# Resolve SOURCE_DIR dependencies
+eval BUILDER="$BUILDER"
+eval MODFILE="$MODFILE"
+eval PYTHON_VENV="$PYTHON_VENV"
+
+# Install all dependencies. Before running 'sudo', make sure we need to
 title "Installing dependencies"
 # shellcheck disable=SC2086
-sudo apt-get install -y $APT_PKG_LIST || exit $?
+if ! dpkg-query -W $APT_PKG_LIST >/dev/null 2>&1; then
+    # shellcheck disable=SC2086
+    sudo apt-get install -y $APT_PKG_LIST || exit $?
+fi
 if ! [ -d "$PYTHON_VENV" ]; then
     python3 -m venv "$PYTHON_VENV" || exit $?
 fi
