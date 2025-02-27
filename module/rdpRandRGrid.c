@@ -148,6 +148,7 @@ rdpRandRGridUpdateRunCmds(struct monitors_t *monitors)
     struct cmd_file_t *cmd_file;
     char *env;
     int fd;
+    int system_rv;
 
     cmd_file = g_new0(struct cmd_file_t, 1);
     if (cmd_file == NULL)
@@ -196,7 +197,14 @@ rdpRandRGridUpdateRunCmds(struct monitors_t *monitors)
              "sh %s&", cmd_file->filename);
     LLOGLN(0, ("rdpRandRGridUpdateRunCmds: running command %s",
            cmd_file->cmd));
-    System(cmd_file->cmd);
+    system_rv = system(cmd_file->cmd);
+    if (system_rv != 0)
+    {
+        LLOGLN(0, ("rdpRandRGridUpdateRunCmds: command %s returned %d",
+               cmd_file->cmd, system_rv));
+        free(cmd_file);
+        return 1;
+    }
     free(cmd_file);
     return 0;
 }

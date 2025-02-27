@@ -46,7 +46,7 @@ rdp module main
 #include <xf86xv.h>
 #include <xf86Crtc.h>
 
-#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(21, 1, 4, 0, 0)
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 21, 1, 4, 0)
 #define XACE_DISABLE_DRI3_PRESENT
 #endif
 
