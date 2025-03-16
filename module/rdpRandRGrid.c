@@ -28,6 +28,7 @@ NVidia Grid RandR
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 /* this should be before all X11 .h files */
 #include <xorg-server.h>
