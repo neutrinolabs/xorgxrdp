@@ -1,0 +1,23 @@
+FreeBSD_task:
+  freebsd_instance:
+    image_family: freebsd-14-2
+  env:
+    XRDP_REPO: https://github.com/neutrinolabs/xrdp
+    BUILD_TOOLS: git autoconf automake libtool pkgconf
+    BUILD_DEPS: nasm xorg-server
+    TEST_DEPS: xdpyinfo
+  prepare_script:
+    - pkg install -y $BUILD_TOOLS $BUILD_DEPS $TEST_DEPS
+    - git clone $XRDP_REPO
+    - ./bootstrap
+  configure_script:
+    ./configure
+      --localstatedir=/var --enable-strict-locations
+      --enable-glamor
+      CPPFLAGS=-I/usr/local/include
+      LDFLAGS=-L/usr/local/lib
+      XRDP_CFLAGS=-I`pwd`/xrdp/common
+  build_script:
+    - make -j $(sysctl -n hw.ncpu || echo 4)
+  check_script:
+    - make check
