@@ -3377,3 +3377,5 @@ rdpClientConAddAllBox(rdpPtr dev, BoxPtr box, DrawablePtr pDrawable)
     }
     return 0;
 }
+
+/* Added comment to test FreeBSD CI */
