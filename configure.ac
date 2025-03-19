@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script
 
-AC_PREREQ(2.65)
+AC_PREREQ(2.69)
 # package version must be x.y.z
 AC_INIT([xorgxrdp], [0.10.3], [xrdp-devel@googlegroups.com])
 package_version_major=$(echo ${PACKAGE_VERSION}|cut -d. -f1)
@@ -12,8 +12,9 @@ AC_SUBST([package_version_patchlevel], [${package_version_patchlevel}])
 AC_CONFIG_HEADERS(config_ac.h:config_ac-h.in)
 AM_INIT_AUTOMAKE([1.11 foreign parallel-tests])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-AC_PROG_CC_C99
-AC_PROG_LIBTOOL
+# autoconf version 2.69 still uses AC_PROG_CC_C99
+m4_version_prereq([2.70], [AC_PROG_CC], [AC_PROG_CC_C99])
+LT_INIT
 
 case $host_os in
         *linux*)
@@ -84,19 +85,19 @@ AC_SUBST([moduledir])
 
 # SIMD is optional
 AC_ARG_WITH([simd],
-    AC_HELP_STRING([--without-simd],[Omit SIMD extensions.]))
+    AS_HELP_STRING([--without-simd],[Omit SIMD extensions.]))
 if test "x${with_simd}" != "xno"; then
   # Check if we're on a supported CPU
   AC_MSG_CHECKING([if we have SIMD optimisations for cpu type])
   case "$host_cpu" in
     x86_64 | amd64)
       AC_MSG_RESULT([yes (x86_64)])
-      AC_PROG_NASM
+      AXRDP_PROG_NASM
       simd_arch=x86_64
     ;;
     i*86 | x86 | ia32)
       AC_MSG_RESULT([yes (i386)])
-      AC_PROG_NASM
+      AXRDP_PROG_NASM
       simd_arch=i386
     ;;
     *)

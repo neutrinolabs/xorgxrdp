@@ -1,7 +1,7 @@
-# AC_PROG_NASM
+# AXRDP_PROG_NASM
 # --------------------------
 # Check that NASM exists and determine flags
-AC_DEFUN([AC_PROG_NASM],[
+AC_DEFUN([AXRDP_PROG_NASM],[
 
 AC_CHECK_PROGS(NASM, [nasm nasmw yasm])
 test -z "$NASM" && AC_MSG_ERROR([no nasm (Netwide Assembler) found])
@@ -116,8 +116,8 @@ try_nasm='$NASM $NAFLAGS -o conftest-nasm.o conftest.asm'
 if AC_TRY_EVAL(try_nasm) && test -s conftest-nasm.o; then
   AC_MSG_RESULT(yes)
 else
-  echo "configure: failed program was:" >&AC_FD_CC
-  cat conftest.asm >&AC_FD_CC
+  echo "configure: failed program was:" >&AS_MESSAGE_LOG_FD
+  cat conftest.asm >&AS_MESSAGE_LOG_FD
   rm -rf conftest*
   AC_MSG_RESULT(no)
   AC_MSG_ERROR([installation or configuration problem: assembler cannot create object files.])
