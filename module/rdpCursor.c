@@ -251,6 +251,7 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
     int sending_bpp;
     int can_do_new;
     int can_do_large;
+    int cursor_id;
 
     LLOGLN(10, ("rdpSpriteSetCursorCon:"));
     if (clientCon->suppress_output)
@@ -281,12 +282,13 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
     if ((pCurs == NULL) || (pCurs->bits == NULL))
     {
         /* None cursor */
-        sending_width = 32;
-        sending_height = 32;
-        xhot = 0;
-        yhot = 0;
-        memset(cur_data, 0, 96 * 96 * 4);
-        memset(cur_mask, 0xFF, 96 * 96 / 8);
+        cursor_id = 0; /* SYSPTR_NULL */
+        LLOGLN(0, ("rdpSpriteSetCursorCon: sending cursor system "
+                "pointer 0x%8.8X", cursor_id));
+        rdpClientConBeginUpdate(clientCon->dev, clientCon);
+        rdpClientConSetCursorSystem(clientCon->dev, clientCon, cursor_id);
+        rdpClientConEndUpdate(clientCon->dev, clientCon);
+        return;
     }
     else
     {

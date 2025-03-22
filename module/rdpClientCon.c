@@ -2109,6 +2109,27 @@ rdpClientConDrawLine(rdpPtr dev, rdpClientCon *clientCon,
 
 /******************************************************************************/
 int
+rdpClientConSetCursorSystem(rdpPtr dev, rdpClientCon *clientCon,
+                            int pointer_type)
+{
+    int size;
+
+    if (clientCon->connected)
+    {
+        LLOGLN(10, ("rdpClientConSetCursor:"));
+        size = 2 + 2 + 4;
+        rdpClientConPreCheck(dev, clientCon, size);
+        out_uint16_le(clientCon->out_s, 65); /* set cursor system */
+        out_uint16_le(clientCon->out_s, size); /* size */
+        clientCon->count++;
+        out_uint32_le(clientCon->out_s, pointer_type);
+    }
+
+    return 0;
+}
+
+/******************************************************************************/
+int
 rdpClientConSetCursor(rdpPtr dev, rdpClientCon *clientCon,
                       short x, short y, uint8_t *cur_data, uint8_t *cur_mask)
 {
