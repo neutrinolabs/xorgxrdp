@@ -1,4 +1,4 @@
-# Release notes for xorgxrdp v0.10.4 (2025/03/28)
+# Release notes for xorgxrdp v0.10.4 (2025/03/30)
 
 ## General announcements
 
