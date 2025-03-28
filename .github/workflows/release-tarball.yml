@@ -1,0 +1,59 @@
+name: Generate release tarball
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build'
+        required: true
+      xrdp_branch:
+        description: 'xrdp branch to build with'
+        required: false
+        default: 'v0.10'
+
+jobs:
+  build:
+    name: Generate release tarball (${{ github.event.repository.name }} ${{ github.event.inputs.tag }})
+    runs-on: ubuntu-latest
+
+    env:
+      XRDP_CFLAGS: -I${{ github.workspace }}/xrdp/common
+
+    steps:
+      - name: Set timestamp
+        run: echo "timestamp=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Checkout xrdp source
+        run: |
+          git clone --depth 1 --branch=${{ github.event.inputs.xrdp_branch }} https://github.com/neutrinolabs/xrdp.git ${{ github.workspace }}/xrdp
+
+      - name: Install dependencies
+        run: |
+          sudo scripts/install_xorgxrdp_build_dependencies_with_apt.sh amd64
+
+      - name: Run make distcheck
+        run: |
+          ./bootstrap
+          ./configure
+          make distcheck
+
+      - name: Find generated tarball
+        id: find_tarball
+        run: |
+          TARBALL=$(find . -maxdepth 1 -name "*.tar.gz" | head -n 1)
+          echo "tarball=$TARBALL" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name:  ${{ github.event.repository.name }}-${{ github.event.inputs.tag }}-${{ env.timestamp }}
+          path: "${{ env.tarball }}"
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
