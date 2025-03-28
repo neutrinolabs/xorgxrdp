@@ -46,6 +46,10 @@ jobs:
         id: find_tarball
         run: |
           TARBALL=$(find . -maxdepth 1 -name "*.tar.gz" | head -n 1)
+          if [ -z "$TARBALL" ]; then
+            echo "Error: No tarball found" >&2
+            exit 1
+          fi
           echo "tarball=$TARBALL" >> $GITHUB_ENV
 
       - name: Upload Artifact
