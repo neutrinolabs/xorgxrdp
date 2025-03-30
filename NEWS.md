@@ -1,3 +1,34 @@
+# Release notes for xorgxrdp v0.10.4 (2025/03/30)
+
+## General announcements
+
+[Power Up Privacy](https://powerupprivacy.com/) and [Cybertrust Japan](https://www.cybertrust.co.jp/english/) sponsored H.264 encoding.  We greatly appreciate the sponsorship. 
+
+Please consider sponsoring or making a donation to the project if you like xrdp. We accept financial contributions via [Open Collective](https://opencollective.com/xrdp-project). Direct donations to each developer via GitHub Sponsors are also welcomed.
+
+## Security fixes
+None
+
+## New features
+None
+
+## Bug fixes
+None
+
+## Internal changes
+* The dixGetDisplayName() function is used to access the display name where available (#367)
+* FreeBSD CI testing is now performed (#379)
+* autoconf version is changed from 2.65 to 2.69 (#378)
+
+## Known issues
+None
+
+## Changes for packagers or developers
+
+- This version is intended to be used together with xrdp v0.10.3 or later. Please build against xrdp v0.10.3 and provide both xrdp v0.10.3 and xorgxrdp v0.10.4 at the same time.
+
+-----------------------
+
 # Release notes for xorgxrdp v0.10.3 (2024/12/15)
 
 ## General announcements
