@@ -21,14 +21,14 @@ Client connection to xrdp
 
 */
 
+#ifndef _RDPCLIENTCON_H
+#define _RDPCLIENTCON_H
+
 #include <xorg-server.h>
 #include <xorgVersion.h>
 #include <xf86.h>
 
-#include "xrdp_client_info.h"
-
-#ifndef _RDPCLIENTCON_H
-#define _RDPCLIENTCON_H
+#include "xup_client_info.h"
 
 /* used in rdpGlyphs.c */
 struct font_cache
@@ -104,7 +104,7 @@ struct _rdpClientCon
     struct font_cache font_cache[12][256];
     int font_stamp;
 
-    struct xrdp_client_info client_info;
+    struct xup_client_info client_info;
 
     uint8_t *shmemptr;
     int shmemfd;

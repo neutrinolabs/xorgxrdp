@@ -54,11 +54,6 @@ xrdp keyboard module
 #include "rdpMisc.h"
 #include "rdpMain.h"
 
-// Check the minimum xrdp client version.
-#if CLIENT_INFO_CURRENT_VERSION < 20240805
-#error "xrdp is too old to contain evdev keyboard support"
-#endif
-
 #include "xrdp_scancode_defs.h"
 
 /******************************************************************************/
@@ -80,7 +75,7 @@ static char g_Keyboard_str[] = "Keyboard";
 static char g_xrdp_keyb_name[] = XRDP_KEYB_NAME;
 
 static int
-rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info);
+rdpLoadLayout(rdpKeyboard *keyboard, struct xup_client_info *client_info);
 
 /******************************************************************************/
 static void
@@ -297,7 +292,7 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
             KbdSync(keyboard, param1);
             break;
         case 18:
-            rdpLoadLayout(keyboard, (struct xrdp_client_info *) param1);
+            rdpLoadLayout(keyboard, (struct xup_client_info *) param1);
             break;
 
     }
@@ -573,7 +568,7 @@ reload_xkb(DeviceIntPtr keyboard, XkbRMLVOSet *set)
 
 /******************************************************************************/
 static int
-rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info)
+rdpLoadLayout(rdpKeyboard *keyboard, struct xup_client_info *client_info)
 {
     // Load default layout parameters
     XkbRMLVOSet set =
