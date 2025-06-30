@@ -729,7 +729,7 @@ rdpClientConSendCaps(rdpPtr dev, rdpClientCon *clientCon)
 
     out_uint16_le(ls, 100);   /* Version capability */
     out_uint16_le(ls, 2 + 2 + 4);
-    out_uint32_le(ls, CLIENT_INFO_CURRENT_VERSION);
+    out_uint32_le(ls, XUP_CLIENT_INFO_CURRENT_VERSION);
     cap_count++;
 
     s_mark_end(ls);
@@ -1366,10 +1366,10 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
 
     // This shouldn't happen - xrdp should check the version we send it
     // before sending client info.
-    if (clientCon->client_info.version != CLIENT_INFO_CURRENT_VERSION)
+    if (clientCon->client_info.version != XUP_CLIENT_INFO_CURRENT_VERSION)
     {
         LLOGLN(0, ("expected xrdp client_info version %d, got %d",
-                   CLIENT_INFO_CURRENT_VERSION,
+                   XUP_CLIENT_INFO_CURRENT_VERSION,
                    clientCon->client_info.version));
         FatalError("Incompatible xrdp version detected  - please recompile");
     }
