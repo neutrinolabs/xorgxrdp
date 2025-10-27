@@ -114,6 +114,78 @@ rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
 }
 
 /*****************************************************************************/
+#if DRI3_SCREEN_INFO_VERSION >= 2
+
+static PixmapPtr
+rdpDri3PixmapFromFds(ScreenPtr screen, CARD8 num_fds, const int *fds,
+                     CARD16 width, CARD16 height, const CARD32 *strides,
+                     const CARD32 *offsets, CARD8 depth, CARD8 bpp,
+                     CARD64 modifier)
+{
+    PixmapPtr rv;
+
+    LLOGLN(10, ("rdpDri3PixmapFromFds:"));
+    rv = glamor_pixmap_from_fds(screen, num_fds, fds, width, height, strides,
+                                  offsets, depth, bpp, modifier);
+    LLOGLN(10, ("rdpDri3PixmapFromFds: pixmap %p", rv));
+    return rv;
+}
+
+/*****************************************************************************/
+static int
+rdpDri3FdsFromPixmap(ScreenPtr screen, PixmapPtr pixmap, int *fds,
+                     uint32_t *strides, uint32_t *offsets,
+                     uint64_t *modifier)
+{
+    int rv;
+
+    LLOGLN(10, ("rdpDri3FdsFromPixmap:"));
+    rv = glamor_fds_from_pixmap(screen, pixmap, fds, strides, offsets, modifier);
+    LLOGLN(10, ("rdpDri3FdsFromPixmap: pixmap %p", pixmap));
+    return rv;
+}
+
+/*****************************************************************************/
+static int
+rdpDri3GetFormats(ScreenPtr screen, CARD32 *num_formats, CARD32 **formats)
+{
+    int rv;
+
+    LLOGLN(10, ("rdpDri3GetFormats:"));
+    rv = glamor_get_formats(screen, num_formats, formats);
+    LLOGLN(10, ("rdpDri3GetFormats: rv %d", rv));
+    return rv;
+}
+
+/*****************************************************************************/
+static int
+rdpDri3GetModifiers(ScreenPtr screen, uint32_t format,
+                    uint32_t *num_modifiers, uint64_t **modifiers)
+{
+    int rv;
+
+    LLOGLN(10, ("rdpDri3GetModifiers:"));
+    rv = glamor_get_modifiers(screen, format, num_modifiers, modifiers);
+    LLOGLN(10, ("rdpDri3GetModifiers: rv %d", rv));
+    return rv;
+}
+
+/*****************************************************************************/
+static int
+rdpDri3GetDrawableModifiers(DrawablePtr draw, uint32_t format,
+                            uint32_t *num_modifiers, uint64_t **modifiers)
+{
+    int rv;
+
+    LLOGLN(10, ("rdpDri3GetDrawableModifiers:"));
+    rv = glamor_get_drawable_modifiers(draw, format, num_modifiers, modifiers);
+    LLOGLN(10, ("rdpDri3GetDrawableModifiers: draw %p rv %d", draw, rv));
+    return rv;
+}
+
+#endif
+
+/*****************************************************************************/
 int
 rdpDri3Init(ScreenPtr pScreen)
 {
@@ -124,6 +196,15 @@ rdpDri3Init(ScreenPtr pScreen)
     rdp_dri3_info.pixmap_from_fd = rdpDri3PixmapFromFd;
     rdp_dri3_info.fd_from_pixmap = rdpDri3FdFromPixmap;
     rdp_dri3_info.open_client = rdpDri3OpenClient;
+#if DRI3_SCREEN_INFO_VERSION >= 2
+    rdp_dri3_info.version = 2;
+    rdp_dri3_info.pixmap_from_fds = rdpDri3PixmapFromFds;
+    rdp_dri3_info.fds_from_pixmap = rdpDri3FdsFromPixmap;
+    rdp_dri3_info.get_formats = rdpDri3GetFormats;
+    rdp_dri3_info.get_modifiers = rdpDri3GetModifiers;
+    rdp_dri3_info.get_drawable_modifiers = rdpDri3GetDrawableModifiers;
+#endif
+    LLOGLN(0, ("rdpScreenInit: rdp_dri3_info.version = %lu", (unsigned long)rdp_dri3_info.version));
     if (!dri3_screen_init(pScreen, &rdp_dri3_info))
     {
         LLOGLN(0, ("rdpScreenInit: dri3_screen_init failed"));
