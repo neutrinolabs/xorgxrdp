@@ -204,10 +204,10 @@ rdpDri3Init(ScreenPtr pScreen)
     rdp_dri3_info.get_modifiers = rdpDri3GetModifiers;
     rdp_dri3_info.get_drawable_modifiers = rdpDri3GetDrawableModifiers;
 #endif
-    LLOGLN(0, ("rdpScreenInit: rdp_dri3_info.version = %lu", (unsigned long)rdp_dri3_info.version));
+    LLOGLN(0, ("rdpDri3Init: rdp_dri3_info.version = %lu", (unsigned long)rdp_dri3_info.version));
     if (!dri3_screen_init(pScreen, &rdp_dri3_info))
     {
-        LLOGLN(0, ("rdpScreenInit: dri3_screen_init failed"));
+        LLOGLN(0, ("rdpDri3Init: dri3_screen_init failed"));
         return 1;
     }
     return 0;
