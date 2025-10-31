@@ -58,7 +58,7 @@ xrdp mouse module
 #define LLOGLN(_level, _args) \
     do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
-static char g_Mouse_str[] = "Mouse";
+static char g_Mouse_str[] = XI_MOUSE;
 static char g_xrdp_mouse_name[] = XRDP_MOUSE_NAME;
 
 /******************************************************************************/
@@ -402,7 +402,7 @@ rdpmousePreInit(InputDriverPtr drv, IDevPtr dev, int flags)
     info->device_control = rdpmouseControl;
     info->flags = XI86_CONFIGURED | XI86_ALWAYS_CORE | XI86_SEND_DRAG_EVENTS |
                   XI86_CORE_POINTER | XI86_POINTER_CAPABLE;
-    info->type_name = "Mouse";
+    info->type_name = g_Mouse_str;
     info->fd = -1;
     info->conf_idev = dev;
 
