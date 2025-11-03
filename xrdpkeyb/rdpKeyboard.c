@@ -86,7 +86,7 @@ static char g_base_str[] = "base";
 static char g_pc104_str[] = "pc104";
 static char g_us_str[] = "us";
 static char g_empty_str[] = "";
-static char g_Keyboard_str[] = "Keyboard";
+static char g_Keyboard_str[] = XI_KEYBOARD;
 
 static char g_xrdp_keyb_name[] = XRDP_KEYB_NAME;
 
@@ -736,7 +736,7 @@ rdpkeybPreInit(InputDriverPtr drv, IDevPtr dev, int flags)
     info->device_control = rdpkeybControl;
     info->flags = XI86_CONFIGURED | XI86_ALWAYS_CORE | XI86_SEND_DRAG_EVENTS |
                   XI86_CORE_KEYBOARD | XI86_KEYBOARD_CAPABLE;
-    info->type_name = "Keyboard";
+    info->type_name = g_Keyboard_str;
     info->fd = -1;
     info->conf_idev = dev;
 
