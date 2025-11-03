@@ -8,7 +8,7 @@ FreeBSD_task:
     TEST_DEPS: xdpyinfo
   prepare_script:
     - pkg install -y $BUILD_TOOLS $BUILD_DEPS $TEST_DEPS
-    - git clone $XRDP_REPO
+    - git clone --depth 1 --branch=v0.10 $XRDP_REPO
     - ./bootstrap
   configure_script:
     ./configure
