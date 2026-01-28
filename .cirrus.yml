@@ -1,6 +1,6 @@
 FreeBSD_task:
   freebsd_instance:
-    image_family: freebsd-14-2
+    image_family: freebsd-14-3
   env:
     XRDP_REPO: https://github.com/neutrinolabs/xrdp
     BUILD_TOOLS: git autoconf automake libtool pkgconf
