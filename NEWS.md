@@ -1,3 +1,30 @@
+# Release notes for xorgxrdp v0.10.5 (2026/01/28)
+
+## General announcements
+
+Please consider sponsoring or making a donation to the project if you like xrdp. We accept financial contributions via [Open Collective](https://opencollective.com/xrdp-project). Direct donations to each developer via GitHub Sponsors are also welcomed.
+
+## Security fixes
+None
+
+## New features
+None
+
+## Bug fixes
+- Fix bug in Chrome pointer detection (#394 #396)
+
+## Internal changes
+- CI: Update FreeBSD xrdp dependency (#398)
+
+## Known issues
+None
+
+## Changes for packagers or developers
+
+- This version is intended to be used together with xrdp v0.10.5 or later. Please build against xrdp v0.10.5 and provide both xrdp v0.10.5 and xorgxrdp v0.10.5 at the same time.
+
+-----------------------
+
 # Release notes for xorgxrdp v0.10.4 (2025/03/30)
 
 ## General announcements
