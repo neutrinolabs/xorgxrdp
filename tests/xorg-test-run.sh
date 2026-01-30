@@ -75,7 +75,7 @@ $XORG \
   -modulepath $moduledir \
   -config $top_srcdir/xrdpdev/xorg.conf \
   -logfile $XORG_LOG \
-  -novtswitch -sharevts -once -terminate -ac \
+  -novtswitch -sharevts -terminate -ac \
   $TEST_DISPLAY $XORG_ARGS >$XORG_OUT 2>$XORG_ERR </dev/null &
 
 # Record Xorg PID so it can be killed

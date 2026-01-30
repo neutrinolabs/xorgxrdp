@@ -1356,6 +1356,7 @@ copy_vmem(rdpPtr dev, RegionPtr in_reg)
     {
         tmpval[0].val = GXcopy;
         ChangeGC(NullClient, copyGC, GCFunction, tmpval);
+
         ValidateGC(&(hwPixmap->drawable), copyGC);
         count = REGION_NUM_RECTS(in_reg);
         pbox = REGION_RECTS(in_reg);
