@@ -71,7 +71,7 @@ if test -u $XORG_FULL; then
 fi
 
 # Find Xorg module path
-moduledir=`$XORG -showDefaultModulePath 2>&1`
+moduledir=`pkg-config --variable moduledir xorg-server`
 echo "Module directory: $moduledir"
 
 # Building the module path to include compiled modules
