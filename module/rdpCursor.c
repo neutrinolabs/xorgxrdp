@@ -225,10 +225,10 @@ set_pixel_safe(uint8_t *data, int x, int y, int width, int height, int bpp,
 }
 
 /******************************************************************************/
-void
+static void
 rdpSpriteSetCursorCon(rdpClientCon *clientCon,
                       DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs,
-                      int x, int y)
+                      int x, int y, int do_move)
 {
     uint8_t *cur_data;
     uint8_t *cur_mask;
@@ -251,6 +251,7 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
     int sending_bpp;
     int can_do_new;
     int can_do_large;
+    int cursor_id;
 
     LLOGLN(10, ("rdpSpriteSetCursorCon:"));
     if (clientCon->suppress_output)
@@ -281,12 +282,13 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
     if ((pCurs == NULL) || (pCurs->bits == NULL))
     {
         /* None cursor */
-        sending_width = 32;
-        sending_height = 32;
-        xhot = 0;
-        yhot = 0;
-        memset(cur_data, 0, 96 * 96 * 4);
-        memset(cur_mask, 0xFF, 96 * 96 / 8);
+        cursor_id = 0; /* SYSPTR_NULL */
+        LLOGLN(10, ("rdpSpriteSetCursorCon: sending cursor system "
+                "pointer 0x%8.8X", cursor_id));
+        rdpClientConBeginUpdate(clientCon->dev, clientCon);
+        rdpClientConSetCursorSystem(clientCon->dev, clientCon, cursor_id);
+        rdpClientConEndUpdate(clientCon->dev, clientCon);
+        return;
     }
     else
     {
@@ -386,6 +388,10 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
                                    cur_data, cur_mask, sending_bpp,
                                    sending_width, sending_height);
     }
+    if (do_move)
+    {
+        rdpClientConMoveCursor(clientCon->dev, clientCon, x, y);
+    }
     rdpClientConEndUpdate(clientCon->dev, clientCon);
     free(cur_data);
 }
@@ -397,22 +403,57 @@ rdpSpriteSetCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs,
 {
     rdpPtr dev;
     rdpClientCon *clientCon;
+    int do_move;
 
     LLOGLN(10, ("rdpSpriteSetCursor:"));
     dev = rdpGetDevFromScreen(pScr);
+    LLOGLN(10, ("rdpSpriteSetCursor: x %d y %d cursor_x %d cursor_y %d",
+           x, y, dev->pointer.cursor_x, dev->pointer.cursor_y));
+    do_move = (dev->pointer.cursor_x != x) || (dev->pointer.cursor_y != y);
+    LLOGLN(10, ("rdpSpriteSetCursor: x %d y %d do_move %d", x, y, do_move));
     clientCon = dev->clientConHead;
     while (clientCon != NULL)
     {
-        rdpSpriteSetCursorCon(clientCon, pDev, pScr, pCurs, x, y);
+        rdpSpriteSetCursorCon(clientCon, pDev, pScr, pCurs, x, y, do_move);
         clientCon = clientCon->next;
     }
+}
+
+/******************************************************************************/
+static void
+rdpSpriteMoveCursorCon(rdpClientCon *clientCon,
+                      DeviceIntPtr pDev, ScreenPtr pScr, int x, int y)
+{
+    LLOGLN(10, ("rdpSpriteMoveCursorCon:"));
+    rdpClientConBeginUpdate(clientCon->dev, clientCon);
+    rdpClientConMoveCursor(clientCon->dev, clientCon, x, y);
+    rdpClientConEndUpdate(clientCon->dev, clientCon);
 }
 
 /******************************************************************************/
 void
 rdpSpriteMoveCursor(DeviceIntPtr pDev, ScreenPtr pScr, int x, int y)
 {
+    rdpPtr dev;
+    rdpClientCon *clientCon;
+    int do_move;
+
     LLOGLN(10, ("rdpSpriteMoveCursor:"));
+    dev = rdpGetDevFromScreen(pScr);
+    LLOGLN(10, ("rdpSpriteMoveCursor: x %d y %d cursor_x %d cursor_y %d",
+      x, y, dev->pointer.cursor_x, dev->pointer.cursor_y));
+    do_move = (dev->pointer.cursor_x != x) || (dev->pointer.cursor_y != y);
+    LLOGLN(10, ("rdpSpriteMoveCursor: x %d y %d do_move %d", x, y, do_move));
+    if (!do_move)
+    {
+        return;
+    }
+    clientCon = dev->clientConHead;
+    while (clientCon != NULL)
+    {
+        rdpSpriteMoveCursorCon(clientCon, pDev, pScr, x, y);
+        clientCon = clientCon->next;
+    }
 }
 
 /******************************************************************************/
