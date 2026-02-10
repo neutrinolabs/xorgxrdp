@@ -241,6 +241,19 @@ g_sprintf(char *dest, const char *format, ...)
 
 /*****************************************************************************/
 int
+g_snprintf(char *dest, unsigned int dest_size, const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    int res = vsnprintf(dest, dest_size, format, ap);
+    va_end(ap);
+
+    return res;
+}
+
+/*****************************************************************************/
+int
 g_sck_tcp_socket(void)
 {
     int rv;
