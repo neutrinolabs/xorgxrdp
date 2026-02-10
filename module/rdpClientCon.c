@@ -1791,6 +1791,44 @@ rdpClientConCheck(ScreenPtr pScreen)
 }
 
 /******************************************************************************/
+/**
+ * Sets up a socket name string
+ *
+ * @param sockname Destination buffer
+ * @param sockname_len Length of above
+ * @param env_name Environment variable for Unqualified socket name
+ * @param default_format Default format if no env_name, with '%s'
+ *                       for display name
+ * @param displaystr Pointer to display name
+ */
+void set_sock_name(char *sockname, unsigned int sockname_len,
+                   const char *env_name,
+                   const char *default_format, const char *displaystr)
+{
+    const char *socket_dir = g_socket_dir();
+    unsigned int len;
+
+    // Add the path plus a '/' to the output buffer
+    len = g_snprintf(sockname, sockname_len, "%s/", socket_dir);
+    if ((unsigned int)len < sockname_len)
+    {
+        sockname += len;
+        sockname_len -= len;
+
+        const char *env_val = getenv(env_name);
+        if (env_val == NULL || env_val[0] == '\0')
+        {
+            (void)g_snprintf(sockname, sockname_len,
+                             default_format, displaystr);
+        }
+        else
+        {
+            (void)g_snprintf(sockname, sockname_len, "%s", env_val);
+        }
+    }
+}
+
+/******************************************************************************/
 int
 rdpClientConInit(rdpPtr dev)
 {
@@ -1823,6 +1861,7 @@ rdpClientConInit(rdpPtr dev)
     }
 #endif
 
+    // Check display is numeric
     errno = 0;
     i = (int)strtol(display, &endptr, 10);
     if (errno != 0 || display == endptr || *endptr != 0)
@@ -1830,8 +1869,9 @@ rdpClientConInit(rdpPtr dev)
         FatalError("rdpClientConInit: can not run at non-integer display");
     }
 
-    /* TODO: don't hardcode socket name */
-    g_sprintf(dev->uds_data, "%s/xrdp_display_%s", socket_dir, display);
+    set_sock_name(dev->uds_data, sizeof(dev->uds_data),
+                  "XRDP_X11RDP_SOCKET", "xrdp_display_%s", display);
+
     if (dev->listen_sck == 0)
     {
         unlink(dev->uds_data);
@@ -1846,8 +1886,10 @@ rdpClientConInit(rdpPtr dev)
         rdpClientConAddEnabledDevice(dev->pScreen, dev->listen_sck);
     }
 
-    /* disconnect socket */ /* TODO: don't hardcode socket name */
-    g_sprintf(dev->disconnect_uds, "%s/xrdp_disconnect_display_%s", socket_dir, display);
+    set_sock_name(dev->disconnect_uds, sizeof(dev->disconnect_uds),
+                  "XRDP_DISCONNECT_SOCKET",
+                  "xrdp_disconnect_display_%s", display);
+
     if (dev->disconnect_sck == 0)
     {
         unlink(dev->disconnect_uds);
