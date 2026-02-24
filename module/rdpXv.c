@@ -394,9 +394,9 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
     int *src32;
     int *dst32;
 
-    LLOGLN(10, ("stretch_RGB32_RGB32: oh 0x%8.8x ov 0x%8.8x", oh, ov));
     oh = (src_w << 16) / dst_w;
     ov = (src_h << 16) / dst_h;
+    LLOGLN(10, ("stretch_RGB32_RGB32: oh 0x%8.8x ov 0x%8.8x", oh, ov));
     iv = ov;
     lndex = src_y;
     last_lndex = -1;
