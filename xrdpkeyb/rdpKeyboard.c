@@ -299,21 +299,21 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
 static void
 rdpkeybDeviceOn(void)
 {
-    LLOGLN(0, ("rdpkeybDeviceOn:"));
+    LLOGLN(10, ("rdpkeybDeviceOn:"));
 }
 
 /******************************************************************************/
 static void
 rdpkeybDeviceOff(void)
 {
-    LLOGLN(0, ("rdpkeybDeviceOff:"));
+    LLOGLN(10, ("rdpkeybDeviceOff:"));
 }
 
 /******************************************************************************/
 static void
 rdpkeybBell(int volume, DeviceIntPtr pDev, pointer ctrl, int cls)
 {
-    LLOGLN(0, ("rdpkeybBell:"));
+    LLOGLN(10, ("rdpkeybBell:"));
 }
 
 /******************************************************************************/
@@ -324,7 +324,7 @@ rdpInDeferredRepeatCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     DeviceIntPtr it;
     Bool found;
 
-    LLOGLN(0, ("rdpInDeferredRepeatCallback:"));
+    LLOGLN(10, ("rdpInDeferredRepeatCallback:"));
     TimerFree(timer);
     pDev = (DeviceIntPtr) arg;
     found = FALSE;
@@ -351,7 +351,7 @@ rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
 {
     XkbControlsPtr ctrls;
 
-    LLOGLN(0, ("rdpkeybChangeKeyboardControl:"));
+    LLOGLN(10, ("rdpkeybChangeKeyboardControl:"));
     ctrls = 0;
     if (pDev != 0)
     {
@@ -487,7 +487,7 @@ static InputDriverRec rdpkeyb =
 static pointer
 rdpkeybPlug(pointer module, pointer options, int *errmaj, int *errmin)
 {
-    LLOGLN(0, ("rdpkeybPlug:"));
+    LLOGLN(10, ("rdpkeybPlug:"));
     xf86AddInputDriver(&rdpkeyb, module, 0);
     xorgxrdpCheckWrap();
     return module;
@@ -497,7 +497,7 @@ rdpkeybPlug(pointer module, pointer options, int *errmaj, int *errmin)
 static void
 rdpkeybUnplug(pointer p)
 {
-    LLOGLN(0, ("rdpkeybUnplug:"));
+    LLOGLN(10, ("rdpkeybUnplug:"));
 }
 
 /******************************************************************************/

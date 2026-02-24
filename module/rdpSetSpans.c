@@ -59,7 +59,7 @@ void
 rdpSetSpans(DrawablePtr pDrawable, GCPtr pGC, char *psrc,
             DDXPointPtr ppt, int *pwidth, int nspans, int fSorted)
 {
-    LLOGLN(0, ("rdpSetSpans:"));
+    LLOGLN(10, ("rdpSetSpans:"));
     /* do original call */
     rdpSetSpansOrg(pDrawable, pGC, psrc, ppt, pwidth, nspans, fSorted);
 }

@@ -148,7 +148,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     DisplayModePtr mode;
     rdpPtr dev;
 
-    LLOGLN(0, ("rdpPreInit:"));
+    LLOGLN(10, ("rdpPreInit:"));
     if (flags & PROBE_DETECT)
     {
         return FALSE;
@@ -413,7 +413,7 @@ xorgxrdpDamageReport(DamagePtr pDamage, RegionPtr pRegion, void *closure)
 static void
 xorgxrdpDamageDestroy(DamagePtr pDamage, void *closure)
 {
-    LLOGLN(0, ("xorgxrdpDamageDestroy:"));
+    LLOGLN(10, ("xorgxrdpDamageDestroy:"));
 }
 
 /******************************************************************************/
@@ -451,7 +451,7 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
 
     pScreen = (ScreenPtr) arg;
     dev = rdpGetDevFromScreen(pScreen);
-    LLOGLN(0, ("rdpDeferredRandR:"));
+    LLOGLN(10, ("rdpDeferredRandR:"));
     pRRScrPriv = rrGetScrPriv(pScreen);
     if (pRRScrPriv == 0)
     {
@@ -571,7 +571,7 @@ rdpCreateScreenResources(ScreenPtr pScreen)
     Bool ret;
     rdpPtr dev;
 
-    LLOGLN(0, ("rdpCreateScreenResources:"));
+    LLOGLN(10, ("rdpCreateScreenResources:"));
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreateScreenResources = dev->CreateScreenResources;
     ret = pScreen->CreateScreenResources(pScreen);
@@ -833,7 +833,7 @@ rdpSwitchMode(int a, DisplayModePtr b, int c)
 rdpSwitchMode(ScrnInfoPtr a, DisplayModePtr b)
 #endif
 {
-    LLOGLN(0, ("rdpSwitchMode:"));
+    LLOGLN(10, ("rdpSwitchMode:"));
     return TRUE;
 }
 
@@ -856,7 +856,7 @@ rdpEnterVT(int a, int b)
 rdpEnterVT(ScrnInfoPtr a)
 #endif
 {
-    LLOGLN(0, ("rdpEnterVT:"));
+    LLOGLN(10, ("rdpEnterVT:"));
     return TRUE;
 }
 
@@ -868,7 +868,7 @@ rdpLeaveVT(int a, int b)
 rdpLeaveVT(ScrnInfoPtr a)
 #endif
 {
-    LLOGLN(0, ("rdpLeaveVT:"));
+    LLOGLN(10, ("rdpLeaveVT:"));
 }
 
 /*****************************************************************************/
@@ -879,7 +879,7 @@ rdpValidMode(int a, DisplayModePtr b, Bool c, int d)
 rdpValidMode(ScrnInfoPtr a, DisplayModePtr b, Bool c, int d)
 #endif
 {
-    LLOGLN(0, ("rdpValidMode:"));
+    LLOGLN(10, ("rdpValidMode:"));
     return 0;
 }
 
@@ -891,7 +891,7 @@ rdpFreeScreen(int a, int b)
 rdpFreeScreen(ScrnInfoPtr a)
 #endif
 {
-    LLOGLN(0, ("rdpFreeScreen:"));
+    LLOGLN(10, ("rdpFreeScreen:"));
 }
 
 /*****************************************************************************/
@@ -906,7 +906,7 @@ rdpProbe(DriverPtr drv, int flags)
     ScrnInfoPtr pscrn;
     const char *val;
 
-    LLOGLN(0, ("rdpProbe:"));
+    LLOGLN(10, ("rdpProbe:"));
     if (flags & PROBE_DETECT)
     {
         return FALSE;
@@ -1002,7 +1002,7 @@ rdpProbe(DriverPtr drv, int flags)
 static const OptionInfoRec *
 rdpAvailableOptions(int chipid, int busid)
 {
-    LLOGLN(0, ("rdpAvailableOptions:"));
+    LLOGLN(10, ("rdpAvailableOptions:"));
     return 0;
 }
 
@@ -1032,7 +1032,7 @@ rdpDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr)
 static void
 rdpIdentify(int flags)
 {
-    LLOGLN(0, ("rdpIdentify:"));
+    LLOGLN(10, ("rdpIdentify:"));
     xf86PrintChipsets(XRDP_DRIVER_NAME, "driver for xrdp", g_Chipsets);
 }
 
@@ -1051,7 +1051,7 @@ _X_EXPORT DriverRec g_DriverRec =
 static pointer
 xrdpdevSetup(pointer module, pointer opts, int *errmaj, int *errmin)
 {
-    LLOGLN(0, ("xrdpdevSetup:"));
+    LLOGLN(10, ("xrdpdevSetup:"));
     if (!g_setup_done)
     {
         g_setup_done = 1;
@@ -1072,7 +1072,7 @@ xrdpdevSetup(pointer module, pointer opts, int *errmaj, int *errmin)
 static void
 xrdpdevTearDown(pointer Module)
 {
-    LLOGLN(0, ("xrdpdevTearDown:"));
+    LLOGLN(10, ("xrdpdevTearDown:"));
 }
 
 /* <drivername>ModuleData */

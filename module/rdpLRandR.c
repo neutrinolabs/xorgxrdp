@@ -985,7 +985,7 @@ ProcLRRDispatch(ClientPtr client)
 static int
 SProcLRRDispatch(ClientPtr client)
 {
-    LLOGLN(0, ("SProcLRRDispatch:"));
+    LLOGLN(10, ("SProcLRRDispatch:"));
     return 0;
 }
 
