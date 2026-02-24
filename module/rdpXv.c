@@ -55,10 +55,6 @@ XVideo
 
 static char g_xv_image[] = "XV_IMAGE";
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #define T_NUM_ENCODINGS 1
 static XF86VideoEncodingRec g_xrdpVidEncodings[T_NUM_ENCODINGS] =
 { { 0, g_xv_image, 2046, 2046, { 1, 1 } } };

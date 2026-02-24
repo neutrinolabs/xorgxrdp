@@ -40,6 +40,7 @@ SIMD function assigning
 #include "rdp.h"
 #include "rdpXv.h"
 #include "rdpCapture.h"
+#include "rdpMisc.h"
 #include "rdpSimd.h"
 
 /* use simd, run time */
@@ -57,10 +58,6 @@ int g_simd_use_accel = 1;
 #include "x86/funcs_x86.h"
 #endif
 #endif
-
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 #if SIMD_USE_ACCEL
 

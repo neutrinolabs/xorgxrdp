@@ -57,10 +57,6 @@ xrdp keyboard module
 #include "xrdp_scancode_defs.h"
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 /* A few hard-coded evdev keycodes (see g_evdev_str) */
 #define CAPS_LOCK_KEY_CODE 66
 #define NUM_LOCK_KEY_CODE 77

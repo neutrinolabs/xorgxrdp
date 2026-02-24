@@ -49,24 +49,13 @@ dri3
 #include <xf86Modes.h>
 
 #include "rdp.h"
+#include "rdpMisc.h"
 #include "rdpPri.h"
 
 #include <glamor.h>
 #include <dri3.h>
 
 extern char g_drm_device[]; /* in xrdpdev.c */
-
-#define LLOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-  do \
-  { \
-    if (_level < LLOG_LEVEL) \
-    { \
-      ErrorF _args ; \
-      ErrorF("\n"); \
-    } \
-  } \
-  while (0)
 
 /*****************************************************************************/
 static PixmapPtr

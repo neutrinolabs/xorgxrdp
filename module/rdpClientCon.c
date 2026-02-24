@@ -62,10 +62,6 @@ Client connection to xrdp
 #include "rdpRandRGrid.h"
 #endif
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #define LTOUI32(_in) ((unsigned int)(_in))
 
 #define USE_MAX_OS_BYTES 1

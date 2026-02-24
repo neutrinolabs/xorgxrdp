@@ -39,6 +39,7 @@ pixmap calls
 
 #include "rdp.h"
 #include "rdpDraw.h"
+#include "rdpMisc.h"
 #include "rdpPixmap.h"
 
 #ifndef XRDP_PIX
@@ -46,10 +47,6 @@ pixmap calls
 #endif
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #if XRDP_PIX == 2
 
 /*****************************************************************************/
