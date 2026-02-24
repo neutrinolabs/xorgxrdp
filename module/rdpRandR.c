@@ -55,11 +55,6 @@ RandR draw calls
 static int g_panning = 0;
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
-/******************************************************************************/
 Bool
 rdpRRRegisterSize(ScreenPtr pScreen, int width, int height)
 {

@@ -77,18 +77,6 @@ Bool g_use_dri3 = TRUE;
 char g_drm_allow_list[128] = "";
 #endif
 
-#define LLOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-  do \
-  { \
-    if (_level < LLOG_LEVEL) \
-    { \
-      ErrorF _args ; \
-      ErrorF("\n"); \
-    } \
-  } \
-  while (0)
-
 static int g_setup_done = 0;
 static OsTimerPtr g_randr_timer = 0;
 static OsTimerPtr g_damage_timer = 0;

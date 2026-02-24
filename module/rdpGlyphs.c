@@ -47,11 +47,6 @@ glyph (font) calls
 #include "rdpReg.h"
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
-/******************************************************************************/
 int
 rdpGlyphDeleteRdpText(struct rdp_text *rtext)
 {

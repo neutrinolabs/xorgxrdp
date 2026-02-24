@@ -55,10 +55,6 @@ capture
 #include <glamor.h>
 #endif
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #define RGB_SPLIT(A, R, G, B, pixel) \
     A = (pixel >> 24) & UCHAR_MAX; \
     R = (pixel >> 16) & UCHAR_MAX; \

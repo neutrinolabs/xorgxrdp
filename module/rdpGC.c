@@ -54,6 +54,7 @@ GC related calls
 #include "rdpPolyRectangle.h"
 #include "rdpPolyArc.h"
 #include "rdpFillPolygon.h"
+#include "rdpMisc.h"
 #include "rdpPolyFillRect.h"
 #include "rdpPolyFillArc.h"
 #include "rdpPolyText8.h"
@@ -65,11 +66,6 @@ GC related calls
 #include "rdpPushPixels.h"
 #include "rdpDraw.h"
 #include "rdpGC.h"
-
-/******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 #define GC_FUNC_VARS rdpPtr dev; rdpGCPtr priv;

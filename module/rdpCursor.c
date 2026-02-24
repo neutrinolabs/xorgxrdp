@@ -51,6 +51,7 @@ cursor
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
+#include "rdpMisc.h"
 #include "rdpCursor.h"
 
 #ifndef X_BYTE_ORDER
@@ -95,11 +96,6 @@ static uint8_t g_reverse_byte[0x100] =
     0x1f, 0x9f, 0x5f, 0xdf, 0x3f, 0xbf, 0x7f, 0xff
 };
 #endif
-
-/******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 Bool

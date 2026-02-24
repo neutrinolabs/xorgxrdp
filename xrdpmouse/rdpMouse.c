@@ -48,16 +48,13 @@ xrdp mouse module
 
 #include "rdp.h"
 #include "rdpInput.h"
+#include "rdpMisc.h"
 #include "rdpDraw.h"
 
 #define NBUTTONS 9
 #define NAXES 4
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 static char g_Mouse_str[] = XI_MOUSE;
 static char g_xrdp_mouse_name[] = XRDP_MOUSE_NAME;
 

@@ -54,10 +54,6 @@ xrdp keyboard module
 #include "rdpMisc.h"
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #define MIN_KEY_CODE 8
 #define MAX_KEY_CODE 255
 #define NO_OF_KEYS ((MAX_KEY_CODE - MIN_KEY_CODE) + 1)

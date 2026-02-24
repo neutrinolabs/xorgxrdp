@@ -284,10 +284,6 @@ void main()\n\
                         ((crc >> 24) & 0xFF) / 255.0);\n\
 }\n";
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 /******************************************************************************/
 void *
 rdpEglCreate(ScreenPtr screen)
