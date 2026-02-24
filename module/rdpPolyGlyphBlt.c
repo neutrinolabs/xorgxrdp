@@ -67,7 +67,7 @@ rdpPolyGlyphBlt(DrawablePtr pDrawable, GCPtr pGC,
     int cd;
     BoxRec box;
 
-    LLOGLN(0, ("rdpPolyGlyphBlt:"));
+    LLOGLN(10, ("rdpPolyGlyphBlt:"));
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolyGlyphBltCallCount++;
     GetTextBoundingBox(pDrawable, pGC->font, x, y, nglyph, &box);

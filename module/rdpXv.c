@@ -92,7 +92,7 @@ xrdpVidPutVideo(ScrnInfoPtr pScrn, short vid_x, short vid_y,
                 short drw_w, short drw_h, RegionPtr clipBoxes,
                 pointer data, DrawablePtr pDraw)
 {
-    LLOGLN(0, ("xrdpVidPutVideo:"));
+    LLOGLN(10, ("xrdpVidPutVideo:"));
     return Success;
 }
 
@@ -103,7 +103,7 @@ xrdpVidPutStill(ScrnInfoPtr pScrn, short vid_x, short vid_y,
                 short drw_w, short drw_h, RegionPtr clipBoxes,
                 pointer data, DrawablePtr pDraw)
 {
-    LLOGLN(0, ("xrdpVidPutStill:"));
+    LLOGLN(10, ("xrdpVidPutStill:"));
     return Success;
 }
 
@@ -114,7 +114,7 @@ xrdpVidGetVideo(ScrnInfoPtr pScrn, short vid_x, short vid_y,
                 short drw_w, short drw_h, RegionPtr clipBoxes,
                 pointer data, DrawablePtr pDraw)
 {
-    LLOGLN(0, ("xrdpVidGetVideo:"));
+    LLOGLN(10, ("xrdpVidGetVideo:"));
     return Success;
 }
 
@@ -125,7 +125,7 @@ xrdpVidGetStill(ScrnInfoPtr pScrn, short vid_x, short vid_y,
                 short drw_w, short drw_h, RegionPtr clipBoxes,
                 pointer data, DrawablePtr pDraw)
 {
-    LLOGLN(0, ("FBDevTIVidGetStill:"));
+    LLOGLN(10, ("FBDevTIVidGetStill:"));
     return Success;
 }
 
@@ -133,7 +133,7 @@ xrdpVidGetStill(ScrnInfoPtr pScrn, short vid_x, short vid_y,
 static void
 xrdpVidStopVideo(ScrnInfoPtr pScrn, pointer data, Bool Cleanup)
 {
-    LLOGLN(0, ("xrdpVidStopVideo:"));
+    LLOGLN(10, ("xrdpVidStopVideo:"));
 }
 
 /*****************************************************************************/
@@ -141,7 +141,7 @@ static int
 xrdpVidSetPortAttribute(ScrnInfoPtr pScrn, Atom attribute,
                         INT32 value, pointer data)
 {
-    LLOGLN(0, ("xrdpVidSetPortAttribute:"));
+    LLOGLN(10, ("xrdpVidSetPortAttribute:"));
     return Success;
 }
 
@@ -150,7 +150,7 @@ static int
 xrdpVidGetPortAttribute(ScrnInfoPtr pScrn, Atom attribute,
                         INT32 *value, pointer data)
 {
-    LLOGLN(0, ("xrdpVidGetPortAttribute:"));
+    LLOGLN(10, ("xrdpVidGetPortAttribute:"));
     return Success;
 }
 
@@ -160,7 +160,7 @@ xrdpVidQueryBestSize(ScrnInfoPtr pScrn, Bool motion,
                      short vid_w, short vid_h, short drw_w, short drw_h,
                      unsigned int *p_w, unsigned int *p_h, pointer data)
 {
-    LLOGLN(0, ("xrdpVidQueryBestSize:"));
+    LLOGLN(10, ("xrdpVidQueryBestSize:"));
 }
 
 /*****************************************************************************/
@@ -451,7 +451,7 @@ rdpDeferredXvCleanup(OsTimerPtr timer, CARD32 now, pointer arg)
 {
     rdpPtr dev;
 
-    LLOGLN(0, ("rdpDeferredXvCleanup:"));
+    LLOGLN(10, ("rdpDeferredXvCleanup:"));
     dev = (rdpPtr) arg;
     dev->xv_timer_scheduled = 0;
     dev->xv_data_bytes = 0;

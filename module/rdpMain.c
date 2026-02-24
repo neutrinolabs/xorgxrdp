@@ -57,7 +57,7 @@ static pointer
 xorgxrdpSetup(pointer Module, pointer Options,
               int *ErrorMajor, int *ErrorMinor)
 {
-    LLOGLN(0, ("xorgxrdpSetup:"));
+    LLOGLN(10, ("xorgxrdpSetup:"));
     if (!g_initialised)
     {
         g_initialised = TRUE;
@@ -71,14 +71,14 @@ xorgxrdpSetup(pointer Module, pointer Options,
 static void
 xorgxrdpTearDown(pointer Module)
 {
-    LLOGLN(0, ("xorgxrdpTearDown:"));
+    LLOGLN(10, ("xorgxrdpTearDown:"));
 }
 
 /*****************************************************************************/
 void
 xorgxrdpDownDown(ScreenPtr pScreen)
 {
-    LLOGLN(0, ("xorgxrdpDownDown:"));
+    LLOGLN(10, ("xorgxrdpDownDown:"));
     if (g_initialised)
     {
         g_initialised = FALSE;

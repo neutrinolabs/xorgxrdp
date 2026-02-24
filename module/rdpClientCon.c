@@ -210,7 +210,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     rdpClientCon *clientCon;
     int new_sck;
 
-    LLOGLN(0, ("rdpClientConGotConnection:"));
+    LLOGLN(10, ("rdpClientConGotConnection:"));
     clientCon = g_new0(rdpClientCon, 1);
     clientCon->shmemstatus = SHM_UNINITIALIZED;
     clientCon->updateRetries = 0;
@@ -361,7 +361,7 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
 {
     int index;
 
-    LLOGLN(0, ("rdpClientConDisconnect:"));
+    LLOGLN(10, ("rdpClientConDisconnect:"));
 
     if (dev->idleDisconnectTimer != NULL && dev->idle_disconnect_timeout_s > 0)
     {
@@ -767,6 +767,8 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
 
     enum shared_memory_status shmemstatus;
 
+    LLOGLN(10, ("rdpClientConResizeAllMemoryAreas:"));
+
     // Update the rdp size from the client size
     clientCon->rdp_width = width;
     clientCon->rdp_height = height;
@@ -1116,7 +1118,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     int bytes;
     int i1;
 
-    LLOGLN(0, ("rdpClientConProcessMsgClientInfo:"));
+    LLOGLN(10, ("rdpClientConProcessMsgClientInfo:"));
     s = clientCon->in_s;
     in_uint32_le(s, bytes);
     if (bytes > sizeof(clientCon->client_info))
@@ -1381,7 +1383,7 @@ static int
 rdpClientConGotControlConnection(ScreenPtr pScreen, rdpPtr dev,
                                  rdpClientCon *clientCon)
 {
-    LLOGLN(0, ("rdpClientConGotControlConnection:"));
+    LLOGLN(10, ("rdpClientConGotControlConnection:"));
     return 0;
 }
 
@@ -1390,7 +1392,7 @@ static int
 rdpClientConGotControlData(ScreenPtr pScreen, rdpPtr dev,
                            rdpClientCon *clientCon)
 {
-    LLOGLN(0, ("rdpClientConGotControlData:"));
+    LLOGLN(10, ("rdpClientConGotControlData:"));
     return 0;
 }
 
@@ -1668,7 +1670,7 @@ rdpClientConInit(rdpPtr dev)
 int
 rdpClientConDeinit(rdpPtr dev)
 {
-    LLOGLN(0, ("rdpClientConDeinit:"));
+    LLOGLN(10, ("rdpClientConDeinit:"));
 
     while (dev->clientConTail != NULL)
     {

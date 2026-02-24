@@ -360,7 +360,7 @@ rdpCloseScreen(int index, ScreenPtr pScreen)
     rdpPtr dev;
     Bool rv;
 
-    LLOGLN(0, ("rdpCloseScreen:"));
+    LLOGLN(10, ("rdpCloseScreen:"));
     dev = rdpGetDevFromScreen(pScreen);
     dev->pScreen->CloseScreen = dev->CloseScreen;
     rv = dev->pScreen->CloseScreen(index, pScreen);
@@ -378,7 +378,7 @@ rdpCloseScreen(ScreenPtr pScreen)
     rdpPtr dev;
     Bool rv;
 
-    LLOGLN(0, ("rdpCloseScreen:"));
+    LLOGLN(10, ("rdpCloseScreen:"));
     dev = rdpGetDevFromScreen(pScreen);
     dev->pScreen->CloseScreen = dev->CloseScreen;
     rv = dev->pScreen->CloseScreen(pScreen);

@@ -57,7 +57,7 @@ void
 rdpFillSpans(DrawablePtr pDrawable, GCPtr pGC, int nInit,
              DDXPointPtr pptInit, int *pwidthInit, int fSorted)
 {
-    LLOGLN(0, ("rdpFillSpans:"));
+    LLOGLN(10, ("rdpFillSpans:"));
     /* do original call */
     rdpFillSpansOrg(pDrawable, pGC, nInit, pptInit, pwidthInit, fSorted);
 }

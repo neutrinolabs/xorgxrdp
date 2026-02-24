@@ -67,7 +67,7 @@ rdpImageGlyphBlt(DrawablePtr pDrawable, GCPtr pGC,
     int cd;
     BoxRec box;
 
-    LLOGLN(0, ("rdpImageGlyphBlt:"));
+    LLOGLN(10, ("rdpImageGlyphBlt:"));
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpImageGlyphBltCallCount++;
     GetTextBoundingBox(pDrawable, pGC->font, x, y, nglyph, &box);
