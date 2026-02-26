@@ -66,7 +66,7 @@ rdpPolyFillArc(DrawablePtr pDrawable, GCPtr pGC, int narcs, xArc *parcs)
     RegionRec clip_reg;
     RegionRec reg;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyFillArc:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyFillArc:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolyFillArcCallCount++;
     rdpRegionInit(&reg, NullBox, 0);
@@ -89,7 +89,7 @@ rdpPolyFillArc(DrawablePtr pDrawable, GCPtr pGC, int narcs, xArc *parcs)
     }
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyFillArc: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyFillArc: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

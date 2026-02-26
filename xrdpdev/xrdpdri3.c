@@ -65,9 +65,9 @@ rdpDri3PixmapFromFd(ScreenPtr screen, int fd,
 {
     PixmapPtr rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3PixmapFromFd:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3PixmapFromFd:");
     rv = glamor_pixmap_from_fd(screen, fd, width, height, stride, depth, bpp);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv);
     return rv;
 }
 
@@ -78,9 +78,9 @@ rdpDri3FdFromPixmap(ScreenPtr screen, PixmapPtr pixmap,
 {
     int rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3FdFromPixmap:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3FdFromPixmap:");
     rv = glamor_fd_from_pixmap(screen, pixmap, stride, size);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap);
     return rv;
 }
 
@@ -91,9 +91,9 @@ rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
 {
     int fd;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3OpenClient:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3OpenClient:");
     fd = open(g_drm_device, O_RDWR | O_CLOEXEC);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3OpenClient: fd %d", fd));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3OpenClient: fd %d", fd);
     if (fd < 0)
     {
         return BadAlloc;
@@ -113,10 +113,10 @@ rdpDri3PixmapFromFds(ScreenPtr screen, CARD8 num_fds, const int *fds,
 {
     PixmapPtr rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3PixmapFromFds:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3PixmapFromFds:");
     rv = glamor_pixmap_from_fds(screen, num_fds, fds, width, height, strides,
                                   offsets, depth, bpp, modifier);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3PixmapFromFds: pixmap %p", rv));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3PixmapFromFds: pixmap %p", rv);
     return rv;
 }
 
@@ -128,9 +128,9 @@ rdpDri3FdsFromPixmap(ScreenPtr screen, PixmapPtr pixmap, int *fds,
 {
     int rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3FdsFromPixmap:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3FdsFromPixmap:");
     rv = glamor_fds_from_pixmap(screen, pixmap, fds, strides, offsets, modifier);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3FdsFromPixmap: pixmap %p", pixmap));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3FdsFromPixmap: pixmap %p", pixmap);
     return rv;
 }
 
@@ -140,9 +140,9 @@ rdpDri3GetFormats(ScreenPtr screen, CARD32 *num_formats, CARD32 **formats)
 {
     int rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3GetFormats:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3GetFormats:");
     rv = glamor_get_formats(screen, num_formats, formats);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3GetFormats: rv %d", rv));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3GetFormats: rv %d", rv);
     return rv;
 }
 
@@ -153,9 +153,9 @@ rdpDri3GetModifiers(ScreenPtr screen, uint32_t format,
 {
     int rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3GetModifiers:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3GetModifiers:");
     rv = glamor_get_modifiers(screen, format, num_modifiers, modifiers);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3GetModifiers: rv %d", rv));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3GetModifiers: rv %d", rv);
     return rv;
 }
 
@@ -166,9 +166,9 @@ rdpDri3GetDrawableModifiers(DrawablePtr draw, uint32_t format,
 {
     int rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3GetDrawableModifiers:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3GetDrawableModifiers:");
     rv = glamor_get_drawable_modifiers(draw, format, num_modifiers, modifiers);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3GetDrawableModifiers: draw %p rv %d", draw, rv));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3GetDrawableModifiers: draw %p rv %d", draw, rv);
     return rv;
 }
 
@@ -193,10 +193,10 @@ rdpDri3Init(ScreenPtr pScreen)
     rdp_dri3_info.get_modifiers = rdpDri3GetModifiers;
     rdp_dri3_info.get_drawable_modifiers = rdpDri3GetDrawableModifiers;
 #endif
-    LLOGLN(LOG_LEVEL_INFO, ("rdpDri3Init: rdp_dri3_info.version = %lu", (unsigned long)rdp_dri3_info.version));
+    LOG(LOG_LEVEL_INFO, "rdpDri3Init: rdp_dri3_info.version = %lu", (unsigned long)rdp_dri3_info.version);
     if (!dri3_screen_init(pScreen, &rdp_dri3_info))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpDri3Init: dri3_screen_init failed"));
+        LOG(LOG_LEVEL_INFO, "rdpDri3Init: dri3_screen_init failed");
         return 1;
     }
     return 0;

@@ -100,7 +100,7 @@ xorgxrdpPreInit(ScrnInfoPtr pScrn, int flags)
     Bool rv;
     const char *env;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpPreInit:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpPreInit:");
     env = getenv("XRDP_NVIDIA_GRID");
     if (env != NULL)
     {
@@ -160,7 +160,7 @@ rdpCreateScreenResources(ScreenPtr pScreen)
     Bool ret;
     rdpPtr dev;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpCreateScreenResources:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCreateScreenResources:");
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreateScreenResources = dev->CreateScreenResources;
     ret = pScreen->CreateScreenResources(pScreen);
@@ -188,7 +188,7 @@ xorgxrdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     rdpPtr dev;
     rrScrPrivPtr pRRScrPriv;
 
-    LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpRRScreenSetSize: width %d height %d", width, height));
+    LOG(LOG_LEVEL_INFO, "xorgxrdpRRScreenSetSize: width %d height %d", width, height);
     dev = rdpGetDevFromScreen(pScreen);
 
     pRRScrPriv = rrGetScrPriv(pScreen);
@@ -208,9 +208,9 @@ xorgxrdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     dev->paddedWidthInBytes = dev->screenSwPixmap->devKind;
     dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
 
-    LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpRRScreenSetSize: screenInfo x %d y %d "
+    LOG(LOG_LEVEL_INFO, "xorgxrdpRRScreenSetSize: screenInfo x %d y %d "
            "width %d height %d", screenInfo.x, screenInfo.y,
-           screenInfo.width, screenInfo.height));
+           screenInfo.width, screenInfo.height);
 
     return rv;
 }
@@ -222,7 +222,7 @@ xorgxrdpDamageReport(DamagePtr pDamage, RegionPtr pRegion, void *closure)
     rdpPtr dev;
     ScreenPtr pScreen;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpDamageReport:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpDamageReport:");
     pScreen = (ScreenPtr)closure;
     dev = rdpGetDevFromScreen(pScreen);
     rdpClientConAddAllReg(dev, pRegion, &(pScreen->root->drawable));
@@ -232,7 +232,7 @@ xorgxrdpDamageReport(DamagePtr pDamage, RegionPtr pRegion, void *closure)
 static void
 xorgxrdpDamageDestroy(DamagePtr pDamage, void *closure)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpDamageDestroy:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpDamageDestroy:");
 }
 
 #ifdef XACE_DISABLE_DRI3_PRESENT
@@ -241,16 +241,16 @@ static void
 xorgxrdpExtension(CallbackListPtr *pcbl, void *unused, void *calldata)
 {
     XaceExtAccessRec *rec = calldata;
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpExtension:"));
-    LLOGLN(LOG_LEVEL_TRACE, ("  name %s", rec->ext->name));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpExtension:");
+    LOG(LOG_LEVEL_TRACE, "  name %s", rec->ext->name);
     if (strcmp(rec->ext->name, "DRI3") == 0)
     {
-        LLOGLN(LOG_LEVEL_TRACE, ("  disabling name %s", rec->ext->name));
+        LOG(LOG_LEVEL_TRACE, "  disabling name %s", rec->ext->name);
         rec->status = BadValue;
     }
     if (strcmp(rec->ext->name, "Present") == 0)
     {
-        LLOGLN(LOG_LEVEL_TRACE, ("  disabling name %s", rec->ext->name));
+        LOG(LOG_LEVEL_TRACE, "  disabling name %s", rec->ext->name);
         rec->status = BadValue;
     }
 }
@@ -264,7 +264,7 @@ xorgxrdpDeferredStartup(OsTimerPtr timer, CARD32 now, pointer arg)
     rdpPtr dev;
     ScreenPtr pScreen;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpDeferredStartup:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpDeferredStartup:");
     pScreen = (ScreenPtr)arg;
     if (pScreen->root != NULL)
     {
@@ -282,7 +282,7 @@ xorgxrdpDeferredStartup(OsTimerPtr timer, CARD32 now, pointer arg)
         {
             DamageSetReportAfterOp(dev->damage, TRUE);
             DamageRegister(&(pScreen->root->drawable), dev->damage);
-            LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpSetupDamage: DamageRegister ok"));
+            LOG(LOG_LEVEL_INFO, "xorgxrdpSetupDamage: DamageRegister ok");
             TimerFree(g_timer);
             g_timer = NULL;
 #ifdef XACE_DISABLE_DRI3_PRESENT
@@ -309,7 +309,7 @@ xorgxrdpScreenInit(ScreenPtr pScreen, int argc, char** argv)
     miPointerScreenPtr PointPriv;
     rrScrPrivPtr pRRScrPriv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpScreenInit:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpScreenInit:");
     rv = g_orgScreenInit(pScreen, argc, argv);
     if (rv)
     {
@@ -317,7 +317,7 @@ xorgxrdpScreenInit(ScreenPtr pScreen, int argc, char** argv)
         dev = XRDPPTR(pScrn);
         dev->nvidia = TRUE;
         dev->nvidia_grid = g_nvidia_grid;
-        LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpScreenInit: nvidia_grid %d", dev->nvidia_grid));
+        LOG(LOG_LEVEL_INFO, "xorgxrdpScreenInit: nvidia_grid %d", dev->nvidia_grid);
         dev->pScreen = pScreen;
         dev->depth = pScrn->depth;
         dev->width = pScrn->virtualX;
@@ -326,7 +326,7 @@ xorgxrdpScreenInit(ScreenPtr pScreen, int argc, char** argv)
         dev->bitsPerPixel = rdpBitsPerPixel(dev->depth);
         dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
 
-        LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpScreenInit: width %d height %d", dev->width, dev->height));
+        LOG(LOG_LEVEL_INFO, "xorgxrdpScreenInit: width %d height %d", dev->width, dev->height);
 
         PointPriv = dixLookupPrivate(&pScreen->devPrivates, miPointerScreenKey);
         PointPriv->spriteFuncs = &g_rdpSpritePointerFuncs;
@@ -379,7 +379,7 @@ xorgxrdpScreenInit(ScreenPtr pScreen, int argc, char** argv)
 
         if (rdpClientConInit(dev) != 0)
         {
-            LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpScreenInit: rdpClientConInit failed"));
+            LOG(LOG_LEVEL_INFO, "xorgxrdpScreenInit: rdpClientConInit failed");
         }
 
         dev->Bpp_mask = 0x00FFFFFF;
@@ -427,12 +427,12 @@ xorgxrdpWrapPreIntScreenInit(Bool ok)
             }
             else
             {
-                LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpWrapPreIntScreenInit: error"));
+                LOG(LOG_LEVEL_INFO, "xorgxrdpWrapPreIntScreenInit: error");
             }
         }
         else
         {
-            LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpWrapPreIntScreenInit: error"));
+            LOG(LOG_LEVEL_INFO, "xorgxrdpWrapPreIntScreenInit: error");
         }
     }
     return ok;
@@ -445,7 +445,7 @@ xorgxrdpPciProbe(struct _DriverRec * drv, int entity_num,
 {
     Bool rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpPciProbe:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpPciProbe:");
     rv = g_saved_driver.PciProbe(drv, entity_num, dev, match_data);
     return xorgxrdpWrapPreIntScreenInit(rv);
 }
@@ -457,7 +457,7 @@ xorgxrdpPlatformProbe(struct _DriverRec * drv, int entity_num, int flags,
 {
     Bool rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpPlatformProbe:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpPlatformProbe:");
     rv = g_saved_driver.platformProbe(drv, entity_num, flags, dev, match_data);
     return xorgxrdpWrapPreIntScreenInit(rv);
 }
@@ -469,7 +469,7 @@ xorgxrdpDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr)
     xorgHWFlags *flags;
     Bool rv;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpDriverFunc:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpDriverFunc:");
     rv = g_saved_driver.driverFunc(pScrn, op, ptr);
     if (op == GET_REQUIRED_HW_INTERFACES)
     {
@@ -501,7 +501,7 @@ xorgxrdpCheckWrap(void)
     {
         g_saved_driver = *(xf86DriverList[0]);
         g_nvidia_wrap_done = TRUE;
-        LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpCheckWrap: NVIDIA driver found"));
+        LOG(LOG_LEVEL_INFO, "xorgxrdpCheckWrap: NVIDIA driver found");
         xf86DriverList[0]->PciProbe = xorgxrdpPciProbe;
         xf86DriverList[0]->platformProbe = xorgxrdpPlatformProbe;
         xf86DriverList[0]->driverFunc = xorgxrdpDriverFunc;
@@ -514,7 +514,7 @@ static pointer
 xorgxrdpSetup(pointer Module, pointer Options,
               int *ErrorMajor, int *ErrorMinor)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpSetup:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpSetup:");
     if (!g_initialised)
     {
         g_initialised = TRUE;
@@ -528,18 +528,18 @@ xorgxrdpSetup(pointer Module, pointer Options,
 static void
 xorgxrdpTearDown(pointer Module)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpTearDown:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpTearDown:");
 }
 
 /*****************************************************************************/
 void
 xorgxrdpDownDown(ScreenPtr pScreen)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpDownDown:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpDownDown:");
     if (g_initialised)
     {
         g_initialised = FALSE;
-        LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpDownDown: 1"));
+        LOG(LOG_LEVEL_INFO, "xorgxrdpDownDown: 1");
         rdpClientConDeinit(rdpGetDevFromScreen(pScreen));
     }
 }

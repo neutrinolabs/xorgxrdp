@@ -72,7 +72,7 @@ rdpComposite(CARD8 op, PicturePtr pSrc, PicturePtr pMask, PicturePtr pDst,
     BoxRec box;
     RegionRec reg;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpComposite:"));
+    LOG(LOG_LEVEL_TRACE, "rdpComposite:");
     pScreen = pDst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     dev->counts.rdpCompositeCallCount++;

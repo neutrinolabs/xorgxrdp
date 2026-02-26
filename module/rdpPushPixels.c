@@ -57,7 +57,7 @@ void
 rdpPushPixels(GCPtr pGC, PixmapPtr pBitMap, DrawablePtr pDst,
               int w, int h, int x, int y)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPushPixels:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPushPixels:");
     /* do original call */
     rdpPushPixelsOrg(pGC, pBitMap, pDst, w, h, x, y);
 }

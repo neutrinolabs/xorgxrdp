@@ -74,7 +74,7 @@ rdpFillPolygon(DrawablePtr pDrawable, GCPtr pGC,
     int y;
     BoxRec box;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpFillPolygon:"));
+    LOG(LOG_LEVEL_TRACE, "rdpFillPolygon:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpFillPolygonCallCount++;
     box.x1 = 0;
@@ -104,7 +104,7 @@ rdpFillPolygon(DrawablePtr pDrawable, GCPtr pGC,
     rdpRegionInit(&reg, &box, 0);
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpFillPolygon: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpFillPolygon: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);
