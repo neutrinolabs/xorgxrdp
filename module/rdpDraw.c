@@ -51,10 +51,6 @@ misc draw calls
 #include "rdpReg.h"
 #include "rdpMain.h"
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #if !defined(XORG_VERSION_CURRENT)
 #warning XORG_VERSION_CURRENT not defined
 #endif
@@ -364,7 +360,7 @@ rdpCloseScreen(int index, ScreenPtr pScreen)
     rdpPtr dev;
     Bool rv;
 
-    LLOGLN(0, ("rdpCloseScreen:"));
+    LLOGLN(10, ("rdpCloseScreen:"));
     dev = rdpGetDevFromScreen(pScreen);
     dev->pScreen->CloseScreen = dev->CloseScreen;
     rv = dev->pScreen->CloseScreen(index, pScreen);
@@ -382,7 +378,7 @@ rdpCloseScreen(ScreenPtr pScreen)
     rdpPtr dev;
     Bool rv;
 
-    LLOGLN(0, ("rdpCloseScreen:"));
+    LLOGLN(10, ("rdpCloseScreen:"));
     dev = rdpGetDevFromScreen(pScreen);
     dev->pScreen->CloseScreen = dev->CloseScreen;
     rv = dev->pScreen->CloseScreen(pScreen);

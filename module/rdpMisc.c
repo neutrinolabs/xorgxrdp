@@ -647,3 +647,46 @@ g_free_unmap_fd(void *addr, int fd, size_t size)
     munmap(addr, size);
     close(fd);
 }
+
+/******************************************************************************/
+void
+g_log_info(const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    LogVMessageVerb(X_INFO, 0, format, ap);
+    va_end(ap);
+    // Also need to terminate message. This seems the simplest way.
+    va_start(ap, format);
+    LogVMessageVerb(X_NONE, 0, "\n", ap);
+    va_end(ap);
+}
+
+/******************************************************************************/
+void
+g_log_debug(const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    LogVMessageVerb(X_DEBUG, 1, format, ap);
+    va_end(ap);
+    va_start(ap, format);
+    LogVMessageVerb(X_NONE, 1, "\n", ap);
+    va_end(ap);
+}
+
+/******************************************************************************/
+void
+g_log_trace(const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    LogVMessageVerb(X_DEBUG, 2, format, ap);
+    va_end(ap);
+    va_start(ap, format);
+    LogVMessageVerb(X_NONE, 2, "\n", ap);
+    va_end(ap);
+}

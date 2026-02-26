@@ -33,10 +33,10 @@ the rest
 #include <config_ac.h>
 
 #if defined(HAVE_FUNC_ATTRIBUTE_FORMAT)
-#define printflike(arg_format, arg_first_check) \
+#define PRINTFLIKE(arg_format, arg_first_check) \
  __attribute__((__format__(__printf__, arg_format, arg_first_check)))
 #else
-#define printflike(arg_format, arg_first_check)
+#define PRINTFLIKE(arg_format, arg_first_check)
 #endif
 
 
@@ -62,7 +62,7 @@ g_sleep(int msecs);
 extern _X_EXPORT int
 g_sck_send(int sck, const void *ptr, int len, int flags);
 extern _X_EXPORT void
-g_sprintf(char *dest, const char *format, ...);
+g_sprintf(char *dest, const char *format, ...) PRINTFLIKE(2,3);
 extern _X_EXPORT int
 g_snprintf(char *dest, unsigned int dest_size, const char *format, ...);
 extern _X_EXPORT int
@@ -108,6 +108,27 @@ extern _X_EXPORT int
 g_alloc_map_fd(void **addr, int *fd, size_t size);
 extern _X_EXPORT void
 g_free_unmap_fd(void *addr, int fd, size_t size);
+
+/* Logging. Use these for new code */
+extern _X_EXPORT void
+g_log_info(const char *format, ...) PRINTFLIKE(1,2);
+extern _X_EXPORT void
+g_log_debug(const char *format, ...) PRINTFLIKE(1,2);
+extern _X_EXPORT void
+g_log_trace(const char *format, ...) PRINTFLIKE(1,2);
+
+/* Legacy logging macro
+ *
+ * Remove when unused
+ *
+ * _level : 0=Info, 1=Debug, 10=Trace
+ * _args : Argument to logging function
+ */
+#define LLOGLN(_level, _args) \
+{ \
+    ((_level > 1) ? g_log_trace : \
+     (_level == 1) ? g_log_debug : g_log_info) _args; \
+}
 
 /* glib-style memory allocation macros */
 #define g_new(struct_type, n_structs) \

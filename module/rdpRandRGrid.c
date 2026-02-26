@@ -47,10 +47,6 @@ NVidia Grid RandR
 #define NV_GRID_END_CMD_MAX 2048
 #define NV_GRID_CMD_FILE ".xrdp_grid_xrandr.sh"
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 struct monitor_t
 {
     int flags;

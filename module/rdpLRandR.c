@@ -25,10 +25,6 @@
 #endif
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 /* 
             start   end
 crtc ids    1       16
@@ -989,7 +985,7 @@ ProcLRRDispatch(ClientPtr client)
 static int
 SProcLRRDispatch(ClientPtr client)
 {
-    LLOGLN(0, ("SProcLRRDispatch:"));
+    LLOGLN(10, ("SProcLRRDispatch:"));
     return 0;
 }
 

@@ -55,11 +55,6 @@ RandR draw calls
 static int g_panning = 0;
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
-/******************************************************************************/
 Bool
 rdpRRRegisterSize(ScreenPtr pScreen, int width, int height)
 {
@@ -83,7 +78,7 @@ Bool
 rdpRRSetConfig(ScreenPtr pScreen, Rotation rotateKind, int rate,
                RRScreenSizePtr pSize)
 {
-    LLOGLN(0, ("rdpRRSetConfig:"));
+    LLOGLN(10, ("rdpRRSetConfig:"));
     return TRUE;
 }
 
@@ -91,7 +86,7 @@ rdpRRSetConfig(ScreenPtr pScreen, Rotation rotateKind, int rate,
 Bool
 rdpRRGetInfo(ScreenPtr pScreen, Rotation *pRotations)
 {
-    LLOGLN(0, ("rdpRRGetInfo:"));
+    LLOGLN(10, ("rdpRRGetInfo:"));
     *pRotations = RR_Rotate_0;
     return TRUE;
 }
@@ -220,7 +215,7 @@ rdpRRCrtcSet(ScreenPtr pScreen, RRCrtcPtr crtc, RRModePtr mode,
              int x, int y, Rotation rotation, int numOutputs,
              RROutputPtr *outputs)
 {
-    LLOGLN(0, ("rdpRRCrtcSet:"));
+    LLOGLN(10, ("rdpRRCrtcSet:"));
     return TRUE;
 }
 
@@ -228,7 +223,7 @@ rdpRRCrtcSet(ScreenPtr pScreen, RRCrtcPtr crtc, RRModePtr mode,
 Bool
 rdpRRCrtcSetGamma(ScreenPtr pScreen, RRCrtcPtr crtc)
 {
-    LLOGLN(0, ("rdpRRCrtcSetGamma:"));
+    LLOGLN(10, ("rdpRRCrtcSetGamma:"));
     return TRUE;
 }
 
@@ -246,7 +241,7 @@ Bool
 rdpRROutputSetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property,
                        RRPropertyValuePtr value)
 {
-    LLOGLN(0, ("rdpRROutputSetProperty:"));
+    LLOGLN(10, ("rdpRROutputSetProperty:"));
     return TRUE;
 }
 
@@ -255,7 +250,7 @@ Bool
 rdpRROutputValidateMode(ScreenPtr pScreen, RROutputPtr output,
                         RRModePtr mode)
 {
-    LLOGLN(0, ("rdpRROutputValidateMode:"));
+    LLOGLN(10, ("rdpRROutputValidateMode:"));
     return TRUE;
 }
 
@@ -263,14 +258,14 @@ rdpRROutputValidateMode(ScreenPtr pScreen, RROutputPtr output,
 void
 rdpRRModeDestroy(ScreenPtr pScreen, RRModePtr mode)
 {
-    LLOGLN(0, ("rdpRRModeDestroy:"));
+    LLOGLN(10, ("rdpRRModeDestroy:"));
 }
 
 /******************************************************************************/
 Bool
 rdpRROutputGetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property)
 {
-    LLOGLN(0, ("rdpRROutputGetProperty:"));
+    LLOGLN(10, ("rdpRROutputGetProperty:"));
     return TRUE;
 }
 
@@ -365,7 +360,7 @@ Bool
 rdpRRSetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
                 BoxPtr trackingArea, INT16 *border)
 {
-    LLOGLN(0, ("rdpRRSetPanning:"));
+    LLOGLN(10, ("rdpRRSetPanning:"));
     return TRUE;
 }
 
@@ -423,7 +418,7 @@ rdpRRConnectOutput(RROutputPtr output, RRCrtcPtr crtc,
     char name[64];
     const int vfreq = 50;
 
-    LLOGLN(0, ("rdpRRConnectOutput:"));
+    LLOGLN(10, ("rdpRRConnectOutput:"));
     sprintf (name, "%dx%d", width, height);
     modeInfo.width = width;
     modeInfo.height = height;

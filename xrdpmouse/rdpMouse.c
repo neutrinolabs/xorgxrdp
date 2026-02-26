@@ -48,16 +48,13 @@ xrdp mouse module
 
 #include "rdp.h"
 #include "rdpInput.h"
+#include "rdpMisc.h"
 #include "rdpDraw.h"
 
 #define NBUTTONS 9
 #define NAXES 4
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 static char g_Mouse_str[] = XI_MOUSE;
 static char g_xrdp_mouse_name[] = XRDP_MOUSE_NAME;
 
@@ -65,28 +62,28 @@ static char g_xrdp_mouse_name[] = XRDP_MOUSE_NAME;
 static void
 rdpmouseDeviceInit(void)
 {
-    LLOGLN(0, ("rdpmouseDeviceInit:"));
+    LLOGLN(10, ("rdpmouseDeviceInit:"));
 }
 
 /******************************************************************************/
 static void
 rdpmouseDeviceOn(DeviceIntPtr pDev)
 {
-    LLOGLN(0, ("rdpmouseDeviceOn:"));
+    LLOGLN(10, ("rdpmouseDeviceOn:"));
 }
 
 /******************************************************************************/
 static void
 rdpmouseDeviceOff(void)
 {
-    LLOGLN(0, ("rdpmouseDeviceOff:"));
+    LLOGLN(10, ("rdpmouseDeviceOff:"));
 }
 
 /******************************************************************************/
 static void
 rdpmouseCtrl(DeviceIntPtr pDevice, PtrCtrl *pCtrl)
 {
-    LLOGLN(0, ("rdpmouseCtrl:"));
+    LLOGLN(10, ("rdpmouseCtrl:"));
 }
 
 /******************************************************************************/
@@ -449,7 +446,7 @@ static InputDriverRec rdpmouse =
 static pointer
 rdpmousePlug(pointer module, pointer options, int *errmaj, int *errmin)
 {
-    LLOGLN(0, ("rdpmousePlug:"));
+    LLOGLN(10, ("rdpmousePlug:"));
     xf86AddInputDriver(&rdpmouse, module, 0);
     return module;
 }
@@ -458,7 +455,7 @@ rdpmousePlug(pointer module, pointer options, int *errmaj, int *errmin)
 static void
 rdpmouseUnplug(pointer p)
 {
-    LLOGLN(0, ("rdpmouseUnplug:"));
+    LLOGLN(10, ("rdpmouseUnplug:"));
 }
 
 /******************************************************************************/

@@ -80,10 +80,6 @@ rdp module main
 #endif
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 static Bool g_initialised = FALSE;
 
 static Bool g_nvidia_wrap_done = FALSE;
@@ -104,7 +100,7 @@ xorgxrdpPreInit(ScrnInfoPtr pScrn, int flags)
     Bool rv;
     const char *env;
 
-    LLOGLN(0, ("xorgxrdpPreInit:"));
+    LLOGLN(10, ("xorgxrdpPreInit:"));
     env = getenv("XRDP_NVIDIA_GRID");
     if (env != NULL)
     {
@@ -164,7 +160,7 @@ rdpCreateScreenResources(ScreenPtr pScreen)
     Bool ret;
     rdpPtr dev;
 
-    LLOGLN(0, ("rdpCreateScreenResources:"));
+    LLOGLN(10, ("rdpCreateScreenResources:"));
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreateScreenResources = dev->CreateScreenResources;
     ret = pScreen->CreateScreenResources(pScreen);
@@ -236,7 +232,7 @@ xorgxrdpDamageReport(DamagePtr pDamage, RegionPtr pRegion, void *closure)
 static void
 xorgxrdpDamageDestroy(DamagePtr pDamage, void *closure)
 {
-    LLOGLN(0, ("xorgxrdpDamageDestroy:"));
+    LLOGLN(10, ("xorgxrdpDamageDestroy:"));
 }
 
 #ifdef XACE_DISABLE_DRI3_PRESENT
@@ -268,7 +264,7 @@ xorgxrdpDeferredStartup(OsTimerPtr timer, CARD32 now, pointer arg)
     rdpPtr dev;
     ScreenPtr pScreen;
 
-    LLOGLN(0, ("xorgxrdpDeferredStartup:"));
+    LLOGLN(10, ("xorgxrdpDeferredStartup:"));
     pScreen = (ScreenPtr)arg;
     if (pScreen->root != NULL)
     {
@@ -313,7 +309,7 @@ xorgxrdpScreenInit(ScreenPtr pScreen, int argc, char** argv)
     miPointerScreenPtr PointPriv;
     rrScrPrivPtr pRRScrPriv;
 
-    LLOGLN(0, ("xorgxrdpScreenInit:"));
+    LLOGLN(10, ("xorgxrdpScreenInit:"));
     rv = g_orgScreenInit(pScreen, argc, argv);
     if (rv)
     {
@@ -449,7 +445,7 @@ xorgxrdpPciProbe(struct _DriverRec * drv, int entity_num,
 {
     Bool rv;
 
-    LLOGLN(0, ("xorgxrdpPciProbe:"));
+    LLOGLN(10, ("xorgxrdpPciProbe:"));
     rv = g_saved_driver.PciProbe(drv, entity_num, dev, match_data);
     return xorgxrdpWrapPreIntScreenInit(rv);
 }
@@ -461,7 +457,7 @@ xorgxrdpPlatformProbe(struct _DriverRec * drv, int entity_num, int flags,
 {
     Bool rv;
 
-    LLOGLN(0, ("xorgxrdpPlatformProbe:"));
+    LLOGLN(10, ("xorgxrdpPlatformProbe:"));
     rv = g_saved_driver.platformProbe(drv, entity_num, flags, dev, match_data);
     return xorgxrdpWrapPreIntScreenInit(rv);
 }
@@ -473,7 +469,7 @@ xorgxrdpDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr)
     xorgHWFlags *flags;
     Bool rv;
 
-    LLOGLN(0, ("xorgxrdpDriverFunc:"));
+    LLOGLN(10, ("xorgxrdpDriverFunc:"));
     rv = g_saved_driver.driverFunc(pScrn, op, ptr);
     if (op == GET_REQUIRED_HW_INTERFACES)
     {
@@ -518,7 +514,7 @@ static pointer
 xorgxrdpSetup(pointer Module, pointer Options,
               int *ErrorMajor, int *ErrorMinor)
 {
-    LLOGLN(0, ("xorgxrdpSetup:"));
+    LLOGLN(10, ("xorgxrdpSetup:"));
     if (!g_initialised)
     {
         g_initialised = TRUE;
@@ -532,14 +528,14 @@ xorgxrdpSetup(pointer Module, pointer Options,
 static void
 xorgxrdpTearDown(pointer Module)
 {
-    LLOGLN(0, ("xorgxrdpTearDown:"));
+    LLOGLN(10, ("xorgxrdpTearDown:"));
 }
 
 /*****************************************************************************/
 void
 xorgxrdpDownDown(ScreenPtr pScreen)
 {
-    LLOGLN(0, ("xorgxrdpDownDown:"));
+    LLOGLN(10, ("xorgxrdpDownDown:"));
     if (g_initialised)
     {
         g_initialised = FALSE;

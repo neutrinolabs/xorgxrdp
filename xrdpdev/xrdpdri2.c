@@ -51,24 +51,13 @@ dri2
 #include <xf86Modes.h>
 
 #include "rdp.h"
+#include "rdpMisc.h"
 #include "rdpPri.h"
 #include "rdpDraw.h"
 
 #if defined(XORGXRDP_GLAMOR)
 #include <glamor.h>
 #endif
-
-#define LLOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-  do \
-  { \
-    if (_level < LLOG_LEVEL) \
-    { \
-      ErrorF _args ; \
-      ErrorF("\n"); \
-    } \
-  } \
-  while (0)
 
 static DevPrivateKeyRec g_rdpDri2ClientKey;
 
