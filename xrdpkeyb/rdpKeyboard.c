@@ -128,9 +128,9 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
     int type = down ? KeyPress : KeyRelease;
 
     LOG(LOG_LEVEL_DEBUG, "KbdAddEvent: down=%d RDP scancode=%03x "
-           "PDU keyCode=%04x PDU keyboardFlags=%04x X11 keycode=%04x",
-           down, rdp_scancode,
-           param3, param4, x_keycode);
+        "PDU keyCode=%04x PDU keyboardFlags=%04x X11 keycode=%04x",
+        down, rdp_scancode,
+        param3, param4, x_keycode);
 
     if (keyboard->skip_numlock)
     {
@@ -433,7 +433,7 @@ rdpkeybPreInit(InputDriverPtr drv, IDevPtr dev, int flags)
     InputInfoPtr info;
 
     LOG(LOG_LEVEL_INFO, "rdpkeybPreInit: drv %p dev %p, flags 0x%x",
-           drv, dev, flags);
+        drv, dev, flags);
     info = xf86AllocateInput(drv, 0);
     info->name = dev->identifier;
     info->device_control = rdpkeybControl;
@@ -456,7 +456,7 @@ static int
 rdpkeybPreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
     LOG(LOG_LEVEL_INFO, "rdpkeybPreInit: drv %p info %p, flags 0x%x",
-           drv, info, flags);
+        drv, info, flags);
     info->device_control = rdpkeybControl;
     info->type_name = g_Keyboard_str;
 
@@ -470,7 +470,7 @@ static void
 rdpkeybUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
     LOG(LOG_LEVEL_INFO, "rdpkeybUnInit: drv %p info %p, flags 0x%x",
-           drv, info, flags);
+        drv, info, flags);
     rdpUnregisterInputCallback(rdpInputKeyboard);
 }
 
@@ -611,9 +611,10 @@ rdpLoadLayout(rdpKeyboard *keyboard, struct xup_client_info *client_info)
         keyboard->x11_keycode_scroll_lock = SCROLL_LOCK_KEY_CODE;
     }
 
-    LOG(LOG_LEVEL_INFO, "rdpLoadLayout: rules=\"%s\" model=\"%s\" variant=\"%s\""
-               "layout=\"%s\" options=\"%s\"",
-               set.rules, set.model, set.variant, set.layout, set.options);
+    LOG(LOG_LEVEL_INFO,
+        "rdpLoadLayout: rules=\"%s\" model=\"%s\" variant=\"%s\""
+        "layout=\"%s\" options=\"%s\"",
+        set.rules, set.model, set.variant, set.layout, set.options);
 
     reload_xkb(keyboard->device, &set);
     reload_xkb(inputInfo.keyboard, &set);

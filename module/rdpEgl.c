@@ -334,7 +334,7 @@ rdpEglCreate(ScreenPtr screen)
     egl->tex_loc[0] = glGetUniformLocation(egl->program[0], "tex");
     egl->tex_size_loc[0] = glGetUniformLocation(egl->program[0], "tex_size");
     LOG(LOG_LEVEL_INFO, "rdpEglCreate: copy_tex_loc %d copy_tex_size_loc %d",
-           egl->tex_loc[0], egl->tex_size_loc[0]);
+        egl->tex_loc[0], egl->tex_size_loc[0]);
     /* create yuv shader */
     vsource = g_vs;
     fsource = g_fs_rfx_rgb_to_yuv;
@@ -359,7 +359,7 @@ rdpEglCreate(ScreenPtr screen)
     egl->tex_loc[1] = glGetUniformLocation(egl->program[1], "tex");
     egl->tex_size_loc[1] = glGetUniformLocation(egl->program[1], "tex_size");
     LOG(LOG_LEVEL_INFO, "rdpEglCreate: yuv_tex_loc %d yuv_tex_size_loc %d",
-           egl->tex_loc[1], egl->tex_size_loc[1]);
+        egl->tex_loc[1], egl->tex_size_loc[1]);
     /* create yuvlp shader */
     vsource = g_vs;
     fsource = g_fs_rfx_yuv_to_yuvlp;
@@ -384,7 +384,7 @@ rdpEglCreate(ScreenPtr screen)
     egl->tex_loc[2] = glGetUniformLocation(egl->program[2], "tex");
     egl->tex_size_loc[2] = glGetUniformLocation(egl->program[2], "tex_size");
     LOG(LOG_LEVEL_INFO, "rdpEglCreate: yuvlp_tex_loc %d yuvlp_tex_size_loc %d",
-           egl->tex_loc[2], egl->tex_size_loc[2]);
+        egl->tex_loc[2], egl->tex_size_loc[2]);
     /* create crc shader */
     vsource = g_vs;
     fsource = g_fs_rfx_crc;
@@ -409,7 +409,7 @@ rdpEglCreate(ScreenPtr screen)
     egl->tex_loc[3] = glGetUniformLocation(egl->program[3], "tex");
     egl->tex_size_loc[3] = glGetUniformLocation(egl->program[3], "tex_size");
     LOG(LOG_LEVEL_INFO, "rdpEglCreate: crc_tex_loc %d crc_tex_size_loc %d",
-           egl->tex_loc[3], egl->tex_size_loc[3]);
+        egl->tex_loc[3], egl->tex_size_loc[3]);
     return egl;
 }
 
@@ -568,7 +568,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     if (num_crcs != clientCon->num_rfx_crcs_alloc[mon_index])
     {
         LOG(LOG_LEVEL_INFO, "rdpEglOut: resize the crc list was %d now %d",
-               clientCon->num_rfx_crcs_alloc[mon_index], num_crcs);
+            clientCon->num_rfx_crcs_alloc[mon_index], num_crcs);
         /* resize the crc list */
         clientCon->num_rfx_crcs_alloc[mon_index] = num_crcs;
         free(clientCon->rfx_crcs[mon_index]);
@@ -587,7 +587,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
             rect.x2 = rect.x1 + 64;
             rect.y2 = rect.y1 + 64;
             LOG(LOG_LEVEL_TRACE, "rdpEglOut: x1 %d y1 %d x2 %d y2 %d",
-                   rect.x1, rect.y1, rect.x2, rect.y2);
+                rect.x1, rect.y1, rect.x2, rect.y2);
             rcode = rdpRegionContainsRect(in_reg, &rect);
             if (rcode == rgnOUT)
             {
@@ -611,9 +611,9 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                 if (crc != crcs[(ly / 64) * tile_extents_stride + (lx / 64)])
                 {
                     LOG(LOG_LEVEL_INFO, "rdpEglOut: error crc no match "
-                           "0x%" PRIx64 " 0x%" PRIx64,
-                           crc,
-                           crcs[(ly / 64) * tile_extents_stride + (lx / 64)]);
+                        "0x%" PRIx64 " 0x%" PRIx64,
+                        crc,
+                        crcs[(ly / 64) * tile_extents_stride + (lx / 64)]);
                 }
 #endif
                 crc = crcs[(ly / 64) * tile_extents_stride + (lx / 64)];
@@ -638,7 +638,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                     else
                     {
                         LOG(LOG_LEVEL_INFO, "rdpEglOut: too many out rects %d",
-                               out_rect_index);
+                            out_rect_index);
                     }
                 }
 

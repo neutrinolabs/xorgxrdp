@@ -130,8 +130,9 @@ rdpRandRGridWriteString(int fd, const char *str)
     written = write(fd, str, to_write);
     if (written != to_write)
     {
-        LOG(LOG_LEVEL_INFO, "rdpRandRGridWriteString: write failed fd %d written %d "
-               "to_write %d", fd, written, to_write);
+        LOG(LOG_LEVEL_INFO,
+            "rdpRandRGridWriteString: write failed fd %d written %d "
+            "to_write %d", fd, written, to_write);
         return 1;
     }
     return 0;
@@ -167,7 +168,7 @@ rdpRandRGridUpdateRunCmds(struct monitors_t *monitors)
     if (fd == -1)
     {
         LOG(LOG_LEVEL_INFO, "rdpRandRGridUpdateRunCmds: open %s failed",
-               cmd_file->filename);
+            cmd_file->filename);
         free(cmd_file);
         return 1;
     }
@@ -193,12 +194,12 @@ rdpRandRGridUpdateRunCmds(struct monitors_t *monitors)
     snprintf(cmd_file->cmd, sizeof(cmd_file->cmd),
              "sh %s&", cmd_file->filename);
     LOG(LOG_LEVEL_INFO, "rdpRandRGridUpdateRunCmds: running command %s",
-           cmd_file->cmd);
+        cmd_file->cmd);
     system_rv = system(cmd_file->cmd);
     if (system_rv != 0)
     {
         LOG(LOG_LEVEL_INFO, "rdpRandRGridUpdateRunCmds: command %s returned %d",
-               cmd_file->cmd, system_rv);
+            cmd_file->cmd, system_rv);
         free(cmd_file);
         return 1;
     }

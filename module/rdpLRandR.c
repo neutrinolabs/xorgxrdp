@@ -115,8 +115,9 @@ remove_client(ClientPtr pClient)
     {
         if (iterator->pClient == pClient)
         {
-            LOG(LOG_LEVEL_TRACE, "remove_client:                      client %p found "
-                   "pClient, removing", pClient);
+            LOG(LOG_LEVEL_TRACE,
+                "remove_client:                      client %p found "
+                "pClient, removing", pClient);
             xorg_list_del(&(iterator->entry));
             free(iterator);
         }
@@ -132,7 +133,8 @@ LRRDeliverScreenEvent(interestedClientRec *ic, ScreenPtr pScreen)
     WindowPtr pRoot;
     WindowPtr pWin;
 
-    LOG(LOG_LEVEL_TRACE, "LRRDeliverScreenEvent:              client %p", ic->pClient);
+    LOG(LOG_LEVEL_TRACE,
+        "LRRDeliverScreenEvent:              client %p", ic->pClient);
     if (dixLookupWindow(&pWin, ic->window, ic->pClient,
                         DixGetAttrAccess) != Success)
     {
@@ -140,10 +142,11 @@ LRRDeliverScreenEvent(interestedClientRec *ic, ScreenPtr pScreen)
     }
     memset(&se, 0, sizeof(se));
     pRoot = pScreen->root;
-    LOG(LOG_LEVEL_TRACE, "LRRDeliverScreenEvent: root id 0x%8.8x win id 0x%8.8x "
-           "width %d height %d",
-           pRoot->drawable.id, ic->window,
-           pScreen->width, pScreen->height);
+    LOG(LOG_LEVEL_TRACE,
+        "LRRDeliverScreenEvent: root id 0x%8.8x win id 0x%8.8x "
+        "width %d height %d",
+        pRoot->drawable.id, ic->window,
+        pScreen->width, pScreen->height);
     se.type = RRScreenChangeNotify + LRREventBase;
     se.rotation = RR_Rotate_0;
     se.timestamp = g_updateTime;
@@ -166,14 +169,15 @@ LRRDeliverCrtcEvent(interestedClientRec *ic, LRRCrtcRec *pCrtc)
     xRRCrtcChangeNotifyEvent ce;
     WindowPtr pWin;
 
-    LOG(LOG_LEVEL_TRACE, "LRRDeliverCrtcEvent:                client %p", ic->pClient);
+    LOG(LOG_LEVEL_TRACE,
+        "LRRDeliverCrtcEvent:                client %p", ic->pClient);
     if (dixLookupWindow(&pWin, ic->window, ic->pClient,
                         DixGetAttrAccess) != Success)
     {
         return 1;
     }
     LOG(LOG_LEVEL_TRACE, "LRRDeliverCrtcEvent: x %d y %d width %d height %d",
-           pCrtc->x, pCrtc->y, pCrtc->width, pCrtc->height);
+        pCrtc->x, pCrtc->y, pCrtc->width, pCrtc->height);
     memset(&ce, 0, sizeof(ce));
     ce.type = RRNotify + LRREventBase;
     ce.subCode = RRNotify_CrtcChange;
@@ -197,7 +201,8 @@ LRRDeliverOutputEvent(interestedClientRec *ic, LRROutputRec *pOutput)
     xRROutputChangeNotifyEvent oe;
     WindowPtr pWin;
 
-    LOG(LOG_LEVEL_TRACE, "LRRDeliverOutputEvent:              client %p", ic->pClient);
+    LOG(LOG_LEVEL_TRACE,
+        "LRRDeliverOutputEvent:              client %p", ic->pClient);
     if (dixLookupWindow(&pWin, ic->window, ic->pClient,
                         DixGetAttrAccess) != Success)
     {
@@ -233,8 +238,9 @@ ProcLRRQueryVersion(ClientPtr client)
     REQUEST(xRRQueryVersionReq);
 
     REQUEST_SIZE_MATCH(xRRQueryVersionReq);
-    LOG(LOG_LEVEL_TRACE, "ProcLRRQueryVersion:                client %p version %d %d",
-           client, stuff->majorVersion, stuff->minorVersion);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRQueryVersion:                client %p version %d %d",
+        client, stuff->majorVersion, stuff->minorVersion);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
     rep.sequenceNumber = client->sequence;
@@ -279,8 +285,9 @@ ProcLRRSelectInput(ClientPtr client)
     interestedClientRec* ic;
     REQUEST(xRRSelectInputReq);
 
-    LOG(LOG_LEVEL_TRACE, "ProcLRRSelectInput:                 client %p enable 0x%8.8x", client,
-           stuff->enable);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRSelectInput:                 client %p enable 0x%8.8x", client,
+        stuff->enable);
     REQUEST_SIZE_MATCH(xRRSelectInputReq);
 
     rc = dixLookupWindow(&pWin, stuff->window, client, DixGetAttrAccess);
@@ -303,8 +310,9 @@ ProcLRRSelectInput(ClientPtr client)
         ic->pClient = client;
         ic->mask = stuff->enable;
         ic->window = stuff->window;
-        LOG(LOG_LEVEL_TRACE, "ProcLRRSelectInput:                 client %p adding "
-               "pClient to list", client);
+        LOG(LOG_LEVEL_TRACE,
+            "ProcLRRSelectInput:                 client %p adding "
+            "pClient to list", client);
         xorg_list_add(&(ic->entry), &g_interestedClients);
     }
     else if (stuff->enable == 0)
@@ -314,7 +322,8 @@ ProcLRRSelectInput(ClientPtr client)
     }
     else
     {
-        LOG(LOG_LEVEL_INFO, "ProcLRRSelectInput: bad enable 0x%8.8x", stuff->enable);
+        LOG(LOG_LEVEL_INFO,
+            "ProcLRRSelectInput: bad enable 0x%8.8x", stuff->enable);
         client->errorValue = stuff->enable;
         return BadValue;
     }
@@ -461,7 +470,7 @@ ProcLRRGetScreenResources(ClientPtr client)
         rep.nbytesNames += g_modes[index].nameLength;
     }
     LOG(LOG_LEVEL_TRACE, "ProcLRRGetScreenResources: rep.nbytesNames %d",
-           rep.nbytesNames);
+        rep.nbytesNames);
     rep.length = (g_numCrtcs + g_numOutputs +
                   g_numModes * bytes_to_int32(SIZEOF(xRRModeInfo)) +
                   bytes_to_int32(rep.nbytesNames));
@@ -702,7 +711,9 @@ ProcLRRGetCrtcInfo(ClientPtr client)
     xRRGetCrtcInfoReply rep;
     REQUEST(xRRGetCrtcInfoReq);
 
-    LOG(LOG_LEVEL_TRACE, "ProcLRRGetCrtcInfo:                 client %p crtc %d", client, stuff->crtc);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRGetCrtcInfo:                 client %p crtc %d",
+        client, stuff->crtc);
     REQUEST_SIZE_MATCH(xRRGetCrtcInfoReq);
 
     if ((stuff->crtc < LRRCrtcStart) ||
@@ -755,7 +766,8 @@ ProcLRRSetCrtcConfig(ClientPtr client)
 
     (void) stuff;
 
-    LOG(LOG_LEVEL_TRACE, "ProcLRRSetCrtcConfig:               client %p", client);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRSetCrtcConfig:               client %p", client);
     REQUEST_SIZE_MATCH(xRRSetCrtcConfigReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -782,7 +794,8 @@ ProcLRRGetCrtcGammaSize(ClientPtr client)
 
     (void) stuff;
 
-    LOG(LOG_LEVEL_TRACE, "ProcLRRGetCrtcGammaSize:            client %p", client);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRGetCrtcGammaSize:            client %p", client);
     REQUEST_SIZE_MATCH(xRRGetCrtcGammaSizeReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -813,7 +826,8 @@ ProcLRRGetCrtcGamma(ClientPtr client)
 
     (void) stuff;
 
-    LOG(LOG_LEVEL_TRACE, "ProcLRRGetCrtcGamma:                client %p", client);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRGetCrtcGamma:                client %p", client);
     REQUEST_SIZE_MATCH(xRRGetCrtcGammaReq);
     len = 256 * 3 * 2;
     extra = (char *) malloc(len);
@@ -866,7 +880,8 @@ ProcLRRGetCrtcGamma(ClientPtr client)
 int
 ProcLRRGetScreenResourcesCurrent(ClientPtr client)
 {
-    LOG(LOG_LEVEL_TRACE, "ProcLRRGetScreenResourcesCurrent:   client %p", client);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRGetScreenResourcesCurrent:   client %p", client);
     return ProcLRRGetScreenResources(client);
 }
 
@@ -892,7 +907,8 @@ ProcLRRGetCrtcTransform(ClientPtr client)
 
     (void) stuff;
 
-    LOG(LOG_LEVEL_TRACE, "ProcLRRGetCrtcTransform:            client %p", client);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRGetCrtcTransform:            client %p", client);
     REQUEST_SIZE_MATCH(xRRGetPanningReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -923,7 +939,8 @@ ProcLRRGetPanning(ClientPtr client)
 
     (void) stuff;
 
-    LOG(LOG_LEVEL_TRACE, "ProcLRRGetPanning:                  client %p", client);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRGetPanning:                  client %p", client);
     REQUEST_SIZE_MATCH(xRRGetPanningReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -949,7 +966,8 @@ ProcLRRGetOutputPrimary(ClientPtr client)
 
     (void) stuff;
 
-    LOG(LOG_LEVEL_TRACE, "ProcLRRGetOutputPrimary:            client %p", client);
+    LOG(LOG_LEVEL_TRACE,
+        "ProcLRRGetOutputPrimary:            client %p", client);
     REQUEST_SIZE_MATCH(xRRGetOutputPrimaryReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -969,13 +987,13 @@ ProcLRRDispatch(ClientPtr client)
     if (stuff->data >= LRRNumberRequests)
     {
         LOG(LOG_LEVEL_INFO, "ProcLRRDispatch: returning BadRequest, data %d",
-               stuff->data);
+            stuff->data);
         return BadRequest;
     }
     if (g_procLRandrVector[stuff->data] == NULL)
     {
         LOG(LOG_LEVEL_INFO, "ProcLRRDispatch: returning Success, data %d",
-               stuff->data);
+            stuff->data);
         return Success;
     }
     return g_procLRandrVector[stuff->data](client);
@@ -997,7 +1015,7 @@ LRRClientCallback(CallbackListPtr *list, void *closure, void *data)
     ClientPtr pClient;
 
     LOG(LOG_LEVEL_TRACE, "LRRClientCallback: list %p closure %p data %p",
-           list, closure, data);
+        list, closure, data);
     if (data != NULL)
     {
         clientinfo = (NewClientInfoRec *) data;
@@ -1005,7 +1023,7 @@ LRRClientCallback(CallbackListPtr *list, void *closure, void *data)
         {
             pClient = clientinfo->client;
             LOG(LOG_LEVEL_TRACE, "LRRClientCallback: clientState %d clientGone %d",
-                   pClient->clientState, pClient->clientGone);
+                pClient->clientState, pClient->clientGone);
             if (pClient->clientGone ||
                 (pClient->clientState == ClientStateRetained) ||
                 (pClient->clientState == ClientStateGone))
@@ -1134,13 +1152,14 @@ rdpLRRSetRdpOutputs(rdpPtr dev)
     int cont;
 
     LOG(LOG_LEVEL_TRACE, "rdpLRRSetRdpOutputs: numCrtcs %d numOutputs %d "
-           "monitorCount %d",
-           g_numCrtcs, g_numOutputs, dev->monitorCount);
+        "monitorCount %d",
+        g_numCrtcs, g_numOutputs, dev->monitorCount);
     LRRSendConfigNotify(dev->pScreen);
     g_primaryOutput = None;
     width = dev->width;
     height = dev->height;
-    LOG(LOG_LEVEL_TRACE, "rdpLRRSetRdpOutputs: width %d height %d", width, height);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpLRRSetRdpOutputs: width %d height %d", width, height);
     if (dev->monitorCount <= 0)
     {
         g_numCrtcs = 1;
@@ -1196,13 +1215,13 @@ rdpLRRSetRdpOutputs(rdpPtr dev)
     {
         cont = 0;
         LOG(LOG_LEVEL_TRACE, "rdpLRRSetRdpOutputs:                client %p",
-               iterator->pClient);
+            iterator->pClient);
         if (iterator->mask & RRScreenChangeNotifyMask)
         {
             if (LRRDeliverScreenEvent(iterator, dev->pScreen) != 0)
             {
                 LOG(LOG_LEVEL_INFO, "rdpLRRSetRdpOutputs: error removing from "
-                       "interested list");
+                    "interested list");
                 xorg_list_del(&(iterator->entry));
                 free(iterator);
                 continue;
@@ -1214,8 +1233,9 @@ rdpLRRSetRdpOutputs(rdpPtr dev)
             {
                 if (LRRDeliverCrtcEvent(iterator, g_crtcs + index) != 0)
                 {
-                    LOG(LOG_LEVEL_INFO, "rdpLRRSetRdpOutputs: error removing from "
-                           "interested list");
+                    LOG(LOG_LEVEL_INFO,
+                        "rdpLRRSetRdpOutputs: error removing from "
+                        "interested list");
                     xorg_list_del(&(iterator->entry));
                     free(iterator);
                     cont = 1;
@@ -1233,8 +1253,9 @@ rdpLRRSetRdpOutputs(rdpPtr dev)
             {
                 if (LRRDeliverOutputEvent(iterator, g_outputs + index) != 0)
                 {
-                    LOG(LOG_LEVEL_INFO, "rdpLRRSetRdpOutputs: error removing from "
-                           "interested list");
+                    LOG(LOG_LEVEL_INFO,
+                        "rdpLRRSetRdpOutputs: error removing from "
+                        "interested list");
                     xorg_list_del(&(iterator->entry));
                     free(iterator);
                     cont = 1;

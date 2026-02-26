@@ -829,8 +829,9 @@ rdpCaptureSimple(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     LOG(LOG_LEVEL_TRACE, "rdpCaptureSimple:");
 
     if (!isShmStatusActive(clientCon->shmemstatus)) {
-        LOG(LOG_LEVEL_INFO, "rdpCaptureSimple: WARNING -- Shared memory is not configured."
-                   " Aborting capture!");
+        LOG(LOG_LEVEL_WARNING,
+            "rdpCaptureSimple: WARNING -- Shared memory is not configured."
+            " Aborting capture!");
         return FALSE;
     }
 
@@ -951,8 +952,9 @@ rdpCaptureSufA16(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     LOG(LOG_LEVEL_TRACE, "rdpCaptureSufA16:");
 
     if (!isShmStatusActive(clientCon->shmemstatus)) {
-        LOG(LOG_LEVEL_INFO, "rdpCaptureSufA16: WARNING -- Shared memory is not configured."
-               " Aborting capture!");
+        LOG(LOG_LEVEL_WARNING,
+            "rdpCaptureSufA16: WARNING -- Shared memory is not configured."
+            " Aborting capture!");
         return FALSE;
     }
 
@@ -1102,8 +1104,9 @@ rdpCaptureGfxPro(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
     if (!isShmStatusActive(clientCon->shmemstatus))
     {
-        LOG(LOG_LEVEL_INFO, "rdpCaptureGfxPro: WARNING -- Shared memory is not configured"
-                   " for RFX. Aborting capture!");
+        LOG(LOG_LEVEL_WARNING,
+            "rdpCaptureGfxPro: WARNING -- Shared memory is not configured"
+            " for RFX. Aborting capture!");
         return FALSE;
     }
 
@@ -1139,8 +1142,9 @@ rdpCaptureGfxPro(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     num_crcs = crc_stride * ((id->height + 63) / 64);
     if (num_crcs != clientCon->num_rfx_crcs_alloc[mon_index])
     {
-        LOG(LOG_LEVEL_INFO, "rdpCaptureGfxPro: resize the crc list was %d now %d",
-               clientCon->num_rfx_crcs_alloc[mon_index], num_crcs);
+        LOG(LOG_LEVEL_INFO,
+            "rdpCaptureGfxPro: resize the crc list was %d now %d",
+            clientCon->num_rfx_crcs_alloc[mon_index], num_crcs);
         /* resize the crc list */
         clientCon->num_rfx_crcs_alloc[mon_index] = num_crcs;
         free(clientCon->rfx_crcs[mon_index]);
@@ -1196,8 +1200,9 @@ rdpCaptureGfxPro(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 }
                 crc_offset = (y / XRDP_RFX_ALIGN) * crc_stride
                              + (x / XRDP_RFX_ALIGN);
-                LOG(LOG_LEVEL_TRACE, "rdpCaptureGfxPro: crc 0x%" PRIx64 " 0x%" PRIx64,
-                       crc, clientCon->rfx_crcs[mon_index][crc_offset]);
+                LOG(LOG_LEVEL_TRACE,
+                    "rdpCaptureGfxPro: crc 0x%" PRIx64 " 0x%" PRIx64,
+                    crc, clientCon->rfx_crcs[mon_index][crc_offset]);
                 if (crc == clientCon->rfx_crcs[mon_index][crc_offset])
                 {
                     LOG(LOG_LEVEL_TRACE, "rdpCaptureGfxPro: crc skip at x %d y %d", x, y);
@@ -1257,8 +1262,9 @@ rdpCaptureSufA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
     if (!isShmStatusActive(clientCon->shmemstatus))
     {
-        LOG(LOG_LEVEL_INFO, "rdpCaptureSufA2: WARNING -- Shared memory is not configured."
-               " Aborting capture!");
+        LOG(LOG_LEVEL_WARNING,
+            "rdpCaptureSufA2: WARNING -- Shared memory is not configured."
+            " Aborting capture!");
         return FALSE;
     }
 
@@ -1300,13 +1306,13 @@ rdpCaptureSufA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     {
         rect = psrc_rects[index];
         LOG(LOG_LEVEL_TRACE, "old x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.x2,
-               rect.x2, rect.y2);
+            rect.x2, rect.y2);
         rect.x1 -= rect.x1 & 1;
         rect.y1 -= rect.y1 & 1;
         rect.x2 += rect.x2 & 1;
         rect.y2 += rect.y2 & 1;
         LOG(LOG_LEVEL_TRACE, "new x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.x2,
-               rect.x2, rect.y2);
+            rect.x2, rect.y2);
         (*out_rects)[index] = rect;
         index++;
     }
@@ -1366,8 +1372,9 @@ rdpCaptureGfxA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
 
     if (!isShmStatusActive(clientCon->shmemstatus))
     {
-        LOG(LOG_LEVEL_INFO, "rdpCaptureGfxA2: WARNING -- Shared memory is not configured."
-               " Aborting capture!");
+        LOG(LOG_LEVEL_WARNING,
+            "rdpCaptureGfxA2: WARNING -- Shared memory is not configured."
+            " Aborting capture!");
         return FALSE;
     }
 
@@ -1389,7 +1396,7 @@ rdpCaptureGfxA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     {
         rect = psrc_rects[index];
         LOG(LOG_LEVEL_TRACE, "old x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.y1,
-               rect.x2, rect.y2);
+            rect.x2, rect.y2);
         rect.x1 -= rect.x1 & 1;
         rect.y1 -= rect.y1 & 1;
         rect.x2 += rect.x2 & 1;
@@ -1403,7 +1410,7 @@ rdpCaptureGfxA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             rect.y2 = id->height & ~1;
         }
         LOG(LOG_LEVEL_TRACE, "new x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.y1,
-               rect.x2, rect.y2);
+            rect.x2, rect.y2);
         (*out_rects)[index] = rect;
         index++;
     }
@@ -1411,8 +1418,9 @@ rdpCaptureGfxA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     monitor_index = (id->flags >> 28) & 0xF;
     if (clientCon->accelAssistPixmaps[monitor_index] != NULL)
     {
-        LOG(LOG_LEVEL_TRACE, "rdpCaptureGfxA2: a monitor_index %d left %d top %d",
-               monitor_index, id->left, id->top);
+        LOG(LOG_LEVEL_TRACE,
+            "rdpCaptureGfxA2: a monitor_index %d left %d top %d",
+            monitor_index, id->left, id->top);
         /* copy vmem to vmem */
         rv = rdpCopyBoxList(clientCon,
                             clientCon->accelAssistPixmaps[monitor_index],
@@ -1424,8 +1432,9 @@ rdpCaptureGfxA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     }
     else if (clientCon->dev->glamor || clientCon->dev->nvidia)
     {
-        LOG(LOG_LEVEL_TRACE, "rdpCaptureGfxA2: b monitor_index %d left %d top %d",
-               monitor_index, id->left, id->top);
+        LOG(LOG_LEVEL_TRACE,
+            "rdpCaptureGfxA2: b monitor_index %d left %d top %d",
+            monitor_index, id->left, id->top);
         /* copy vmem to smem */
         if (!rdpCopyBoxList(clientCon,
                             clientCon->dev->screenSwPixmap,
@@ -1456,7 +1465,8 @@ rdpCaptureGfxA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     }
     else
     {
-        LOG(LOG_LEVEL_INFO, "rdpCaptureGfxA2: unimplemented color conversion");
+        LOG(LOG_LEVEL_WARNING,
+            "rdpCaptureGfxA2: unimplemented color conversion");
     }
 
     return rv;
@@ -1490,7 +1500,7 @@ rdpCapture(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             /* used for even align capture */
             return rdpCaptureGfxA2(clientCon, in_reg, out_rects, num_out_rects, id);
         default:
-            LOG(LOG_LEVEL_INFO, "rdpCapture: mode %d not implemented", mode);
+            LOG(LOG_LEVEL_WARNING, "rdpCapture: mode %d not implemented", mode);
             break;
     }
     return FALSE;

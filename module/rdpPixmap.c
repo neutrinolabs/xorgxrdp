@@ -58,7 +58,7 @@ rdpCreatePixmap(ScreenPtr pScreen, int width, int height, int depth,
     PixmapPtr rv;
 
     LOG(LOG_LEVEL_TRACE, "rdpCreatePixmap: width %d height %d depth %d",
-           width, height, depth);
+        width, height, depth);
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreatePixmap = dev->CreatePixmap;
     rv = pScreen->CreatePixmap(pScreen, width, height, depth, usage_hint);
@@ -76,7 +76,7 @@ rdpCreatePixmap(ScreenPtr pScreen, int width, int height, int depth)
     PixmapPtr rv;
 
     LOG(LOG_LEVEL_TRACE, "rdpCreatePixmap: width %d height %d depth %d",
-           width, height, depth);
+        width, height, depth);
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreatePixmap = dev->CreatePixmap;
     rv = pScreen->CreatePixmap(pScreen, width, height, depth);

@@ -209,8 +209,8 @@ xorgxrdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
 
     LOG(LOG_LEVEL_INFO, "xorgxrdpRRScreenSetSize: screenInfo x %d y %d "
-           "width %d height %d", screenInfo.x, screenInfo.y,
-           screenInfo.width, screenInfo.height);
+        "width %d height %d", screenInfo.x, screenInfo.y,
+        screenInfo.width, screenInfo.height);
 
     return rv;
 }
@@ -317,7 +317,8 @@ xorgxrdpScreenInit(ScreenPtr pScreen, int argc, char** argv)
         dev = XRDPPTR(pScrn);
         dev->nvidia = TRUE;
         dev->nvidia_grid = g_nvidia_grid;
-        LOG(LOG_LEVEL_INFO, "xorgxrdpScreenInit: nvidia_grid %d", dev->nvidia_grid);
+        LOG(LOG_LEVEL_INFO, "xorgxrdpScreenInit: nvidia_grid %d",
+            dev->nvidia_grid);
         dev->pScreen = pScreen;
         dev->depth = pScrn->depth;
         dev->width = pScrn->virtualX;
@@ -326,7 +327,8 @@ xorgxrdpScreenInit(ScreenPtr pScreen, int argc, char** argv)
         dev->bitsPerPixel = rdpBitsPerPixel(dev->depth);
         dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
 
-        LOG(LOG_LEVEL_INFO, "xorgxrdpScreenInit: width %d height %d", dev->width, dev->height);
+        LOG(LOG_LEVEL_INFO, "xorgxrdpScreenInit: width %d height %d",
+            dev->width, dev->height);
 
         PointPriv = dixLookupPrivate(&pScreen->devPrivates, miPointerScreenKey);
         PointPriv->spriteFuncs = &g_rdpSpritePointerFuncs;
