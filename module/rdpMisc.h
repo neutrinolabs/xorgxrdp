@@ -107,27 +107,6 @@ g_alloc_map_fd(void **addr, int *fd, size_t size);
 extern _X_EXPORT void
 g_free_unmap_fd(void *addr, int fd, size_t size);
 
-/* Legacy Logging functions */
-extern _X_EXPORT void
-g_log_info(const char *format, ...) PRINTFLIKE(1,2);
-extern _X_EXPORT void
-g_log_debug(const char *format, ...) PRINTFLIKE(1,2);
-extern _X_EXPORT void
-g_log_trace(const char *format, ...) PRINTFLIKE(1,2);
-
-/* Legacy logging macro
- *
- * Remove when unused
- *
- * _level : 0=Info, 1=Debug, 10=Trace
- * _args : Argument to logging function
- */
-#define LLOGLN(_level, _args) \
-{ \
-    ((_level > LOG_LEVEL_DEBUG) ? g_log_trace : \
-     (_level == LOG_LEVEL_DEBUG) ? g_log_debug : g_log_info) _args; \
-}
-
 /* Logging */
 /* Logging levels */
 enum logLevels
