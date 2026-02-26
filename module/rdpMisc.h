@@ -109,7 +109,7 @@ g_alloc_map_fd(void **addr, int *fd, size_t size);
 extern _X_EXPORT void
 g_free_unmap_fd(void *addr, int fd, size_t size);
 
-/* Logging. Use these for new code */
+/* Legacy Logging functions */
 extern _X_EXPORT void
 g_log_info(const char *format, ...) PRINTFLIKE(1,2);
 extern _X_EXPORT void
@@ -130,10 +130,24 @@ g_log_trace(const char *format, ...) PRINTFLIKE(1,2);
      (_level == LOG_LEVEL_DEBUG) ? g_log_debug : g_log_info) _args; \
 }
 
+/* Logging */
 /* Logging levels */
-#define LOG_LEVEL_INFO 0
-#define LOG_LEVEL_DEBUG 1
-#define LOG_LEVEL_TRACE 2
+enum logLevels
+{
+    LOG_LEVEL_ERROR,
+    LOG_LEVEL_WARNING,
+    LOG_LEVEL_INFO,
+    LOG_LEVEL_DEBUG,
+    LOG_LEVEL_TRACE
+};
+
+extern _X_EXPORT void
+g_log_msg(enum logLevels log_level, const char *format, ...) PRINTFLIKE(2,3);
+
+/* Logging macro, for compatibility with xrdp
+ */
+#define LOG(log_level,...) \
+    g_log_msg(log_level, __VA_ARGS__)
 
 /* glib-style memory allocation macros */
 #define g_new(struct_type, n_structs) \
