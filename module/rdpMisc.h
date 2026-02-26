@@ -64,7 +64,8 @@ g_sck_send(int sck, const void *ptr, int len, int flags);
 extern _X_EXPORT void
 g_sprintf(char *dest, const char *format, ...) PRINTFLIKE(2,3);
 extern _X_EXPORT int
-g_snprintf(char *dest, unsigned int dest_size, const char *format, ...);
+g_snprintf(char *dest, unsigned int dest_size, const char *format, ...)
+    PRINTFLIKE(3,4);
 extern _X_EXPORT int
 g_sck_tcp_socket(void);
 extern _X_EXPORT int
