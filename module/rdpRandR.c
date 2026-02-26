@@ -63,7 +63,7 @@ rdpRRRegisterSize(ScreenPtr pScreen, int width, int height)
     RRScreenSizePtr pSize;
     ScrnInfoPtr pScrn;
 
-    LLOGLN(0, ("rdpRRRegisterSize: width %d height %d", width, height));
+    LLOGLN(LOG_LEVEL_INFO, ("rdpRRRegisterSize: width %d height %d", width, height));
     pScrn = xf86Screens[pScreen->myNum];
     mmwidth = PixelToMM(width, pScrn->xDpi);
     mmheight = PixelToMM(height, pScrn->yDpi);
@@ -78,7 +78,7 @@ Bool
 rdpRRSetConfig(ScreenPtr pScreen, Rotation rotateKind, int rate,
                RRScreenSizePtr pSize)
 {
-    LLOGLN(10, ("rdpRRSetConfig:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRSetConfig:"));
     return TRUE;
 }
 
@@ -86,7 +86,7 @@ rdpRRSetConfig(ScreenPtr pScreen, Rotation rotateKind, int rate,
 Bool
 rdpRRGetInfo(ScreenPtr pScreen, Rotation *pRotations)
 {
-    LLOGLN(10, ("rdpRRGetInfo:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRGetInfo:"));
     *pRotations = RR_Rotate_0;
     return TRUE;
 }
@@ -98,7 +98,7 @@ rdpRRSetPixmapVisitWindow(WindowPtr window, void *data)
 {
     ScreenPtr screen;
 
-    LLOGLN(10, ("rdpRRSetPixmapVisitWindow:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRSetPixmapVisitWindow:"));
     screen = window->drawable.pScreen;
     if (screen->GetWindowPixmap(window) == data)
     {
@@ -119,7 +119,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     BoxRec box;
     rdpPtr dev;
 
-    LLOGLN(0, ("rdpRRScreenSetSize: width %d height %d mmWidth %d mmHeight %d",
+    LLOGLN(LOG_LEVEL_INFO, ("rdpRRScreenSetSize: width %d height %d mmWidth %d mmHeight %d",
            width, height, (int)mmWidth, (int)mmHeight));
     dev = rdpGetDevFromScreen(pScreen);
     if (dev->allow_screen_resize == 0)
@@ -127,16 +127,16 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
         if ((width == pScreen->width) && (height == pScreen->height) &&
             (mmWidth == pScreen->mmWidth) && (mmHeight == pScreen->mmHeight))
         {
-            LLOGLN(0, ("rdpRRScreenSetSize: already this size"));
+            LLOGLN(LOG_LEVEL_INFO, ("rdpRRScreenSetSize: already this size"));
             return TRUE;
         }
-        LLOGLN(0, ("rdpRRScreenSetSize: not allowing resize"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRScreenSetSize: not allowing resize"));
         return FALSE;
     }
     root = rdpGetRootWindowPtr(pScreen);
     if ((width < 1) || (height < 1))
     {
-        LLOGLN(10, ("  error width %d height %d", width, height));
+        LLOGLN(LOG_LEVEL_TRACE, ("  error width %d height %d", width, height));
         return FALSE;
     }
     dev->width = width;
@@ -171,7 +171,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
             return FALSE;
         }
         screen_tex = glamor_get_pixmap_texture(screenPixmap);
-        LLOGLN(0, ("rdpRRScreenSetSize: screen_tex 0x%8.8x", screen_tex));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRScreenSetSize: screen_tex 0x%8.8x", screen_tex));
         pScreen->SetScreenPixmap(screenPixmap);
         if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
         {
@@ -192,7 +192,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     root->drawable.height = height;
     ResizeChildrenWinSize(root, 0, 0, 0, 0);
     RRGetInfo(pScreen, 1);
-    LLOGLN(0, ("  screen resized to %dx%d", pScreen->width, pScreen->height));
+    LLOGLN(LOG_LEVEL_INFO, ("  screen resized to %dx%d", pScreen->width, pScreen->height));
     RRScreenSizeNotify(pScreen);
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 13, 0, 0, 0)
     xf86EnableDisableFBAccess(pScreen->myNum, FALSE);
@@ -202,7 +202,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     xf86EnableDisableFBAccess(xf86Screens[pScreen->myNum], TRUE);
 #endif
 
-    LLOGLN(0, ("rdpRRScreenSetSize: screenInfo x %d y %d "
+    LLOGLN(LOG_LEVEL_INFO, ("rdpRRScreenSetSize: screenInfo x %d y %d "
            "width %d height %d", screenInfo.x, screenInfo.y,
            screenInfo.width, screenInfo.height));
 
@@ -215,7 +215,7 @@ rdpRRCrtcSet(ScreenPtr pScreen, RRCrtcPtr crtc, RRModePtr mode,
              int x, int y, Rotation rotation, int numOutputs,
              RROutputPtr *outputs)
 {
-    LLOGLN(10, ("rdpRRCrtcSet:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRCrtcSet:"));
     return TRUE;
 }
 
@@ -223,7 +223,7 @@ rdpRRCrtcSet(ScreenPtr pScreen, RRCrtcPtr crtc, RRModePtr mode,
 Bool
 rdpRRCrtcSetGamma(ScreenPtr pScreen, RRCrtcPtr crtc)
 {
-    LLOGLN(10, ("rdpRRCrtcSetGamma:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRCrtcSetGamma:"));
     return TRUE;
 }
 
@@ -231,7 +231,7 @@ rdpRRCrtcSetGamma(ScreenPtr pScreen, RRCrtcPtr crtc)
 Bool
 rdpRRCrtcGetGamma(ScreenPtr pScreen, RRCrtcPtr crtc)
 {
-    LLOGLN(0, ("rdpRRCrtcGetGamma: %p %p %p %p", crtc, crtc->gammaRed,
+    LLOGLN(LOG_LEVEL_INFO, ("rdpRRCrtcGetGamma: %p %p %p %p", crtc, crtc->gammaRed,
            crtc->gammaBlue, crtc->gammaGreen));
     return TRUE;
 }
@@ -241,7 +241,7 @@ Bool
 rdpRROutputSetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property,
                        RRPropertyValuePtr value)
 {
-    LLOGLN(10, ("rdpRROutputSetProperty:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRROutputSetProperty:"));
     return TRUE;
 }
 
@@ -250,7 +250,7 @@ Bool
 rdpRROutputValidateMode(ScreenPtr pScreen, RROutputPtr output,
                         RRModePtr mode)
 {
-    LLOGLN(10, ("rdpRROutputValidateMode:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRROutputValidateMode:"));
     return TRUE;
 }
 
@@ -258,14 +258,14 @@ rdpRROutputValidateMode(ScreenPtr pScreen, RROutputPtr output,
 void
 rdpRRModeDestroy(ScreenPtr pScreen, RRModePtr mode)
 {
-    LLOGLN(10, ("rdpRRModeDestroy:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRModeDestroy:"));
 }
 
 /******************************************************************************/
 Bool
 rdpRROutputGetProperty(ScreenPtr pScreen, RROutputPtr output, Atom property)
 {
-    LLOGLN(10, ("rdpRROutputGetProperty:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRROutputGetProperty:"));
     return TRUE;
 }
 
@@ -315,7 +315,7 @@ rdpRRGetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
     BoxRec totalAreaRect;
     BoxRec trackingAreaRect;
 
-    LLOGLN(10, ("rdpRRGetPanning: totalArea %p trackingArea %p border %p",
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRGetPanning: totalArea %p trackingArea %p border %p",
                 totalArea, trackingArea, border));
 
     if (!g_panning)
@@ -360,7 +360,7 @@ Bool
 rdpRRSetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
                 BoxPtr trackingArea, INT16 *border)
 {
-    LLOGLN(10, ("rdpRRSetPanning:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRSetPanning:"));
     return TRUE;
 }
 
@@ -372,7 +372,7 @@ rdpRRAddCrtc(rdpPtr dev)
     RRCrtcPtr crtc = RRCrtcCreate(dev->pScreen, NULL);
     if (crtc == 0)
     {
-        LLOGLN(0, ("rdpRRAddCrtc: RRCrtcCreate failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRAddCrtc: RRCrtcCreate failed"));
         return 1;
     }
     /* Create and initialise (unused) gamma ramps */
@@ -396,12 +396,12 @@ rdpRRAddOutput(rdpPtr dev, const char *aname)
     output = RROutputCreate(dev->pScreen, aname, strlen(aname), NULL);
     if (output == 0)
     {
-        LLOGLN(0, ("rdpRRAddOutput: RROutputCreate failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRAddOutput: RROutputCreate failed"));
         return 1;
     }
     if (!RROutputSetClones(output, NULL, 0))
     {
-        LLOGLN(0, ("rdpRRAddOutput: RROutputSetClones failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRAddOutput: RROutputSetClones failed"));
         return 1;
     }
     return 0;
@@ -418,7 +418,7 @@ rdpRRConnectOutput(RROutputPtr output, RRCrtcPtr crtc,
     char name[64];
     const int vfreq = 50;
 
-    LLOGLN(10, ("rdpRRConnectOutput:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpRRConnectOutput:"));
     sprintf (name, "%dx%d", width, height);
     modeInfo.width = width;
     modeInfo.height = height;
@@ -429,7 +429,7 @@ rdpRRConnectOutput(RROutputPtr output, RRCrtcPtr crtc,
     mode = RRModeGet(&modeInfo, name);
     if (mode == 0)
     {
-        LLOGLN(0, ("rdpRRConnectOutput: RRModeGet failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRConnectOutput: RRModeGet failed"));
         return 1;
     }
     /* Don't set the mode for the output unless we need to */
@@ -438,7 +438,7 @@ rdpRRConnectOutput(RROutputPtr output, RRCrtcPtr crtc,
     {
         if (!RROutputSetModes(output, &mode, 1, 0))
         {
-            LLOGLN(0, ("rdpRRConnectOutput: RROutputSetModes failed"));
+            LLOGLN(LOG_LEVEL_INFO, ("rdpRRConnectOutput: RROutputSetModes failed"));
             return 1;
         }
     }
@@ -448,18 +448,18 @@ rdpRRConnectOutput(RROutputPtr output, RRCrtcPtr crtc,
     {
         if (!RROutputSetCrtcs(output, &crtc, 1))
         {
-            LLOGLN(0, ("rdpRRConnectOutput: RROutputSetCrtcs failed"));
+            LLOGLN(LOG_LEVEL_INFO, ("rdpRRConnectOutput: RROutputSetCrtcs failed"));
             return 1;
         }
     }
     if (!RROutputSetConnection(output, RR_Connected))
     {
-        LLOGLN(0, ("rdpRRConnectOutput: RROutputSetConnection failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRConnectOutput: RROutputSetConnection failed"));
         return 1;
     }
     if (!RROutputSetPhysicalSize(output, mmwidth, mmheight))
     {
-        LLOGLN(0, ("rdpRRConnectOutput: RROutputSetPhysicalSize failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRConnectOutput: RROutputSetPhysicalSize failed"));
         return 1;
     }
     RRCrtcNotify(crtc, mode, x, y, RR_Rotate_0, NULL, 1, &output);
@@ -473,17 +473,17 @@ rdpRRDisconnectOutput(RROutputPtr output, RRCrtcPtr crtc)
 {
     if (!RROutputSetModes(output, NULL, 0, 0))
     {
-        LLOGLN(0, ("rdpRRDisconnectOutput: RROutputSetModes failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRDisconnectOutput: RROutputSetModes failed"));
         return 1;
     }
     if (!RROutputSetCrtcs(output, NULL, 0))
     {
-        LLOGLN(0, ("rdpRRDisconnectOutput: RROutputSetCrtcs failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRDisconnectOutput: RROutputSetCrtcs failed"));
         return 1;
     }
     if (!RROutputSetConnection(output, RR_Disconnected))
     {
-        LLOGLN(0, ("rdpRRDisconnectOutput: RROutputSetConnection failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRDisconnectOutput: RROutputSetConnection failed"));
         return 1;
     }
     RRCrtcNotify(crtc, NULL, 0, 0, RR_Rotate_0, NULL, 0, NULL);
@@ -528,7 +528,7 @@ rdpRRSetRdpOutputs(rdpPtr dev)
     int rv = 0;
 
     pRRScrPriv = rrGetScrPriv(dev->pScreen);
-    LLOGLN(0, ("rdpRRSetRdpOutputs: numCrtcs %d numOutputs %d monitorCount %d",
+    LLOGLN(LOG_LEVEL_INFO, ("rdpRRSetRdpOutputs: numCrtcs %d numOutputs %d monitorCount %d",
            pRRScrPriv->numCrtcs, pRRScrPriv->numOutputs, dev->monitorCount));
     int count = (dev->monitorCount <= 0) ? 1 : dev->monitorCount;
 
@@ -546,7 +546,7 @@ rdpRRSetRdpOutputs(rdpPtr dev)
 
     if (rv != 0)
     {
-        LLOGLN(0, ("rdpRRSetRdpOutputs: Failed to add CRTCs / Outputs"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRSetRdpOutputs: Failed to add CRTCs / Outputs"));
         return rv;
     }
 
@@ -558,7 +558,7 @@ rdpRRSetRdpOutputs(rdpPtr dev)
         height = dev->height;
         mmwidth = dev->pScreen->mmWidth;
         mmheight = dev->pScreen->mmHeight;
-        LLOGLN(0, ("rdpRRSetRdpOutputs: update output %d "
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRSetRdpOutputs: update output %d "
                "left %d top %d width %d height %d",
                0, left, top, width, height));
         rv = rdpRRConnectOutput(pRRScrPriv->outputs[0],
@@ -577,7 +577,7 @@ rdpRRSetRdpOutputs(rdpPtr dev)
             height = dev->minfo[index].bottom - dev->minfo[index].top + 1;
             mmwidth = dev->minfo[index].physical_width;
             mmheight = dev->minfo[index].physical_height;
-            LLOGLN(0, ("rdpRRSetRdpOutputs: update output %d "
+            LLOGLN(LOG_LEVEL_INFO, ("rdpRRSetRdpOutputs: update output %d "
                    "left %d top %d width %d height %d",
                    index, left, top, width, height));
             rv = rdpRRConnectOutput(pRRScrPriv->outputs[index],
@@ -601,7 +601,7 @@ rdpRRSetRdpOutputs(rdpPtr dev)
 
     if (rv != 0)
     {
-        LLOGLN(0, ("rdpRRSetRdpOutputs: rdpRRSetRdpOutputs failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpRRSetRdpOutputs: rdpRRSetRdpOutputs failed"));
     }
     return rv;
 }

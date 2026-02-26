@@ -69,7 +69,7 @@ rdpTriangles(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
     BoxRec box;
     RegionRec reg;
 
-    LLOGLN(10, ("rdpTriangles:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpTriangles:"));
     pScreen = pDst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     dev->counts.rdpTrianglesCallCount++;

@@ -126,9 +126,14 @@ g_log_trace(const char *format, ...) PRINTFLIKE(1,2);
  */
 #define LLOGLN(_level, _args) \
 { \
-    ((_level > 1) ? g_log_trace : \
-     (_level == 1) ? g_log_debug : g_log_info) _args; \
+    ((_level > LOG_LEVEL_DEBUG) ? g_log_trace : \
+     (_level == LOG_LEVEL_DEBUG) ? g_log_debug : g_log_info) _args; \
 }
+
+/* Logging levels */
+#define LOG_LEVEL_INFO 0
+#define LOG_LEVEL_DEBUG 1
+#define LOG_LEVEL_TRACE 2
 
 /* glib-style memory allocation macros */
 #define g_new(struct_type, n_structs) \

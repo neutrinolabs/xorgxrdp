@@ -115,7 +115,7 @@ remove_client(ClientPtr pClient)
     {
         if (iterator->pClient == pClient)
         {
-            LLOGLN(10, ("remove_client:                      client %p found "
+            LLOGLN(LOG_LEVEL_TRACE, ("remove_client:                      client %p found "
                    "pClient, removing", pClient));
             xorg_list_del(&(iterator->entry));
             free(iterator);
@@ -132,7 +132,7 @@ LRRDeliverScreenEvent(interestedClientRec *ic, ScreenPtr pScreen)
     WindowPtr pRoot;
     WindowPtr pWin;
 
-    LLOGLN(10, ("LRRDeliverScreenEvent:              client %p", ic->pClient));
+    LLOGLN(LOG_LEVEL_TRACE, ("LRRDeliverScreenEvent:              client %p", ic->pClient));
     if (dixLookupWindow(&pWin, ic->window, ic->pClient,
                         DixGetAttrAccess) != Success)
     {
@@ -140,7 +140,7 @@ LRRDeliverScreenEvent(interestedClientRec *ic, ScreenPtr pScreen)
     }
     memset(&se, 0, sizeof(se));
     pRoot = pScreen->root;
-    LLOGLN(10, ("LRRDeliverScreenEvent: root id 0x%8.8x win id 0x%8.8x "
+    LLOGLN(LOG_LEVEL_TRACE, ("LRRDeliverScreenEvent: root id 0x%8.8x win id 0x%8.8x "
            "width %d height %d",
            pRoot->drawable.id, ic->window,
            pScreen->width, pScreen->height));
@@ -166,13 +166,13 @@ LRRDeliverCrtcEvent(interestedClientRec *ic, LRRCrtcRec *pCrtc)
     xRRCrtcChangeNotifyEvent ce;
     WindowPtr pWin;
 
-    LLOGLN(10, ("LRRDeliverCrtcEvent:                client %p", ic->pClient));
+    LLOGLN(LOG_LEVEL_TRACE, ("LRRDeliverCrtcEvent:                client %p", ic->pClient));
     if (dixLookupWindow(&pWin, ic->window, ic->pClient,
                         DixGetAttrAccess) != Success)
     {
         return 1;
     }
-    LLOGLN(10, ("LRRDeliverCrtcEvent: x %d y %d width %d height %d",
+    LLOGLN(LOG_LEVEL_TRACE, ("LRRDeliverCrtcEvent: x %d y %d width %d height %d",
            pCrtc->x, pCrtc->y, pCrtc->width, pCrtc->height));
     memset(&ce, 0, sizeof(ce));
     ce.type = RRNotify + LRREventBase;
@@ -197,7 +197,7 @@ LRRDeliverOutputEvent(interestedClientRec *ic, LRROutputRec *pOutput)
     xRROutputChangeNotifyEvent oe;
     WindowPtr pWin;
 
-    LLOGLN(10, ("LRRDeliverOutputEvent:              client %p", ic->pClient));
+    LLOGLN(LOG_LEVEL_TRACE, ("LRRDeliverOutputEvent:              client %p", ic->pClient));
     if (dixLookupWindow(&pWin, ic->window, ic->pClient,
                         DixGetAttrAccess) != Success)
     {
@@ -233,7 +233,7 @@ ProcLRRQueryVersion(ClientPtr client)
     REQUEST(xRRQueryVersionReq);
 
     REQUEST_SIZE_MATCH(xRRQueryVersionReq);
-    LLOGLN(10, ("ProcLRRQueryVersion:                client %p version %d %d",
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRQueryVersion:                client %p version %d %d",
            client, stuff->majorVersion, stuff->minorVersion));
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -253,13 +253,13 @@ ProcLRRQueryVersion(ClientPtr client)
     /* require 1.1 or greater randr client */
     if (version_compare(rep.majorVersion, rep.minorVersion, 1, 1) < 0)
     {
-        LLOGLN(0, ("ProcLRRQueryVersion: bad version"));
+        LLOGLN(LOG_LEVEL_INFO, ("ProcLRRQueryVersion: bad version"));
         return BadValue;
     }
     /* don't allow swapping */
     if (client->swapped)
     {
-        LLOGLN(0, ("ProcLRRQueryVersion: no swap support"));
+        LLOGLN(LOG_LEVEL_INFO, ("ProcLRRQueryVersion: no swap support"));
         return BadValue;
     }
     WriteToClient(client, sizeof(rep), &rep);
@@ -279,7 +279,7 @@ ProcLRRSelectInput(ClientPtr client)
     interestedClientRec* ic;
     REQUEST(xRRSelectInputReq);
 
-    LLOGLN(10, ("ProcLRRSelectInput:                 client %p enable 0x%8.8x", client,
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRSelectInput:                 client %p enable 0x%8.8x", client,
            stuff->enable));
     REQUEST_SIZE_MATCH(xRRSelectInputReq);
 
@@ -303,7 +303,7 @@ ProcLRRSelectInput(ClientPtr client)
         ic->pClient = client;
         ic->mask = stuff->enable;
         ic->window = stuff->window;
-        LLOGLN(10, ("ProcLRRSelectInput:                 client %p adding "
+        LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRSelectInput:                 client %p adding "
                "pClient to list", client));
         xorg_list_add(&(ic->entry), &g_interestedClients);
     }
@@ -314,7 +314,7 @@ ProcLRRSelectInput(ClientPtr client)
     }
     else
     {
-        LLOGLN(0, ("ProcLRRSelectInput: bad enable 0x%8.8x", stuff->enable));
+        LLOGLN(LOG_LEVEL_INFO, ("ProcLRRSelectInput: bad enable 0x%8.8x", stuff->enable));
         client->errorValue = stuff->enable;
         return BadValue;
     }
@@ -347,7 +347,7 @@ ProcLRRGetScreenInfo(ClientPtr client)
     CARD16 *rates;
     REQUEST(xRRGetScreenInfoReq);
 
-    LLOGLN(10, ("ProcLRRGetScreenInfo:               client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetScreenInfo:               client %p", client));
     REQUEST_SIZE_MATCH(xRRGetScreenInfoReq);
     rc = dixLookupWindow(&pWin, stuff->window, client, DixGetAttrAccess);
     if (rc != Success)
@@ -408,7 +408,7 @@ ProcLRRGetScreenSizeRange(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRGetScreenSizeRange:          client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetScreenSizeRange:          client %p", client));
     REQUEST_SIZE_MATCH(xRRGetScreenSizeRangeReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -446,7 +446,7 @@ ProcLRRGetScreenResources(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRGetScreenResources:          client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetScreenResources:          client %p", client));
     REQUEST_SIZE_MATCH(xRRGetScreenResourcesReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -460,12 +460,12 @@ ProcLRRGetScreenResources(ClientPtr client)
     {
         rep.nbytesNames += g_modes[index].nameLength;
     }
-    LLOGLN(10, ("ProcLRRGetScreenResources: rep.nbytesNames %d",
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetScreenResources: rep.nbytesNames %d",
            rep.nbytesNames));
     rep.length = (g_numCrtcs + g_numOutputs +
                   g_numModes * bytes_to_int32(SIZEOF(xRRModeInfo)) +
                   bytes_to_int32(rep.nbytesNames));
-    LLOGLN(10, ("ProcLRRGetScreenResources: rep.length %d", rep.length));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetScreenResources: rep.length %d", rep.length));
     extraLen = rep.length << 2;
     if (extraLen != 0)
     {
@@ -479,7 +479,7 @@ ProcLRRGetScreenResources(ClientPtr client)
     {
         extra = NULL;
     }
-    LLOGLN(10, ("ProcLRRGetScreenResources: extraLen %d", (int) extraLen));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetScreenResources: extraLen %d", (int) extraLen));
     crtcs = (RRCrtc *) extra;
     outputs = (RROutput *) (crtcs + g_numCrtcs);
     modeinfos = (xRRModeInfo *) (outputs + g_numOutputs);
@@ -539,7 +539,7 @@ ProcLRRGetOutputInfo(ClientPtr client)
     xRRGetOutputInfoReply rep;
     REQUEST(xRRGetOutputInfoReq);
 
-    LLOGLN(10, ("ProcLRRGetOutputInfo:               client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetOutputInfo:               client %p", client));
     REQUEST_SIZE_MATCH(xRRGetOutputInfoReq);
 
     if ((stuff->output < LRROutputStart) ||
@@ -550,7 +550,7 @@ ProcLRRGetOutputInfo(ClientPtr client)
     output = g_outputs + (stuff->output - LRROutputStart);
 
     memset(&rep, 0, sizeof(rep));
-    LLOGLN(10, ("ProcLRRGetOutputInfo: stuff->output %d", stuff->output));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetOutputInfo: stuff->output %d", stuff->output));
     rep.type = X_Reply;
     rep.status = RRSetConfigSuccess;
     rep.sequenceNumber = client->sequence;
@@ -616,7 +616,7 @@ ProcLRRListOutputProperties(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRListOutputProperties:        client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRListOutputProperties:        client %p", client));
     REQUEST_SIZE_MATCH(xRRListOutputPropertiesReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -640,7 +640,7 @@ ProcLRRQueryOutputProperty(ClientPtr client)
 {
     xRRQueryOutputPropertyReply rep;
 
-    LLOGLN(10, ("ProcLRRQueryOutputProperty:         client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRQueryOutputProperty:         client %p", client));
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
     rep.sequenceNumber = client->sequence;
@@ -670,7 +670,7 @@ ProcLRRGetOutputProperty(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRGetOutputProperty:           client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetOutputProperty:           client %p", client));
     REQUEST_SIZE_MATCH(xRRGetOutputPropertyReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -702,7 +702,7 @@ ProcLRRGetCrtcInfo(ClientPtr client)
     xRRGetCrtcInfoReply rep;
     REQUEST(xRRGetCrtcInfoReq);
 
-    LLOGLN(10, ("ProcLRRGetCrtcInfo:                 client %p crtc %d", client, stuff->crtc));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetCrtcInfo:                 client %p crtc %d", client, stuff->crtc));
     REQUEST_SIZE_MATCH(xRRGetCrtcInfoReq);
 
     if ((stuff->crtc < LRRCrtcStart) ||
@@ -755,7 +755,7 @@ ProcLRRSetCrtcConfig(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRSetCrtcConfig:               client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRSetCrtcConfig:               client %p", client));
     REQUEST_SIZE_MATCH(xRRSetCrtcConfigReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -782,7 +782,7 @@ ProcLRRGetCrtcGammaSize(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRGetCrtcGammaSize:            client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetCrtcGammaSize:            client %p", client));
     REQUEST_SIZE_MATCH(xRRGetCrtcGammaSizeReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -813,7 +813,7 @@ ProcLRRGetCrtcGamma(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRGetCrtcGamma:                client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetCrtcGamma:                client %p", client));
     REQUEST_SIZE_MATCH(xRRGetCrtcGammaReq);
     len = 256 * 3 * 2;
     extra = (char *) malloc(len);
@@ -866,7 +866,7 @@ ProcLRRGetCrtcGamma(ClientPtr client)
 int
 ProcLRRGetScreenResourcesCurrent(ClientPtr client)
 {
-    LLOGLN(10, ("ProcLRRGetScreenResourcesCurrent:   client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetScreenResourcesCurrent:   client %p", client));
     return ProcLRRGetScreenResources(client);
 }
 
@@ -892,7 +892,7 @@ ProcLRRGetCrtcTransform(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRGetCrtcTransform:            client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetCrtcTransform:            client %p", client));
     REQUEST_SIZE_MATCH(xRRGetPanningReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -923,7 +923,7 @@ ProcLRRGetPanning(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRGetPanning:                  client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetPanning:                  client %p", client));
     REQUEST_SIZE_MATCH(xRRGetPanningReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -949,7 +949,7 @@ ProcLRRGetOutputPrimary(ClientPtr client)
 
     (void) stuff;
 
-    LLOGLN(10, ("ProcLRRGetOutputPrimary:            client %p", client));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRGetOutputPrimary:            client %p", client));
     REQUEST_SIZE_MATCH(xRRGetOutputPrimaryReq);
     memset(&rep, 0, sizeof(rep));
     rep.type = X_Reply;
@@ -965,16 +965,16 @@ ProcLRRDispatch(ClientPtr client)
 {
     REQUEST(xReq);
 
-    LLOGLN(10, ("ProcLRRDispatch: data %d", stuff->data));
+    LLOGLN(LOG_LEVEL_TRACE, ("ProcLRRDispatch: data %d", stuff->data));
     if (stuff->data >= LRRNumberRequests)
     {
-        LLOGLN(0, ("ProcLRRDispatch: returning BadRequest, data %d",
+        LLOGLN(LOG_LEVEL_INFO, ("ProcLRRDispatch: returning BadRequest, data %d",
                stuff->data));
         return BadRequest;
     }
     if (g_procLRandrVector[stuff->data] == NULL)
     {
-        LLOGLN(0, ("ProcLRRDispatch: returning Success, data %d",
+        LLOGLN(LOG_LEVEL_INFO, ("ProcLRRDispatch: returning Success, data %d",
                stuff->data));
         return Success;
     }
@@ -985,7 +985,7 @@ ProcLRRDispatch(ClientPtr client)
 static int
 SProcLRRDispatch(ClientPtr client)
 {
-    LLOGLN(10, ("SProcLRRDispatch:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("SProcLRRDispatch:"));
     return 0;
 }
 
@@ -996,7 +996,7 @@ LRRClientCallback(CallbackListPtr *list, void *closure, void *data)
     NewClientInfoRec *clientinfo;
     ClientPtr pClient;
 
-    LLOGLN(10, ("LRRClientCallback: list %p closure %p data %p",
+    LLOGLN(LOG_LEVEL_TRACE, ("LRRClientCallback: list %p closure %p data %p",
            list, closure, data));
     if (data != NULL)
     {
@@ -1004,13 +1004,13 @@ LRRClientCallback(CallbackListPtr *list, void *closure, void *data)
         if (clientinfo->client != NULL)
         {
             pClient = clientinfo->client;
-            LLOGLN(10, ("LRRClientCallback: clientState %d clientGone %d",
+            LLOGLN(LOG_LEVEL_TRACE, ("LRRClientCallback: clientState %d clientGone %d",
                    pClient->clientState, pClient->clientGone));
             if (pClient->clientGone ||
                 (pClient->clientState == ClientStateRetained) ||
                 (pClient->clientState == ClientStateGone))
             {
-                LLOGLN(10, ("LRRClientCallback: client gone"));
+                LLOGLN(LOG_LEVEL_TRACE, ("LRRClientCallback: client gone"));
                 remove_client(pClient);
             }
         }
@@ -1024,13 +1024,13 @@ rdpLRRInit(rdpPtr dev)
     ExtensionEntry *extEntry;
     int index;
 
-    LLOGLN(10, ("rdpLRRInit:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpLRRInit:"));
     if (!AddCallback(&ClientStateCallback, LRRClientCallback, 0))
     {
-        LLOGLN(0, ("rdpLRRInit: AddCallback failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpLRRInit: AddCallback failed"));
         return 1;
     }
-    LLOGLN(0, ("rdpLRRInit: AddCallback ok"));
+    LLOGLN(LOG_LEVEL_INFO, ("rdpLRRInit: AddCallback ok"));
 
     extEntry = AddExtension(LRANDR_NAME,
                             LRRNumberEvents, LRRNumberErrors,
@@ -1038,10 +1038,10 @@ rdpLRRInit(rdpPtr dev)
                             NULL, StandardMinorOpcode);
     if (extEntry == NULL)
     {
-        LLOGLN(0, ("rdpLRRInit: AddExtension failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpLRRInit: AddExtension failed"));
         return 1;
     }
-    LLOGLN(0, ("rdpLRRInit: AddExtension ok"));
+    LLOGLN(LOG_LEVEL_INFO, ("rdpLRRInit: AddExtension ok"));
 
     LRRErrorBase = extEntry->errorBase;
     LRREventBase = extEntry->eventBase;
@@ -1133,14 +1133,14 @@ rdpLRRSetRdpOutputs(rdpPtr dev)
     int count;
     int cont;
 
-    LLOGLN(10, ("rdpLRRSetRdpOutputs: numCrtcs %d numOutputs %d "
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpLRRSetRdpOutputs: numCrtcs %d numOutputs %d "
            "monitorCount %d",
            g_numCrtcs, g_numOutputs, dev->monitorCount));
     LRRSendConfigNotify(dev->pScreen);
     g_primaryOutput = None;
     width = dev->width;
     height = dev->height;
-    LLOGLN(10, ("rdpLRRSetRdpOutputs: width %d height %d", width, height));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpLRRSetRdpOutputs: width %d height %d", width, height));
     if (dev->monitorCount <= 0)
     {
         g_numCrtcs = 1;
@@ -1195,13 +1195,13 @@ rdpLRRSetRdpOutputs(rdpPtr dev)
     xorg_list_for_each_entry_safe(iterator, next, &g_interestedClients, entry)
     {
         cont = 0;
-        LLOGLN(10, ("rdpLRRSetRdpOutputs:                client %p",
+        LLOGLN(LOG_LEVEL_TRACE, ("rdpLRRSetRdpOutputs:                client %p",
                iterator->pClient));
         if (iterator->mask & RRScreenChangeNotifyMask)
         {
             if (LRRDeliverScreenEvent(iterator, dev->pScreen) != 0)
             {
-                LLOGLN(0, ("rdpLRRSetRdpOutputs: error removing from "
+                LLOGLN(LOG_LEVEL_INFO, ("rdpLRRSetRdpOutputs: error removing from "
                        "interested list"));
                 xorg_list_del(&(iterator->entry));
                 free(iterator);
@@ -1214,7 +1214,7 @@ rdpLRRSetRdpOutputs(rdpPtr dev)
             {
                 if (LRRDeliverCrtcEvent(iterator, g_crtcs + index) != 0)
                 {
-                    LLOGLN(0, ("rdpLRRSetRdpOutputs: error removing from "
+                    LLOGLN(LOG_LEVEL_INFO, ("rdpLRRSetRdpOutputs: error removing from "
                            "interested list"));
                     xorg_list_del(&(iterator->entry));
                     free(iterator);
@@ -1233,7 +1233,7 @@ rdpLRRSetRdpOutputs(rdpPtr dev)
             {
                 if (LRRDeliverOutputEvent(iterator, g_outputs + index) != 0)
                 {
-                    LLOGLN(0, ("rdpLRRSetRdpOutputs: error removing from "
+                    LLOGLN(LOG_LEVEL_INFO, ("rdpLRRSetRdpOutputs: error removing from "
                            "interested list"));
                     xorg_list_del(&(iterator->entry));
                     free(iterator);
