@@ -163,13 +163,13 @@ rdpAddClientConToDev(rdpPtr dev, rdpClientCon *clientCon)
     if (dev->clientConTail == NULL)
     {
         LOG(LOG_LEVEL_INFO, "rdpAddClientConToDev: adding first clientCon %p",
-                   clientCon);
+            clientCon);
         dev->clientConHead = clientCon;
     }
     else
     {
         LOG(LOG_LEVEL_INFO, "rdpAddClientConToDev: adding clientCon %p",
-                   clientCon);
+            clientCon);
         dev->clientConTail->next = clientCon;
     }
     dev->clientConTail = clientCon;
@@ -180,7 +180,7 @@ static void
 rdpRemoveClientConFromDev(rdpPtr dev, rdpClientCon *clientCon)
 {
     LOG(LOG_LEVEL_INFO, "rdpRemoveClientConFromDev: removing clientCon %p",
-               clientCon);
+        clientCon);
 
     if (clientCon->prev == NULL)
     {
@@ -232,7 +232,7 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     else
     {
         LOG(LOG_LEVEL_INFO, "rdpClientConGotConnection: g_sck_accept ok new_sck %d",
-               new_sck);
+            new_sck);
         clientCon->sck = new_sck;
         g_sck_set_non_blocking(clientCon->sck);
         g_sck_tcp_set_no_delay(clientCon->sck); /* only works if TCP */
@@ -248,8 +248,8 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     {
         /* Only allow one client at a time */
         LOG(LOG_LEVEL_INFO, "rdpClientConGotConnection: "
-                   "marking only clientCon %p for disconnect",
-                   dev->clientConTail);
+            "marking only clientCon %p for disconnect",
+            dev->clientConTail);
         dev->clientConTail->connected = FALSE;
     }
 #endif
@@ -257,15 +257,17 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     /* set idle timer to disconnect */
     if (dev->idle_disconnect_timeout_s > 0)
     {
-        LOG(LOG_LEVEL_INFO, "rdpClientConGetConnection: "
-                   "engaging idle timer, timeout [%d] sec", dev->idle_disconnect_timeout_s);
+        LOG(LOG_LEVEL_INFO, "rdpClientConGotConnection: "
+            "engaging idle timer, timeout [%d] sec",
+            dev->idle_disconnect_timeout_s);
         dev->idleDisconnectTimer = TimerSet(dev->idleDisconnectTimer, 0, dev->idle_disconnect_timeout_s * 1000,
                                             rdpDeferredIdleDisconnectCallback, dev);
     }
     else
     {
-        LOG(LOG_LEVEL_INFO, "rdpClientConGetConnection: "
-                   "idle_disconnect_timeout set to non-positive value, idle timer turned off");
+        LOG(LOG_LEVEL_INFO, "rdpClientConGotConnection: "
+            "idle_disconnect_timeout set to non-positive value, "
+            "idle timer turned off");
     }
 
     rdpAddClientConToDev(dev, clientCon);
@@ -290,7 +292,8 @@ rdpDeferredDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         LOG(LOG_LEVEL_INFO, "rdpDeferredDisconnectCallback: connected");
         if (dev->disconnectTimer != NULL)
         {
-            LOG(LOG_LEVEL_INFO, "rdpDeferredDisconnectCallback: disengaging disconnect timer");
+            LOG(LOG_LEVEL_INFO,
+                "rdpDeferredDisconnectCallback: disengaging disconnect timer");
             TimerCancel(dev->disconnectTimer);
             TimerFree(dev->disconnectTimer);
             dev->disconnectTimer = NULL;
@@ -305,7 +308,7 @@ rdpDeferredDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     if (now - dev->disconnect_time_ms > dev->disconnect_timeout_s * 1000)
     {
         LOG(LOG_LEVEL_INFO, "rdpDeferredDisconnectCallback: "
-                   "disconnect timeout exceeded, exiting");
+            "disconnect timeout exceeded, exiting");
         kill(getpid(), SIGTERM);
         return 0;
     }
@@ -332,8 +335,9 @@ rdpDeferredIdleDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     /* we MUST compare to equal otherwise we could restart the idle timer with 0! */
     if (millis_since_last_event >= (dev->idle_disconnect_timeout_s * 1000))
     {
-        LOG(LOG_LEVEL_INFO, "rdpDeferredIdleDisconnectCallback: session has been idle for %d seconds, disconnecting",
-                    dev->idle_disconnect_timeout_s);
+        LOG(LOG_LEVEL_INFO, "rdpDeferredIdleDisconnectCallback: "
+            "session has been idle for %d seconds, disconnecting",
+            dev->idle_disconnect_timeout_s);
 
         /* disconnect all clients */
         while (dev->clientConHead != NULL)
@@ -341,12 +345,14 @@ rdpDeferredIdleDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
             rdpClientConDisconnect(dev, dev->clientConHead);
         }
 
-        LOG(LOG_LEVEL_INFO, "rdpDeferredIdleDisconnectCallback: disconnected idle session");
+        LOG(LOG_LEVEL_INFO, "rdpDeferredIdleDisconnectCallback: "
+            "disconnected idle session");
 
         TimerCancel(dev->idleDisconnectTimer);
         TimerFree(dev->idleDisconnectTimer);
         dev->idleDisconnectTimer = NULL;
-        LOG(LOG_LEVEL_INFO, "rdpDeferredIdleDisconnectCallback: idle timer disengaged");
+        LOG(LOG_LEVEL_INFO, "rdpDeferredIdleDisconnectCallback: "
+            "idle timer disengaged");
         return 0;
     }
 
@@ -365,7 +371,8 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
 
     if (dev->idleDisconnectTimer != NULL && dev->idle_disconnect_timeout_s > 0)
     {
-        LOG(LOG_LEVEL_INFO, "rdpClientConDisconnect: disconnected, idle timer disengaged");
+        LOG(LOG_LEVEL_INFO, "rdpClientConDisconnect: "
+            "disconnected, idle timer disengaged");
         TimerCancel(dev->idleDisconnectTimer);
         TimerFree(dev->idleDisconnectTimer);
         dev->idleDisconnectTimer = NULL;
@@ -375,8 +382,9 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     {
         if (dev->disconnect_scheduled == FALSE)
         {
-            LOG(LOG_LEVEL_INFO, "rdpClientConDisconnect: engaging disconnect timer, "
-                       "exit after %d seconds", dev->disconnect_timeout_s);
+            LOG(LOG_LEVEL_INFO, "rdpClientConDisconnect: "
+                "engaging disconnect timer, "
+                "exit after %d seconds", dev->disconnect_timeout_s);
             dev->disconnectTimer = TimerSet(dev->disconnectTimer, 0, 1000 * 10,
                                             rdpDeferredDisconnectCallback, dev);
             dev->disconnect_scheduled = TRUE;
@@ -456,14 +464,16 @@ rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
             }
             else
             {
-                LOG(LOG_LEVEL_INFO, "rdpClientConSend: g_tcp_send failed(returned -1)");
+                LOG(LOG_LEVEL_INFO,
+                    "rdpClientConSend: g_tcp_send failed(returned -1)");
                 clientCon->connected = FALSE;
                 return 1;
             }
         }
         else if (sent == 0)
         {
-            LOG(LOG_LEVEL_INFO, "rdpClientConSend: g_tcp_send failed(returned zero)");
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConSend: g_tcp_send failed(returned zero)");
             clientCon->connected = FALSE;
             return 1;
         }
@@ -494,8 +504,8 @@ rdpClientConSendMsg(rdpPtr dev, rdpClientCon *clientCon)
         if (len > s->size)
         {
             LOG(LOG_LEVEL_INFO, "rdpClientConSendMsg: overrun error len, %d "
-                       "stream size %d, client count %d",
-                       len, s->size, clientCon->count);
+                "stream size %d, client count %d",
+                len, s->size, clientCon->count);
         }
 
         s_pop_layer(s, iso_hdr);
@@ -528,7 +538,8 @@ rdpClientConSendPending(rdpPtr dev, rdpClientCon *clientCon)
         s_mark_end(clientCon->out_s);
         if (rdpClientConSendMsg(dev, clientCon) != 0)
         {
-            LOG(LOG_LEVEL_INFO, "rdpClientConSendPending: rdpClientConSendMsg failed");
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConSendPending: rdpClientConSendMsg failed");
             rv = 1;
         }
     }
@@ -561,14 +572,16 @@ rdpClientConRecv(rdpPtr dev, rdpClientCon *clientCon, char *data, int len)
             }
             else
             {
-                LOG(LOG_LEVEL_INFO, "rdpClientConRecv: g_sck_recv failed(returned -1)");
+                LOG(LOG_LEVEL_INFO,
+                    "rdpClientConRecv: g_sck_recv failed(returned -1)");
                 clientCon->connected = FALSE;
                 return 1;
             }
         }
         else if (rcvd == 0)
         {
-            LOG(LOG_LEVEL_INFO, "rdpClientConRecv: g_sck_recv failed(returned 0)");
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConRecv: g_sck_recv failed(returned 0)");
             clientCon->connected = FALSE;
             return 1;
         }
@@ -676,7 +689,7 @@ rdpClientConProcessMsgVersion(rdpPtr dev, rdpClientCon *clientCon,
                               int param1, int param2, int param3, int param4)
 {
     LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsgVersion: version %d %d %d %d",
-           param1, param2, param3, param4);
+        param1, param2, param3, param4);
 
     if ((param1 > 0) || (param2 > 0) || (param3 > 0) || (param4 > 0))
     {
@@ -703,8 +716,9 @@ rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
 
     if (clientCon->shmemptr != NULL && clientCon->shmem_bytes == bytes)
     {
-        LOG(LOG_LEVEL_INFO, "rdpClientConAllocateSharedMemory: reusing shmemfd %d",
-               clientCon->shmemfd);
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConAllocateSharedMemory: reusing shmemfd %d",
+            clientCon->shmemfd);
         return;
     }
     if (clientCon->shmemptr != NULL)
@@ -724,10 +738,11 @@ rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
     clientCon->shmemptr = shmemptr;
     clientCon->shmemfd = shmemfd;
     clientCon->shmem_bytes = bytes;
-    LOG(LOG_LEVEL_INFO, "rdpClientConAllocateSharedMemory: shmemfd %d shmemptr %p "
-            "bytes %d",
-            clientCon->shmemfd, clientCon->shmemptr,
-            clientCon->shmem_bytes);
+    LOG(LOG_LEVEL_INFO,
+        "rdpClientConAllocateSharedMemory: shmemfd %d shmemptr %p "
+        "bytes %d",
+        clientCon->shmemfd, clientCon->shmemptr,
+        clientCon->shmem_bytes);
 }
 
 /******************************************************************************/
@@ -778,12 +793,13 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
     {
         case CC_SUF_RFX: /* RFX */
         case CC_GFX_PRO:
-            LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsgClientInfo: got RFX capture");
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConProcessMsgClientInfo: got RFX capture");
             /* RFX capture needs fixed-size rectangles */
             clientCon->cap_width = RDPALIGN(width, XRDP_RFX_ALIGN);
             clientCon->cap_height = RDPALIGN(height, XRDP_RFX_ALIGN);
             LOG(LOG_LEVEL_INFO, "  cap_width %d cap_height %d",
-                   clientCon->cap_width, clientCon->cap_height);
+                clientCon->cap_width, clientCon->cap_height);
 
             bytes = clientCon->cap_width * clientCon->cap_height *
                     clientCon->rdp_Bpp;
@@ -796,7 +812,8 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
             break;
         case CC_SUF_A2: /* H264 */
         case CC_GFX_A2:
-            LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsgClientInfo: got H264 capture");
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConProcessMsgClientInfo: got H264 capture");
             clientCon->cap_width = width;
             clientCon->cap_height = height;
 
@@ -809,7 +826,8 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
             dev->msFrameInterval = clientCon->client_info.h264_frame_interval;
             break;
         default:
-            LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsgClientInfo: got normal capture");
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConProcessMsgClientInfo: got normal capture");
             clientCon->cap_width = width;
             clientCon->cap_height = height;
 
@@ -823,7 +841,8 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
             break;
     }
 
-    LOG(LOG_LEVEL_INFO, "    msFrameInterval %ld", (long)dev->msFrameInterval);
+    LOG(LOG_LEVEL_INFO,
+        "    msFrameInterval %ld", (long)dev->msFrameInterval);
     rdpClientConAllocateSharedMemory(clientCon, bytes);
 
     if (clientCon->client_info.capture_format != 0)
@@ -882,7 +901,8 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
         dev->allow_screen_resize = 1;
         ok = RRScreenSizeSet(dev->pScreen, width, height, mmwidth, mmheight);
         dev->allow_screen_resize = 0;
-        LOG(LOG_LEVEL_INFO, "rdpClientConProcessScreenSizeMsg: RRScreenSizeSet ok=[%d]", ok);
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConResizeAllMemoryAreas: RRScreenSizeSet ok=[%d]", ok);
     }
 
     rdpCaptureResetState(clientCon);
@@ -903,7 +923,7 @@ rdpClientConProcessMonitorUpdateMsg(rdpPtr dev, rdpClientCon *clientCon,
 {
     int i;
     LOG(LOG_LEVEL_INFO, "rdpClientConProcessMonitorUpdateMsg: (%dx%d) #%d",
-           width, height, num_monitors);
+        width, height, num_monitors);
 
 
     // Update the client_info we have
@@ -948,8 +968,9 @@ rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
     in_uint32_le(s, param3);
     in_uint32_le(s, param4);
 
-    LOG(LOG_LEVEL_TRACE, "rdpClientConProcessMsgClientInput: msg %d param1 %d param2 %d "
-           "param3 %d param4 %d", msg, param1, param2, param3, param4);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpClientConProcessMsgClientInput: msg %d param1 %d param2 %d "
+        "param3 %d param4 %d", msg, param1, param2, param3, param4);
 
     if (msg < 100)
     {
@@ -965,13 +986,15 @@ rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
         y = param1 & 0xffff;
         cx = (param2 >> 16) & 0xffff;
         cy = param2 & 0xffff;
-        LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsgClientInput: invalidate x %d y %d "
-               "cx %d cy %d", x, y, cx, cy);
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConProcessMsgClientInput: invalidate x %d y %d "
+            "cx %d cy %d", x, y, cx, cy);
         rdpClientConAddDirtyScreen(dev, clientCon, x, y, cx, cy);
     }
     else if (msg == 300) /* resize desktop */
     {
-        LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsgClientInput: obsolete msg %d", msg);
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConProcessMsgClientInput: obsolete msg %d", msg);
     }
     else if (msg == 301) /* version */
     {
@@ -991,12 +1014,15 @@ rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
         }
         else
         {
-            LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsgClientInput: bad monitor count %d", param3);
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConProcessMsgClientInput: bad monitor count %d",
+                param3);
         }
     }
     else
     {
-        LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsgClientInput: unknown msg %d", msg);
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConProcessMsgClientInput: unknown msg %d", msg);
     }
 
     return 0;
@@ -1067,7 +1093,8 @@ rdpClientConProcessClientInfoMonitors(rdpPtr dev, rdpClientCon *clientCon)
     if (clientCon->client_info.display_sizes.monitorCount > 0)
     {
         LOG(LOG_LEVEL_INFO, "  client can do multimon");
-        LOG(LOG_LEVEL_INFO, "  client monitor data, monitorCount=%d", clientCon->client_info.display_sizes.monitorCount);
+        LOG(LOG_LEVEL_INFO, "  client monitor data, monitorCount=%d",
+            clientCon->client_info.display_sizes.monitorCount);
         clientCon->doMultimon = 1;
         dev->doMultimon = 1;
         memcpy(dev->minfo, clientCon->client_info.display_sizes.minfo, sizeof(dev->minfo));
@@ -1092,10 +1119,10 @@ rdpClientConProcessClientInfoMonitors(rdpPtr dev, rdpClientCon *clientCon)
             dev->minfo[index].right -= box.x1;
             dev->minfo[index].bottom -= box.y1;
             LOG(LOG_LEVEL_INFO, "    left %d top %d right %d bottom %d",
-                   dev->minfo[index].left,
-                   dev->minfo[index].top,
-                   dev->minfo[index].right,
-                   dev->minfo[index].bottom);
+                dev->minfo[index].left,
+                dev->minfo[index].top,
+                dev->minfo[index].right,
+                dev->minfo[index].bottom);
         }
     }
     else
@@ -1131,8 +1158,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     if (clientCon->client_info.version != CLIENT_INFO_CURRENT_VERSION)
     {
         LOG(LOG_LEVEL_INFO, "expected xrdp client_info version %d, got %d",
-                   CLIENT_INFO_CURRENT_VERSION,
-                   clientCon->client_info.version);
+            CLIENT_INFO_CURRENT_VERSION,
+            clientCon->client_info.version);
         FatalError("Incompatible xrdp version detected  - please recompile");
     }
 
@@ -1252,10 +1279,12 @@ rdpClientConProcessMsgClientRegion(rdpPtr dev, rdpClientCon *clientCon)
     in_uint32_le(s, y);
     in_uint32_le(s, cx);
     in_uint32_le(s, cy);
-    LOG(LOG_LEVEL_TRACE, "rdpClientConProcessMsgClientRegion: %d %d %d %d flags 0x%8.8x",
-           x, y, cx, cy, flags);
-    LOG(LOG_LEVEL_TRACE, "rdpClientConProcessMsgClientRegion: rect_id %d rect_id_ack %d",
-           clientCon->rect_id, clientCon->rect_id_ack);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpClientConProcessMsgClientRegion: %d %d %d %d flags 0x%8.8x",
+        x, y, cx, cy, flags);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpClientConProcessMsgClientRegion: rect_id %d rect_id_ack %d",
+        clientCon->rect_id, clientCon->rect_id_ack);
 
     box.x1 = x;
     box.y1 = y;
@@ -1264,7 +1293,7 @@ rdpClientConProcessMsgClientRegion(rdpPtr dev, rdpClientCon *clientCon)
 
     rdpRegionInit(&reg, &box, 0);
     LOG(LOG_LEVEL_TRACE, "rdpClientConProcessMsgClientRegion: %d %d %d %d",
-           box.x1, box.y1, box.x2, box.y2);
+        box.x1, box.y1, box.x2, box.y2);
     rdpRegionSubtract(clientCon->shmRegion, clientCon->shmRegion, &reg);
     rdpRegionUninit(&reg);
     rdpScheduleDeferredUpdate(clientCon);
@@ -1288,9 +1317,11 @@ rdpClientConProcessMsgClientRegionEx(rdpPtr dev, rdpClientCon *clientCon)
         // Client just wishes to ack all in-flight frames
         clientCon->rect_id_ack = clientCon->rect_id;
     }
-    LOG(LOG_LEVEL_TRACE, "rdpClientConProcessMsgClientRegionEx: flags 0x%8.8x", flags);
-    LOG(LOG_LEVEL_TRACE, "rdpClientConProcessMsgClientRegionEx: rect_id %d "
-           "rect_id_ack %d", clientCon->rect_id, clientCon->rect_id_ack);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpClientConProcessMsgClientRegionEx: flags 0x%8.8x", flags);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpClientConProcessMsgClientRegionEx: rect_id %d "
+        "rect_id_ack %d", clientCon->rect_id, clientCon->rect_id_ack);
     rdpScheduleDeferredUpdate(clientCon);
     return 0;
 }
@@ -1313,8 +1344,8 @@ rdpClientConProcessMsgClientSuppressOutput(rdpPtr dev, rdpClientCon *clientCon)
     in_uint32_le(s, right);
     in_uint32_le(s, bottom);
     LOG(LOG_LEVEL_TRACE, "rdpClientConProcessMsgClientSuppressOutput: "
-           "suppress %d left %d top %d right %d bottom %d",
-           suppress, left, top, right, bottom);
+        "suppress %d left %d top %d right %d bottom %d",
+        suppress, left, top, right, bottom);
     clientCon->suppress_output = suppress;
     if (suppress == 0)
     {
@@ -1354,7 +1385,7 @@ rdpClientConProcessMsg(rdpPtr dev, rdpClientCon *clientCon)
             break;
         default:
             LOG(LOG_LEVEL_INFO, "rdpClientConProcessMsg: unknown msg_type %d",
-                   msg_type);
+                msg_type);
             break;
     }
 
@@ -1492,7 +1523,8 @@ rdpClientConCheck(ScreenPtr pScreen)
 
             if (g_sck_recv(dev->disconnect_sck, buf, sizeof(buf), 0))
             {
-                LOG(LOG_LEVEL_INFO, "rdpClientConCheck: got disconnection request");
+                LOG(LOG_LEVEL_INFO,
+                    "rdpClientConCheck: got disconnection request");
 
                 /* disconnect all clients */
                 while (dev->clientConHead != NULL)
@@ -1513,7 +1545,8 @@ rdpClientConCheck(ScreenPtr pScreen)
             {
                 if (rdpClientConGotData(pScreen, dev, clientCon) != 0)
                 {
-                    LOG(LOG_LEVEL_INFO, "rdpClientConCheck: rdpClientConGotData failed");
+                    LOG(LOG_LEVEL_INFO,
+                        "rdpClientConCheck: rdpClientConGotData failed");
                     continue; /* skip other socket checks for this clientCon */
                 }
             }
@@ -1524,7 +1557,8 @@ rdpClientConCheck(ScreenPtr pScreen)
             {
                 if (rdpClientConGotControlConnection(pScreen, dev, clientCon) != 0)
                 {
-                    LOG(LOG_LEVEL_INFO, "rdpClientConCheck: rdpClientConGotControlConnection failed");
+                    LOG(LOG_LEVEL_INFO, "rdpClientConCheck: "
+                        "rdpClientConGotControlConnection failed");
                     continue;
                 }
             }
@@ -1535,7 +1569,8 @@ rdpClientConCheck(ScreenPtr pScreen)
             {
                 if (rdpClientConGotControlData(pScreen, dev, clientCon) != 0)
                 {
-                    LOG(LOG_LEVEL_INFO, "rdpClientConCheck: rdpClientConGotControlData failed");
+                    LOG(LOG_LEVEL_INFO, "rdpClientConCheck: "
+                        "rdpClientConGotControlData failed");
                     continue;
                 }
             }
@@ -1560,7 +1595,8 @@ rdpClientConInit(rdpPtr dev)
         {
             if (!g_directory_exist(socket_dir))
             {
-                LOG(LOG_LEVEL_INFO, "rdpClientConInit: g_create_dir(%s) failed", socket_dir);
+                LOG(LOG_LEVEL_INFO,
+                    "rdpClientConInit: g_create_dir(%s) failed", socket_dir);
                 return 0;
             }
         }
@@ -1608,7 +1644,9 @@ rdpClientConInit(rdpPtr dev)
         dev->disconnect_sck = g_sck_local_socket_dgram();
         if (g_sck_local_bind(dev->disconnect_sck, dev->disconnect_uds) != 0)
         {
-            LOG(LOG_LEVEL_INFO, "rdpClientConInit: g_tcp_local_bind failed at %s:%d", __FILE__, __LINE__);
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConInit: g_tcp_local_bind failed at %s:%d",
+                __FILE__, __LINE__);
             return 1;
         }
         g_sck_listen(dev->disconnect_sck);
@@ -1627,8 +1665,9 @@ rdpClientConInit(rdpPtr dev)
         }
 
     }
-    LOG(LOG_LEVEL_INFO, "rdpClientConInit: disconnect idle session after [%d] sec",
-               dev->idle_disconnect_timeout_s);
+    LOG(LOG_LEVEL_INFO,
+        "rdpClientConInit: disconnect idle session after [%d] sec",
+        dev->idle_disconnect_timeout_s);
 
     /* kill disconnected */
     ptext = getenv("XRDP_SESMAN_MAX_DISC_TIME");
@@ -1659,8 +1698,9 @@ rdpClientConInit(rdpPtr dev)
         dev->disconnect_timeout_s = 60;
     }
 
-    LOG(LOG_LEVEL_INFO, "rdpClientConInit: kill disconnected [%d] timeout [%d] sec",
-               dev->do_kill_disconnected, dev->disconnect_timeout_s);
+    LOG(LOG_LEVEL_INFO,
+        "rdpClientConInit: kill disconnected [%d] timeout [%d] sec",
+        dev->do_kill_disconnected, dev->disconnect_timeout_s);
 
 
     return 0;
@@ -1686,7 +1726,7 @@ rdpClientConDeinit(rdpPtr dev)
         if (unlink(dev->uds_data) < 0)
         {
             LOG(LOG_LEVEL_INFO, "rdpClientConDeinit: failed to delete %s (%s)",
-                        dev->uds_data, strerror(errno));
+                dev->uds_data, strerror(errno));
         }
     }
 
@@ -1694,11 +1734,13 @@ rdpClientConDeinit(rdpPtr dev)
     {
         rdpClientConRemoveEnabledDevice(dev->disconnect_sck);
         g_sck_close(dev->disconnect_sck);
-        LOG(LOG_LEVEL_INFO, "rdpClientConDeinit: deleting file %s", dev->disconnect_uds);
+        LOG(LOG_LEVEL_INFO, "rdpClientConDeinit: deleting file %s",
+            dev->disconnect_uds);
         if (unlink(dev->disconnect_uds) < 0)
         {
-            LOG(LOG_LEVEL_INFO, "rdpClientConDeinit: failed to delete %s (%s)",
-                        dev->disconnect_uds, strerror(errno));
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConDeinit: failed to delete %s (%s)",
+                dev->disconnect_uds, strerror(errno));
         }
     }
 
@@ -1805,8 +1847,8 @@ rdpClientConScreenBlt(rdpPtr dev, rdpClientCon *clientCon,
     if (clientCon->connected)
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConScreenBlt: x %d y %d cx %d cy %d "
-               "srcx %d srcy %d",
-               x, y, cx, cy, srcx, srcy);
+            "srcx %d srcy %d",
+            x, y, cx, cy, srcx, srcy);
         rdpClientConPreCheck(dev, clientCon, 16);
         out_uint16_le(clientCon->out_s, 4); /* screen blt */
         out_uint16_le(clientCon->out_s, 16); /* size */
@@ -2249,7 +2291,8 @@ rdpClientConSetCursorShmFd(rdpPtr dev, rdpClientCon *clientCon,
         memcpy(shmemptr + width * height * Bpp, cur_mask, width * height / 8);
         rdpClientConSendPending(clientCon->dev, clientCon);
         rv = g_sck_send_fd_set(clientCon->sck, "int", 4, &fd, 1);
-        LOG(LOG_LEVEL_TRACE, "rdpClientConSetCursorShmFd: g_sck_send_fd_set rv %d", rv);
+        LOG(LOG_LEVEL_TRACE,
+            "rdpClientConSetCursorShmFd: g_sck_send_fd_set rv %d", rv);
         g_free_unmap_fd(shmemptr, fd, shmsize);
     }
     return rv;
@@ -2264,7 +2307,8 @@ rdpClientConCreateOsSurface(rdpPtr dev, rdpClientCon *clientCon,
 
     if (clientCon->connected)
     {
-        LOG(LOG_LEVEL_TRACE, "rdpClientConCreateOsSurface: width %d height %d", width, height);
+        LOG(LOG_LEVEL_TRACE,
+            "rdpClientConCreateOsSurface: width %d height %d", width, height);
         rdpClientConPreCheck(dev, clientCon, 12);
         out_uint16_le(clientCon->out_s, 20);
         out_uint16_le(clientCon->out_s, 12);
@@ -2285,8 +2329,9 @@ rdpClientConCreateOsSurfaceBpp(rdpPtr dev, rdpClientCon *clientCon,
     LOG(LOG_LEVEL_TRACE, "rdpClientConCreateOsSurfaceBpp:");
     if (clientCon->connected)
     {
-        LOG(LOG_LEVEL_TRACE, "rdpClientConCreateOsSurfaceBpp: width %d height %d "
-               "bpp %d", width, height, bpp);
+        LOG(LOG_LEVEL_TRACE,
+            "rdpClientConCreateOsSurfaceBpp: width %d height %d "
+            "bpp %d", width, height, bpp);
         rdpClientConPreCheck(dev, clientCon, 13);
         out_uint16_le(clientCon->out_s, 31);
         out_uint16_le(clientCon->out_s, 13);
@@ -2313,7 +2358,8 @@ rdpClientConSwitchOsSurface(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
         }
 
         clientCon->rdpIndex = rdpindex;
-        LOG(LOG_LEVEL_TRACE, "rdpClientConSwitchOsSurface: rdpindex %d", rdpindex);
+        LOG(LOG_LEVEL_TRACE,
+            "rdpClientConSwitchOsSurface: rdpindex %d", rdpindex);
         /* switch surface */
         rdpClientConPreCheck(dev, clientCon, 8);
         out_uint16_le(clientCon->out_s, 21);
@@ -2372,9 +2418,10 @@ rdpClientConAddOsBitmap(rdpPtr dev, rdpClientCon *clientCon,
     this_bytes = pixmap->devKind * pixmap->drawable.height;
     if (this_bytes > MAX_OS_BYTES)
     {
-        LOG(LOG_LEVEL_TRACE, "rdpClientConAddOsBitmap: error, too big this_bytes %d "
-               "width %d height %d", this_bytes,
-               pixmap->drawable.height, pixmap->drawable.height);
+        LOG(LOG_LEVEL_TRACE,
+            "rdpClientConAddOsBitmap: error, too big this_bytes %d "
+            "width %d height %d", this_bytes,
+            pixmap->drawable.height, pixmap->drawable.height);
         return -1;
     }
 
@@ -2415,8 +2462,9 @@ rdpClientConAddOsBitmap(rdpPtr dev, rdpClientCon *clientCon,
         }
         else
         {
-            LOG(LOG_LEVEL_TRACE, "rdpClientConAddOsBitmap: too many pixmaps removing "
-                   "oldest_index %d", oldest_index);
+            LOG(LOG_LEVEL_TRACE,
+                "rdpClientConAddOsBitmap: too many pixmaps removing "
+                "oldest_index %d", oldest_index);
             rdpClientConRemoveOsBitmap(dev, clientCon, oldest_index);
             rdpClientConDeleteOsSurface(dev, clientCon, oldest_index);
             clientCon->osBitmaps[oldest_index].used = TRUE;
@@ -2437,14 +2485,14 @@ rdpClientConAddOsBitmap(rdpPtr dev, rdpClientCon *clientCon,
 
     clientCon->osBitmapAllocSize += this_bytes;
     LOG(LOG_LEVEL_TRACE, "rdpClientConAddOsBitmap: this_bytes %d "
-           "clientCon->osBitmapAllocSize %d",
-           this_bytes, clientCon->osBitmapAllocSize);
+        "clientCon->osBitmapAllocSize %d",
+        this_bytes, clientCon->osBitmapAllocSize);
 #if USE_MAX_OS_BYTES
     while (clientCon->osBitmapAllocSize > MAX_OS_BYTES)
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConAddOsBitmap: must delete "
-               "clientCon->osBitmapNumUsed %d",
-               clientCon->osBitmapNumUsed);
+            "clientCon->osBitmapNumUsed %d",
+            clientCon->osBitmapNumUsed);
         /* find oldest */
         oldest = INT_MAX;
         oldest_index = -1;
@@ -2474,9 +2522,10 @@ rdpClientConAddOsBitmap(rdpPtr dev, rdpClientCon *clientCon,
     }
 #endif
     LOG(LOG_LEVEL_TRACE, "rdpClientConAddOsBitmap: new bitmap index %d", rv);
-    LOG(LOG_LEVEL_TRACE, "rdpClientConAddOsBitmap: clientCon->osBitmapNumUsed %d "
-           "clientCon->osBitmapStamp 0x%8.8x",
-           clientCon->osBitmapNumUsed, clientCon->osBitmapStamp);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpClientConAddOsBitmap: clientCon->osBitmapNumUsed %d "
+        "clientCon->osBitmapStamp 0x%8.8x",
+        clientCon->osBitmapNumUsed, clientCon->osBitmapStamp);
     return rv;
 }
 
@@ -2501,7 +2550,7 @@ rdpClientConRemoveOsBitmap(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
     }
 
     LOG(LOG_LEVEL_TRACE, "rdpClientConRemoveOsBitmap: index %d stamp %d",
-           rdpindex, clientCon->osBitmaps[rdpindex].stamp);
+        rdpindex, clientCon->osBitmaps[rdpindex].stamp);
 
     if (clientCon->osBitmaps[rdpindex].used)
     {
@@ -2511,8 +2560,8 @@ rdpClientConRemoveOsBitmap(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
         this_bytes = pixmap->devKind * pixmap->drawable.height;
         clientCon->osBitmapAllocSize -= this_bytes;
         LOG(LOG_LEVEL_TRACE, "rdpClientConRemoveOsBitmap: this_bytes %d "
-               "clientCon->osBitmapAllocSize %d", this_bytes,
-               clientCon->osBitmapAllocSize);
+            "clientCon->osBitmapAllocSize %d", this_bytes,
+            clientCon->osBitmapAllocSize);
         clientCon->osBitmaps[rdpindex].used = 0;
         clientCon->osBitmaps[rdpindex].pixmap = 0;
         clientCon->osBitmaps[rdpindex].priv = 0;
@@ -2527,7 +2576,7 @@ rdpClientConRemoveOsBitmap(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
     }
 
     LOG(LOG_LEVEL_TRACE, "rdpup_remove_os_bitmap: clientCon->osBitmapNumUsed %d",
-           clientCon->osBitmapNumUsed);
+        clientCon->osBitmapNumUsed);
     return 0;
 }
 
@@ -2548,7 +2597,7 @@ rdpClientConUpdateOsUse(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
     }
 
     LOG(LOG_LEVEL_TRACE, "rdpClientConUpdateOsUse: index %d stamp %d",
-           rdpindex, clientCon->osBitmaps[rdpindex].stamp);
+        rdpindex, clientCon->osBitmaps[rdpindex].stamp);
 
     if (clientCon->osBitmaps[rdpindex].used)
     {
@@ -2557,7 +2606,8 @@ rdpClientConUpdateOsUse(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
     }
     else
     {
-        LOG(LOG_LEVEL_INFO, "rdpClientConUpdateOsUse: error rdpindex %d", rdpindex);
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConUpdateOsUse: error rdpindex %d", rdpindex);
     }
 
     return 0;
@@ -2635,8 +2685,9 @@ out_rects_dr(struct stream *s,
         out_uint16_le(s, y);
         out_uint16_le(s, cx);
         out_uint16_le(s, cy);
-        LOG(LOG_LEVEL_TRACE, "out_rects_dr: rects_d index %d x %d y %d cx %d cy %d",
-               index, x, y, cx, cy);
+        LOG(LOG_LEVEL_TRACE,
+            "out_rects_dr: rects_d index %d x %d y %d cx %d cy %d",
+            index, x, y, cx, cy);
     }
     out_uint16_le(s, num_rects_c);
     for (index = 0; index < num_rects_c; index++)
@@ -2650,8 +2701,9 @@ out_rects_dr(struct stream *s,
         out_uint16_le(s, y);
         out_uint16_le(s, cx);
         out_uint16_le(s, cy);
-        LOG(LOG_LEVEL_TRACE, "out_rects_dr: rects_c index %d x %d y %d cx %d cy %d",
-               index, x, y, cx, cy);
+        LOG(LOG_LEVEL_TRACE,
+            "out_rects_dr: rects_c index %d x %d y %d cx %d cy %d",
+            index, x, y, cx, cy);
     }
     return 0;
 }
@@ -2675,17 +2727,18 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
     int surface_id;
 
     LOG(LOG_LEVEL_TRACE, "rdpClientConSendPaintRectShmFd:");
-    LOG(LOG_LEVEL_TRACE, "rdpClientConSendPaintRectShmFd: cap_left %d cap_top %d "
-           "cap_width %d cap_height %d",
-           clientCon->cap_left, clientCon->cap_top,
-           clientCon->cap_width, clientCon->cap_height);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpClientConSendPaintRectShmFd: cap_left %d cap_top %d "
+        "cap_width %d cap_height %d",
+        clientCon->cap_left, clientCon->cap_top,
+        clientCon->cap_width, clientCon->cap_height);
     LOG(LOG_LEVEL_TRACE, "rdpClientConSendPaintRectShmFd: id->flags 0x%8.8X "
-           "id->left %d id->top %d id->width %d id->height %d",
-           id->flags, id->left, id->top, id->width, id->height);
+        "id->left %d id->top %d id->width %d id->height %d",
+        id->flags, id->left, id->top, id->width, id->height);
 
     capture_code = clientCon->client_info.capture_code;
     LOG(LOG_LEVEL_TRACE, "rdpClientConSendPaintRectShmFd: capture_code %d",
-           capture_code);
+        capture_code);
 
     num_rects_d = REGION_NUM_RECTS(dirtyReg);
     num_rects_c = numCopyRects;
@@ -2900,7 +2953,7 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, int mon,
 
     cap_dirty = rdpRegionCreate(cap_rect, 0);
     LOG(LOG_LEVEL_TRACE, "rdpCapRect: cap_rect x1 %d y1 %d x2 %d y2 %d",
-               cap_rect->x1, cap_rect->y1, cap_rect->x2, cap_rect->y2);
+        cap_rect->x1, cap_rect->y1, cap_rect->x2, cap_rect->y2);
     rdpRegionIntersect(cap_dirty, cap_dirty, clientCon->dirtyRegion);
     num_rects = REGION_NUM_RECTS(cap_dirty);
     if (num_rects > MAX_CAPTURE_RECTS)
@@ -2920,7 +2973,7 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, int mon,
         rects = 0;
         num_rects = 0;
         LOG(LOG_LEVEL_TRACE, "rdpCapRect: capture_code %d",
-                    clientCon->client_info.capture_code);
+            clientCon->client_info.capture_code);
         if (rdpCapture(clientCon, cap_dirty, &rects, &num_rects, id))
         {
             LOG(LOG_LEVEL_TRACE, "rdpCapRect: num_rects %d", num_rects);
@@ -2965,10 +3018,11 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         return 0;
     }
     if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
-        LOG(LOG_LEVEL_TRACE, "rdpDeferredUpdateCallback: clientCon->shmemstatus "
-               "is not valid for capture operations: %d"
-               " reschedule rect_id %d rect_id_ack %d",
-               clientCon->shmemstatus, clientCon->rect_id, clientCon->rect_id_ack);
+        LOG(LOG_LEVEL_TRACE,
+            "rdpDeferredUpdateCallback: clientCon->shmemstatus "
+            "is not valid for capture operations: %d"
+            " reschedule rect_id %d rect_id_ack %d",
+            clientCon->shmemstatus, clientCon->rect_id, clientCon->rect_id_ack);
         return 0;
     }
     if ((clientCon->rect_id > clientCon->rect_id_ack) ||
@@ -3002,9 +3056,10 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
             // Did we get anything from the last monitor?
             if (clientCon->rect_id > clientCon->rect_id_ack)
             {
-                LOG(LOG_LEVEL_TRACE, "rdpDeferredUpdateCallback: reschedule rect_id %d "
-                       "rect_id_ack %d",
-                       clientCon->rect_id, clientCon->rect_id_ack);
+                LOG(LOG_LEVEL_TRACE,
+                    "rdpDeferredUpdateCallback: reschedule rect_id %d "
+                    "rect_id_ack %d",
+                    clientCon->rect_id, clientCon->rect_id_ack);
                 break;
             }
             // Offset the monitor index by the rectangle ID so we start

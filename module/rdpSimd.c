@@ -338,7 +338,7 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
         int ax, bx, cx, dx;
         cpuid_amd64(1, 0, &ax, &bx, &cx, &dx);
         LOG(LOG_LEVEL_INFO, "rdpSimdInit: cpuid ax 1 cx 0 return ax 0x%8.8x bx "
-               "0x%8.8x cx 0x%8.8x dx 0x%8.8x", ax, bx, cx, dx);
+            "0x%8.8x cx 0x%8.8x dx 0x%8.8x", ax, bx, cx, dx);
         if (dx & (1 << 26)) /* SSE 2 */
         {
             dev->yv12_to_rgb32 = yv12_to_rgb32_amd64_sse2;
@@ -355,7 +355,7 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
         int ax, bx, cx, dx;
         cpuid_x86(1, 0, &ax, &bx, &cx, &dx);
         LOG(LOG_LEVEL_INFO, "rdpSimdInit: cpuid ax 1 cx 0 return ax 0x%8.8x bx "
-               "0x%8.8x cx 0x%8.8x dx 0x%8.8x", ax, bx, cx, dx);
+            "0x%8.8x cx 0x%8.8x dx 0x%8.8x", ax, bx, cx, dx);
         if (dx & (1 << 26)) /* SSE 2 */
         {
             dev->yv12_to_rgb32 = yv12_to_rgb32_x86_sse2;

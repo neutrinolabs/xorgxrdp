@@ -280,7 +280,7 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
         /* None cursor */
         cursor_id = 0; /* SYSPTR_NULL */
         LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursorCon: sending cursor system "
-                "pointer 0x%8.8X", cursor_id);
+            "pointer 0x%8.8X", cursor_id);
         rdpClientConBeginUpdate(clientCon->dev, clientCon);
         rdpClientConSetCursorSystem(clientCon->dev, clientCon, cursor_id);
         rdpClientConEndUpdate(clientCon->dev, clientCon);
@@ -308,9 +308,9 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
         sending_width = server_width > 32 ? client_max_width : 32;
         sending_height = server_height > 32 ? client_max_height : 32;
         LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursorCon: sending_width %d "
-               "sending_height %d server_width %d server_height %d "
-               "sending_bpp %d", sending_width, sending_height,
-               server_width, server_height, sending_bpp);
+            "sending_height %d server_width %d server_height %d "
+            "sending_bpp %d", sending_width, sending_height,
+            server_width, server_height, sending_bpp);
         if (sending_bpp == 32)
         {
             paddedRowBytes = PixmapBytePad(server_width, 32);
@@ -403,10 +403,12 @@ rdpSpriteSetCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs,
 
     LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursor:");
     dev = rdpGetDevFromScreen(pScr);
-    LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursor: x %d y %d cursor_x %d cursor_y %d",
-           x, y, dev->pointer.cursor_x, dev->pointer.cursor_y);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpSpriteSetCursor: x %d y %d cursor_x %d cursor_y %d",
+        x, y, dev->pointer.cursor_x, dev->pointer.cursor_y);
     do_move = (dev->pointer.cursor_x != x) || (dev->pointer.cursor_y != y);
-    LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursor: x %d y %d do_move %d", x, y, do_move);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpSpriteSetCursor: x %d y %d do_move %d", x, y, do_move);
     clientCon = dev->clientConHead;
     while (clientCon != NULL)
     {
@@ -436,10 +438,12 @@ rdpSpriteMoveCursor(DeviceIntPtr pDev, ScreenPtr pScr, int x, int y)
 
     LOG(LOG_LEVEL_TRACE, "rdpSpriteMoveCursor:");
     dev = rdpGetDevFromScreen(pScr);
-    LOG(LOG_LEVEL_TRACE, "rdpSpriteMoveCursor: x %d y %d cursor_x %d cursor_y %d",
-      x, y, dev->pointer.cursor_x, dev->pointer.cursor_y);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpSpriteMoveCursor: x %d y %d cursor_x %d cursor_y %d",
+        x, y, dev->pointer.cursor_x, dev->pointer.cursor_y);
     do_move = (dev->pointer.cursor_x != x) || (dev->pointer.cursor_y != y);
-    LOG(LOG_LEVEL_TRACE, "rdpSpriteMoveCursor: x %d y %d do_move %d", x, y, do_move);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpSpriteMoveCursor: x %d y %d do_move %d", x, y, do_move);
     if (!do_move)
     {
         return;

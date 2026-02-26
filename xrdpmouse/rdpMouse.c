@@ -118,7 +118,8 @@ PtrAddEvent(rdpPointer *pointer)
     int type;
     int buttons;
 
-    LOG(LOG_LEVEL_TRACE, "PtrAddEvent: x %d y %d", pointer->cursor_x, pointer->cursor_y);
+    LOG(LOG_LEVEL_TRACE, "PtrAddEvent: x %d y %d",
+        pointer->cursor_x, pointer->cursor_y);
 
     if ((pointer->old_cursor_x != pointer->cursor_x) ||
             (pointer->old_cursor_y != pointer->cursor_y))
@@ -161,7 +162,8 @@ PtrAddScrollEvent(rdpPointer *pointer, int vertical, int delta)
     int mask_pos;
     int scaled_delta;
 
-    LOG(LOG_LEVEL_TRACE, "PtrAddScrollEvent: vertical %d y %d", vertical, delta);
+    LOG(LOG_LEVEL_TRACE,
+        "PtrAddScrollEvent: vertical %d y %d", vertical, delta);
 
     scroll_events_mask = valuator_mask_new(NAXES);
     mask_pos = vertical ? 2 : 3;
@@ -192,8 +194,9 @@ rdpInputMouse(rdpPtr dev, int msg,
 {
     rdpPointer *pointer;
 
-    LOG(LOG_LEVEL_TRACE, "rdpInputMouse: msg %d param1 %ld param2 %ld param3 %ld param4 %ld",
-                msg, param1, param2, param3, param4);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpInputMouse: msg %d param1 %ld param2 %ld param3 %ld param4 %ld",
+        msg, param1, param2, param3, param4);
     pointer = &(dev->pointer);
     switch (msg)
     {
@@ -375,7 +378,7 @@ rdpmousePreInit(InputDriverPtr drv, IDevPtr dev, int flags)
     InputInfoPtr info;
 
     LOG(LOG_LEVEL_INFO, "rdpmousePreInit: drv %p dev %p, flags 0x%x",
-               drv, dev, flags);
+        drv, dev, flags);
     info = xf86AllocateInput(drv, 0);
     info->name = dev->identifier;
     info->device_control = rdpmouseControl;
@@ -398,7 +401,7 @@ static int
 rdpmousePreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
     LOG(LOG_LEVEL_INFO, "rdpmousePreInit: drv %p info %p, flags 0x%x",
-               drv, info, flags);
+        drv, info, flags);
     info->device_control = rdpmouseControl;
     info->type_name = g_Mouse_str;
     return 0;
@@ -411,7 +414,7 @@ static void
 rdpmouseUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
     LOG(LOG_LEVEL_INFO, "rdpmouseUnInit: drv %p info %p, flags 0x%x",
-               drv, info, flags);
+        drv, info, flags);
     rdpUnregisterInputCallback(rdpInputMouse);
 }
 

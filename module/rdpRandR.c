@@ -119,8 +119,9 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     BoxRec box;
     rdpPtr dev;
 
-    LOG(LOG_LEVEL_INFO, "rdpRRScreenSetSize: width %d height %d mmWidth %d mmHeight %d",
-           width, height, (int)mmWidth, (int)mmHeight);
+    LOG(LOG_LEVEL_INFO,
+        "rdpRRScreenSetSize: width %d height %d mmWidth %d mmHeight %d",
+        width, height, (int)mmWidth, (int)mmHeight);
     dev = rdpGetDevFromScreen(pScreen);
     if (dev->allow_screen_resize == 0)
     {
@@ -171,7 +172,8 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
             return FALSE;
         }
         screen_tex = glamor_get_pixmap_texture(screenPixmap);
-        LOG(LOG_LEVEL_INFO, "rdpRRScreenSetSize: screen_tex 0x%8.8x", screen_tex);
+        LOG(LOG_LEVEL_INFO,
+            "rdpRRScreenSetSize: screen_tex 0x%8.8x", screen_tex);
         pScreen->SetScreenPixmap(screenPixmap);
         if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
         {
@@ -192,7 +194,8 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     root->drawable.height = height;
     ResizeChildrenWinSize(root, 0, 0, 0, 0);
     RRGetInfo(pScreen, 1);
-    LOG(LOG_LEVEL_INFO, "  screen resized to %dx%d", pScreen->width, pScreen->height);
+    LOG(LOG_LEVEL_INFO,
+        "  screen resized to %dx%d", pScreen->width, pScreen->height);
     RRScreenSizeNotify(pScreen);
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 13, 0, 0, 0)
     xf86EnableDisableFBAccess(pScreen->myNum, FALSE);
@@ -227,7 +230,7 @@ Bool
 rdpRRCrtcGetGamma(ScreenPtr pScreen, RRCrtcPtr crtc)
 {
     LOG(LOG_LEVEL_INFO, "rdpRRCrtcGetGamma: %p %p %p %p", crtc, crtc->gammaRed,
-           crtc->gammaBlue, crtc->gammaGreen);
+        crtc->gammaBlue, crtc->gammaGreen);
     return TRUE;
 }
 
@@ -310,8 +313,9 @@ rdpRRGetPanning(ScreenPtr pScreen, RRCrtcPtr crtc, BoxPtr totalArea,
     BoxRec totalAreaRect;
     BoxRec trackingAreaRect;
 
-    LOG(LOG_LEVEL_TRACE, "rdpRRGetPanning: totalArea %p trackingArea %p border %p",
-                totalArea, trackingArea, border);
+    LOG(LOG_LEVEL_TRACE,
+        "rdpRRGetPanning: totalArea %p trackingArea %p border %p",
+        totalArea, trackingArea, border);
 
     if (!g_panning)
     {
@@ -523,8 +527,9 @@ rdpRRSetRdpOutputs(rdpPtr dev)
     int rv = 0;
 
     pRRScrPriv = rrGetScrPriv(dev->pScreen);
-    LOG(LOG_LEVEL_INFO, "rdpRRSetRdpOutputs: numCrtcs %d numOutputs %d monitorCount %d",
-           pRRScrPriv->numCrtcs, pRRScrPriv->numOutputs, dev->monitorCount);
+    LOG(LOG_LEVEL_INFO,
+        "rdpRRSetRdpOutputs: numCrtcs %d numOutputs %d monitorCount %d",
+        pRRScrPriv->numCrtcs, pRRScrPriv->numOutputs, dev->monitorCount);
     int count = (dev->monitorCount <= 0) ? 1 : dev->monitorCount;
 
     /* Ensure we've got enough CRT controllers and outputs */
@@ -554,8 +559,8 @@ rdpRRSetRdpOutputs(rdpPtr dev)
         mmwidth = dev->pScreen->mmWidth;
         mmheight = dev->pScreen->mmHeight;
         LOG(LOG_LEVEL_INFO, "rdpRRSetRdpOutputs: update output %d "
-               "left %d top %d width %d height %d",
-               0, left, top, width, height);
+            "left %d top %d width %d height %d",
+            0, left, top, width, height);
         rv = rdpRRConnectOutput(pRRScrPriv->outputs[0],
                                 pRRScrPriv->crtcs[0],
                                 left, top, width, height,
@@ -573,8 +578,8 @@ rdpRRSetRdpOutputs(rdpPtr dev)
             mmwidth = dev->minfo[index].physical_width;
             mmheight = dev->minfo[index].physical_height;
             LOG(LOG_LEVEL_INFO, "rdpRRSetRdpOutputs: update output %d "
-                   "left %d top %d width %d height %d",
-                   index, left, top, width, height);
+                "left %d top %d width %d height %d",
+                index, left, top, width, height);
             rv = rdpRRConnectOutput(pRRScrPriv->outputs[index],
                                     pRRScrPriv->crtcs[index],
                                     left, top, width, height,

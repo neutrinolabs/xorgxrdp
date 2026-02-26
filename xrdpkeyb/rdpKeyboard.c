@@ -539,7 +539,7 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
 
     LOG(LOG_LEVEL_INFO, "rdpkeybDeviceInit:");
     LOG(LOG_LEVEL_TRACE, "  MAP_LENGTH %d GLYPHS_PER_KEY %d N_PREDEFINED_KEYS %d",
-           MAP_LENGTH, GLYPHS_PER_KEY, (int) N_PREDEFINED_KEYS);
+        MAP_LENGTH, GLYPHS_PER_KEY, (int) N_PREDEFINED_KEYS);
 
     for (i = 0; i < MAP_LENGTH; i++)
     {
@@ -726,7 +726,7 @@ rdpkeybPreInit(InputDriverPtr drv, IDevPtr dev, int flags)
     InputInfoPtr info;
 
     LOG(LOG_LEVEL_INFO, "rdpkeybPreInit: drv %p dev %p, flags 0x%x",
-           drv, dev, flags);
+        drv, dev, flags);
     info = xf86AllocateInput(drv, 0);
     info->name = dev->identifier;
     info->device_control = rdpkeybControl;
@@ -749,7 +749,7 @@ static int
 rdpkeybPreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
     LOG(LOG_LEVEL_INFO, "rdpkeybPreInit: drv %p info %p, flags 0x%x",
-           drv, info, flags);
+        drv, info, flags);
     info->device_control = rdpkeybControl;
     info->type_name = g_Keyboard_str;
 
@@ -763,7 +763,7 @@ static void
 rdpkeybUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
     LOG(LOG_LEVEL_INFO, "rdpkeybUnInit: drv %p info %p, flags 0x%x",
-           drv, info, flags);
+        drv, info, flags);
     rdpUnregisterInputCallback(rdpInputKeyboard);
 }
 
@@ -860,7 +860,7 @@ rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info)
     int keylayout = client_info->keylayout;
 
     LOG(LOG_LEVEL_INFO, "rdpLoadLayout: keylayout 0x%8.8x variant %s",
-               keylayout, client_info->variant);
+        keylayout, client_info->variant);
     memset(&set, 0, sizeof(set));
     set.rules = g_base_str;
 

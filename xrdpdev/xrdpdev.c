@@ -200,7 +200,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
                 {
                     dev->glamor = TRUE;
                     LOG(LOG_LEVEL_INFO, "rdpPreInit: drm device looks ok, "
-                           "use glamor set");
+                        "use glamor set");
                     break;
                 }
                 token = strtok(NULL, delim);
@@ -301,7 +301,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
         }
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "\tmode \"%s\" ok\n", *modename);
         LOG(LOG_LEVEL_TRACE, "%d %d %d %d", mode->HDisplay, dev->width,
-               mode->VDisplay, dev->height);
+            mode->VDisplay, dev->height);
         if ((mode->HDisplay == dev->width) && (mode->VDisplay == dev->height))
         {
             pScrn->virtualX = mode->HDisplay;
@@ -322,8 +322,9 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     LOG(LOG_LEVEL_TRACE, "rdpPreInit: out fPtr->num_modes %d", dev->num_modes);
     if (!got_res_match)
     {
-        LOG(LOG_LEVEL_INFO, "rdpPreInit: could not find screen resolution %dx%d",
-               dev->width, dev->height);
+        LOG(LOG_LEVEL_INFO,
+            "rdpPreInit: could not find screen resolution %dx%d",
+            dev->width, dev->height);
         return FALSE;
     }
     if (dev->glamor)
@@ -590,8 +591,9 @@ rdpCreateScreenResources(ScreenPtr pScreen)
         PixmapPtr screen_pixmap;
         uint32_t screen_tex;
         old_screen_pixmap = dev->screenSwPixmap;
-        LOG(LOG_LEVEL_INFO, "rdpCreateScreenResources: create screen pixmap w %d h %d",
-               pScreen->width, pScreen->height);
+        LOG(LOG_LEVEL_INFO,
+            "rdpCreateScreenResources: create screen pixmap w %d h %d",
+            pScreen->width, pScreen->height);
         screen_pixmap = pScreen->CreatePixmap(pScreen,
                                               pScreen->width,
                                               pScreen->height,
@@ -602,7 +604,8 @@ rdpCreateScreenResources(ScreenPtr pScreen)
             return FALSE;
         }
         screen_tex = glamor_get_pixmap_texture(screen_pixmap);
-        LOG(LOG_LEVEL_INFO, "rdpCreateScreenResources: screen_tex 0x%8.8x", screen_tex);
+        LOG(LOG_LEVEL_INFO,
+            "rdpCreateScreenResources: screen_tex 0x%8.8x", screen_tex);
         pScreen->SetScreenPixmap(screen_pixmap);
         if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
         {
@@ -637,8 +640,9 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     miSetVisualTypes(pScrn->depth, miGetDefaultVisualMask(pScrn->depth),
                      pScrn->rgbBits, TrueColor);
     miSetPixmapDepths();
-    LOG(LOG_LEVEL_INFO, "rdpScreenInit: virtualX %d virtualY %d rgbBits %d depth %d",
-           pScrn->virtualX, pScrn->virtualY, pScrn->rgbBits, pScrn->depth);
+    LOG(LOG_LEVEL_INFO,
+        "rdpScreenInit: virtualX %d virtualY %d rgbBits %d depth %d",
+        pScrn->virtualX, pScrn->virtualY, pScrn->rgbBits, pScrn->depth);
 
     dev->depth = pScrn->depth;
     dev->paddedWidthInBytes = PixmapBytePad(dev->width, dev->depth);
@@ -937,7 +941,8 @@ rdpProbe(DriverPtr drv, int flags)
 #if defined(XORGXRDP_GLAMOR)
             strncpy(g_drm_device, val, 127);
             g_drm_device[127] = 0;
-            LOG(LOG_LEVEL_INFO, "rdpProbe: found DRMDevice xorg.conf value [%s]", val);
+            LOG(LOG_LEVEL_INFO,
+                "rdpProbe: found DRMDevice xorg.conf value [%s]", val);
 #endif
         }
         val = xf86FindOptionValue(dev_sections[i]->options, "DRI2");
@@ -950,7 +955,8 @@ rdpProbe(DriverPtr drv, int flags)
             {
                g_use_dri2 = 0;
             }
-            LOG(LOG_LEVEL_INFO, "rdpProbe: found DRI2 xorg.conf value [%s]", val);
+            LOG(LOG_LEVEL_INFO,
+                "rdpProbe: found DRI2 xorg.conf value [%s]", val);
 #endif
         }
         val = xf86FindOptionValue(dev_sections[i]->options, "DRI3");
@@ -963,7 +969,8 @@ rdpProbe(DriverPtr drv, int flags)
             {
                g_use_dri3 = 0;
             }
-            LOG(LOG_LEVEL_INFO, "rdpProbe: found DRI3 xorg.conf value [%s]", val);
+            LOG(LOG_LEVEL_INFO,
+                "rdpProbe: found DRI3 xorg.conf value [%s]", val);
 #endif
         }
         val = xf86FindOptionValue(dev_sections[i]->options, "DRMAllowList");
@@ -972,7 +979,8 @@ rdpProbe(DriverPtr drv, int flags)
 #if defined(XORGXRDP_GLAMOR)
             strncpy(g_drm_allow_list, val, 127);
             g_drm_allow_list[127] = 0;
-            LOG(LOG_LEVEL_INFO, "rdpProbe: found DRMAllowList xorg.conf value [%s]", val);
+            LOG(LOG_LEVEL_INFO,
+                "rdpProbe: found DRMAllowList xorg.conf value [%s]", val);
 #endif
         }
         entity = xf86ClaimFbSlot(drv, 0, dev_sections[i], 1);
