@@ -670,10 +670,10 @@ g_log_debug(const char *format, ...)
     va_list ap;
 
     va_start(ap, format);
-    LogVMessageVerb(X_DEBUG, 1, format, ap);
+    LogVMessageVerb(X_DEBUG, 4, format, ap);
     va_end(ap);
     va_start(ap, format);
-    LogVMessageVerb(X_NONE, 1, "\n", ap);
+    LogVMessageVerb(X_NONE, 4, "\n", ap);
     va_end(ap);
 }
 
@@ -684,9 +684,9 @@ g_log_trace(const char *format, ...)
     va_list ap;
 
     va_start(ap, format);
-    LogVMessageVerb(X_DEBUG, 2, format, ap);
+    LogVMessageVerb(X_DEBUG, 5, format, ap);
     va_end(ap);
     va_start(ap, format);
-    LogVMessageVerb(X_NONE, 2, "\n", ap);
+    LogVMessageVerb(X_NONE, 5, "\n", ap);
     va_end(ap);
 }
