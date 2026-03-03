@@ -64,7 +64,8 @@ g_sck_send(int sck, const void *ptr, int len, int flags);
 extern _X_EXPORT void
 g_sprintf(char *dest, const char *format, ...) PRINTFLIKE(2,3);
 extern _X_EXPORT int
-g_snprintf(char *dest, unsigned int dest_size, const char *format, ...);
+g_snprintf(char *dest, unsigned int dest_size, const char *format, ...)
+    PRINTFLIKE(3,4);
 extern _X_EXPORT int
 g_sck_tcp_socket(void);
 extern _X_EXPORT int
@@ -109,26 +110,24 @@ g_alloc_map_fd(void **addr, int *fd, size_t size);
 extern _X_EXPORT void
 g_free_unmap_fd(void *addr, int fd, size_t size);
 
-/* Logging. Use these for new code */
-extern _X_EXPORT void
-g_log_info(const char *format, ...) PRINTFLIKE(1,2);
-extern _X_EXPORT void
-g_log_debug(const char *format, ...) PRINTFLIKE(1,2);
-extern _X_EXPORT void
-g_log_trace(const char *format, ...) PRINTFLIKE(1,2);
+/* Logging */
+/* Logging levels */
+enum logLevels
+{
+    LOG_LEVEL_ERROR,
+    LOG_LEVEL_WARNING,
+    LOG_LEVEL_INFO,
+    LOG_LEVEL_DEBUG,
+    LOG_LEVEL_TRACE
+};
 
-/* Legacy logging macro
- *
- * Remove when unused
- *
- * _level : 0=Info, 1=Debug, 10=Trace
- * _args : Argument to logging function
+extern _X_EXPORT void
+g_log_msg(enum logLevels log_level, const char *format, ...) PRINTFLIKE(2,3);
+
+/* Logging macro, for compatibility with xrdp
  */
-#define LLOGLN(_level, _args) \
-{ \
-    ((_level > 1) ? g_log_trace : \
-     (_level == 1) ? g_log_debug : g_log_info) _args; \
-}
+#define LOG(log_level,...) \
+    g_log_msg(log_level, __VA_ARGS__)
 
 /* glib-style memory allocation macros */
 #define g_new(struct_type, n_structs) \

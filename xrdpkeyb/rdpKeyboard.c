@@ -127,10 +127,10 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
     int rdp_scancode = SCANCODE_FROM_KBD_EVENT(param3, param4);
     int type = down ? KeyPress : KeyRelease;
 
-    LLOGLN(1, ("KbdAddEvent: down=%d RDP scancode=%03x "
-           "PDU keyCode=%04x PDU keyboardFlags=%04x X11 keycode=%04x",
-           down, rdp_scancode,
-           param3, param4, x_keycode));
+    LOG(LOG_LEVEL_DEBUG, "KbdAddEvent: down=%d RDP scancode=%03x "
+        "PDU keyCode=%04x PDU keyboardFlags=%04x X11 keycode=%04x",
+        down, rdp_scancode,
+        param3, param4, x_keycode);
 
     if (keyboard->skip_numlock)
     {
@@ -224,7 +224,7 @@ KbdSync(rdpKeyboard *keyboard, int param1)
     int xkb_state;
 
     xkb_state = XkbStateFieldFromRec(&(keyboard->device->key->xkbInfo->state));
-    LLOGLN(10, ("KbdSync: xkb_state=%04X", xkb_state));
+    LOG(LOG_LEVEL_TRACE, "KbdSync: xkb_state=%04X", xkb_state);
 
     // Make sure the modifiers are released
     rdpEnqueueKey(keyboard->device, KeyRelease,
@@ -238,7 +238,7 @@ KbdSync(rdpKeyboard *keyboard, int param1)
     // Caps_Lock is a specific modifier */
     if ((!(xkb_state & LockMask)) != (!(param1 & TS_SYNC_CAPS_LOCK)))
     {
-        LLOGLN(0, ("KbdSync: toggling caps lock"));
+        LOG(LOG_LEVEL_INFO, "KbdSync: toggling caps lock");
         rdpEnqueueKey(keyboard->device, KeyPress,
                       keyboard->x11_keycode_caps_lock);
         rdpEnqueueKey(keyboard->device, KeyRelease,
@@ -248,7 +248,7 @@ KbdSync(rdpKeyboard *keyboard, int param1)
     // Num_Lock is normally mapped to mod2 (see 'xmodmap -pm')
     if ((!(xkb_state & Mod2Mask)) != (!(param1 & TS_SYNC_NUM_LOCK)))
     {
-        LLOGLN(0, ("KbdSync: toggling num lock"));
+        LOG(LOG_LEVEL_INFO, "KbdSync: toggling num lock");
         rdpEnqueueKey(keyboard->device, KeyPress,
                       keyboard->x11_keycode_num_lock);
         rdpEnqueueKey(keyboard->device, KeyRelease,
@@ -259,7 +259,7 @@ KbdSync(rdpKeyboard *keyboard, int param1)
     // it ourselves
     if ((!(keyboard->scroll_lock_state)) != (!(param1 & TS_SYNC_SCROLL_LOCK)))
     {
-        LLOGLN(0, ("KbdSync: toggling scroll lock"));
+        LOG(LOG_LEVEL_INFO, "KbdSync: toggling scroll lock");
         rdpEnqueueKey(keyboard->device, KeyPress,
                       keyboard->x11_keycode_scroll_lock);
         rdpEnqueueKey(keyboard->device, KeyRelease,
@@ -277,7 +277,7 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
     rdpKeyboard *keyboard;
 
     keyboard = &(dev->keyboard);
-    LLOGLN(10, ("rdpInputKeyboard:"));
+    LOG(LOG_LEVEL_TRACE, "rdpInputKeyboard:");
     switch (msg)
     {
         case 15: /* key down */
@@ -299,21 +299,21 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
 static void
 rdpkeybDeviceOn(void)
 {
-    LLOGLN(10, ("rdpkeybDeviceOn:"));
+    LOG(LOG_LEVEL_TRACE, "rdpkeybDeviceOn:");
 }
 
 /******************************************************************************/
 static void
 rdpkeybDeviceOff(void)
 {
-    LLOGLN(10, ("rdpkeybDeviceOff:"));
+    LOG(LOG_LEVEL_TRACE, "rdpkeybDeviceOff:");
 }
 
 /******************************************************************************/
 static void
 rdpkeybBell(int volume, DeviceIntPtr pDev, pointer ctrl, int cls)
 {
-    LLOGLN(10, ("rdpkeybBell:"));
+    LOG(LOG_LEVEL_TRACE, "rdpkeybBell:");
 }
 
 /******************************************************************************/
@@ -324,7 +324,7 @@ rdpInDeferredRepeatCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     DeviceIntPtr it;
     Bool found;
 
-    LLOGLN(10, ("rdpInDeferredRepeatCallback:"));
+    LOG(LOG_LEVEL_TRACE, "rdpInDeferredRepeatCallback:");
     TimerFree(timer);
     pDev = (DeviceIntPtr) arg;
     found = FALSE;
@@ -351,7 +351,7 @@ rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
 {
     XkbControlsPtr ctrls;
 
-    LLOGLN(10, ("rdpkeybChangeKeyboardControl:"));
+    LOG(LOG_LEVEL_TRACE, "rdpkeybChangeKeyboardControl:");
     ctrls = 0;
     if (pDev != 0)
     {
@@ -373,14 +373,14 @@ rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
     {
         if (ctrls->enabled_ctrls & XkbRepeatKeysMask)
         {
-            LLOGLN(0, ("rdpkeybChangeKeyboardControl: autoRepeat on"));
+            LOG(LOG_LEVEL_INFO, "rdpkeybChangeKeyboardControl: autoRepeat on");
             /* schedule to turn off the autorepeat after 100 ms so any app
              * polling it will be happy it's on */
             TimerSet(NULL, 0, 100, rdpInDeferredRepeatCallback, pDev);
         }
         else
         {
-            LLOGLN(0, ("rdpkeybChangeKeyboardControl: autoRepeat off"));
+            LOG(LOG_LEVEL_INFO, "rdpkeybChangeKeyboardControl: autoRepeat off");
         }
     }
 }
@@ -392,7 +392,7 @@ rdpkeybControl(DeviceIntPtr device, int what)
     DevicePtr pDev;
     rdpPtr dev;
 
-    LLOGLN(0, ("rdpkeybControl: what %d", what));
+    LOG(LOG_LEVEL_INFO, "rdpkeybControl: what %d", what);
     pDev = (DevicePtr)device;
 
     switch (what)
@@ -432,8 +432,8 @@ rdpkeybPreInit(InputDriverPtr drv, IDevPtr dev, int flags)
 {
     InputInfoPtr info;
 
-    LLOGLN(0, ("rdpkeybPreInit: drv %p dev %p, flags 0x%x",
-           drv, dev, flags));
+    LOG(LOG_LEVEL_INFO, "rdpkeybPreInit: drv %p dev %p, flags 0x%x",
+        drv, dev, flags);
     info = xf86AllocateInput(drv, 0);
     info->name = dev->identifier;
     info->device_control = rdpkeybControl;
@@ -455,8 +455,8 @@ rdpkeybPreInit(InputDriverPtr drv, IDevPtr dev, int flags)
 static int
 rdpkeybPreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
-    LLOGLN(0, ("rdpkeybPreInit: drv %p info %p, flags 0x%x",
-           drv, info, flags));
+    LOG(LOG_LEVEL_INFO, "rdpkeybPreInit: drv %p info %p, flags 0x%x",
+        drv, info, flags);
     info->device_control = rdpkeybControl;
     info->type_name = g_Keyboard_str;
 
@@ -469,8 +469,8 @@ rdpkeybPreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 static void
 rdpkeybUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
-    LLOGLN(0, ("rdpkeybUnInit: drv %p info %p, flags 0x%x",
-           drv, info, flags));
+    LOG(LOG_LEVEL_INFO, "rdpkeybUnInit: drv %p info %p, flags 0x%x",
+        drv, info, flags);
     rdpUnregisterInputCallback(rdpInputKeyboard);
 }
 
@@ -487,7 +487,7 @@ static InputDriverRec rdpkeyb =
 static pointer
 rdpkeybPlug(pointer module, pointer options, int *errmaj, int *errmin)
 {
-    LLOGLN(10, ("rdpkeybPlug:"));
+    LOG(LOG_LEVEL_TRACE, "rdpkeybPlug:");
     xf86AddInputDriver(&rdpkeyb, module, 0);
     xorgxrdpCheckWrap();
     return module;
@@ -497,7 +497,7 @@ rdpkeybPlug(pointer module, pointer options, int *errmaj, int *errmin)
 static void
 rdpkeybUnplug(pointer p)
 {
-    LLOGLN(10, ("rdpkeybUnplug:"));
+    LOG(LOG_LEVEL_TRACE, "rdpkeybUnplug:");
 }
 
 /******************************************************************************/
@@ -532,7 +532,7 @@ reload_xkb(DeviceIntPtr keyboard, XkbRMLVOSet *set)
     if (!InitKeyboardDeviceStruct(keyboard, set, rdpkeybBell,
                                   rdpkeybChangeKeyboardControl))
     {
-        LLOGLN(0, ("reload_xkb: InitKeyboardDeviceStruct failed"));
+        LOG(LOG_LEVEL_INFO, "reload_xkb: InitKeyboardDeviceStruct failed");
         return 1;
     }
 
@@ -611,9 +611,10 @@ rdpLoadLayout(rdpKeyboard *keyboard, struct xup_client_info *client_info)
         keyboard->x11_keycode_scroll_lock = SCROLL_LOCK_KEY_CODE;
     }
 
-    LLOGLN(0, ("rdpLoadLayout: rules=\"%s\" model=\"%s\" variant=\"%s\""
-               "layout=\"%s\" options=\"%s\"",
-               set.rules, set.model, set.variant, set.layout, set.options));
+    LOG(LOG_LEVEL_INFO,
+        "rdpLoadLayout: rules=\"%s\" model=\"%s\" variant=\"%s\""
+        "layout=\"%s\" options=\"%s\"",
+        set.rules, set.model, set.variant, set.layout, set.options);
 
     reload_xkb(keyboard->device, &set);
     reload_xkb(inputInfo.keyboard, &set);

@@ -130,8 +130,9 @@ rdpRandRGridWriteString(int fd, const char *str)
     written = write(fd, str, to_write);
     if (written != to_write)
     {
-        LLOGLN(0, ("rdpRandRGridWriteString: write failed fd %d written %d "
-               "to_write %d", fd, written, to_write));
+        LOG(LOG_LEVEL_INFO,
+            "rdpRandRGridWriteString: write failed fd %d written %d "
+            "to_write %d", fd, written, to_write);
         return 1;
     }
     return 0;
@@ -150,13 +151,13 @@ rdpRandRGridUpdateRunCmds(struct monitors_t *monitors)
     cmd_file = g_new0(struct cmd_file_t, 1);
     if (cmd_file == NULL)
     {
-        LLOGLN(0, ("rdpRandRGridUpdateRunCmds: alloc failed"));
+        LOG(LOG_LEVEL_INFO, "rdpRandRGridUpdateRunCmds: alloc failed");
         return 1;
     }
     env = getenv("HOME");
     if (env == NULL)
     {
-        LLOGLN(0, ("rdpRandRGridUpdateRunCmds: getenv HOME failed"));
+        LOG(LOG_LEVEL_INFO, "rdpRandRGridUpdateRunCmds: getenv HOME failed");
         free(cmd_file);
         return 1;
     }
@@ -166,8 +167,8 @@ rdpRandRGridUpdateRunCmds(struct monitors_t *monitors)
               S_IRUSR | S_IWUSR);
     if (fd == -1)
     {
-        LLOGLN(0, ("rdpRandRGridUpdateRunCmds: open %s failed",
-               cmd_file->filename));
+        LOG(LOG_LEVEL_INFO, "rdpRandRGridUpdateRunCmds: open %s failed",
+            cmd_file->filename);
         free(cmd_file);
         return 1;
     }
@@ -192,13 +193,13 @@ rdpRandRGridUpdateRunCmds(struct monitors_t *monitors)
     close(fd);
     snprintf(cmd_file->cmd, sizeof(cmd_file->cmd),
              "sh %s&", cmd_file->filename);
-    LLOGLN(0, ("rdpRandRGridUpdateRunCmds: running command %s",
-           cmd_file->cmd));
+    LOG(LOG_LEVEL_INFO, "rdpRandRGridUpdateRunCmds: running command %s",
+        cmd_file->cmd);
     system_rv = system(cmd_file->cmd);
     if (system_rv != 0)
     {
-        LLOGLN(0, ("rdpRandRGridUpdateRunCmds: command %s returned %d",
-               cmd_file->cmd, system_rv));
+        LOG(LOG_LEVEL_INFO, "rdpRandRGridUpdateRunCmds: command %s returned %d",
+            cmd_file->cmd, system_rv);
         free(cmd_file);
         return 1;
     }

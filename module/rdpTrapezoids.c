@@ -69,7 +69,7 @@ rdpTrapezoids(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
     BoxRec box;
     RegionRec reg;
 
-    LLOGLN(10, ("rdpTrapezoids:"));
+    LOG(LOG_LEVEL_TRACE, "rdpTrapezoids:");
     pScreen = pDst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     dev->counts.rdpTrapezoidsCallCount++;

@@ -130,7 +130,7 @@ rdpValidateGC(GCPtr pGC, unsigned long changes, DrawablePtr d)
 {
     GC_FUNC_VARS;
 
-    LLOGLN(10, ("rdpValidateGC:"));
+    LOG(LOG_LEVEL_TRACE, "rdpValidateGC:");
     GC_FUNC_PROLOGUE(pGC);
     pGC->funcs->ValidateGC(pGC, changes, d);
     priv->ops = pGC->ops;
@@ -143,7 +143,7 @@ rdpChangeGC(GCPtr pGC, unsigned long mask)
 {
     GC_FUNC_VARS;
 
-    LLOGLN(10, ("rdpChangeGC:"));
+    LOG(LOG_LEVEL_TRACE, "rdpChangeGC:");
     GC_FUNC_PROLOGUE(pGC);
     pGC->funcs->ChangeGC(pGC, mask);
     GC_FUNC_EPILOGUE(pGC);
@@ -155,7 +155,7 @@ rdpCopyGC(GCPtr src, unsigned long mask, GCPtr dst)
 {
     GC_FUNC_VARS;
 
-    LLOGLN(10, ("rdpCopyGC:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCopyGC:");
     GC_FUNC_PROLOGUE(dst);
     dst->funcs->CopyGC(src, mask, dst);
     GC_FUNC_EPILOGUE(dst);
@@ -167,7 +167,7 @@ rdpDestroyGC(GCPtr pGC)
 {
     GC_FUNC_VARS;
 
-    LLOGLN(10, ("rdpDestroyGC:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDestroyGC:");
     GC_FUNC_PROLOGUE(pGC);
     pGC->funcs->DestroyGC(pGC);
     GC_FUNC_EPILOGUE(pGC);
@@ -179,7 +179,7 @@ rdpChangeClip(GCPtr pGC, int type, pointer pValue, int nrects)
 {
     GC_FUNC_VARS;
 
-    LLOGLN(10, ("rdpChangeClip:"));
+    LOG(LOG_LEVEL_TRACE, "rdpChangeClip:");
     GC_FUNC_PROLOGUE(pGC);
     pGC->funcs->ChangeClip(pGC, type, pValue, nrects);
     GC_FUNC_EPILOGUE(pGC);
@@ -191,7 +191,7 @@ rdpDestroyClip(GCPtr pGC)
 {
     GC_FUNC_VARS;
 
-    LLOGLN(10, ("rdpDestroyClip:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDestroyClip:");
     GC_FUNC_PROLOGUE(pGC);
     pGC->funcs->DestroyClip(pGC);
     GC_FUNC_EPILOGUE(pGC);
@@ -203,7 +203,7 @@ rdpCopyClip(GCPtr dst, GCPtr src)
 {
     GC_FUNC_VARS;
 
-    LLOGLN(10, ("rdpCopyClip:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCopyClip:");
     GC_FUNC_PROLOGUE(dst);
     dst->funcs->CopyClip(dst, src);
     GC_FUNC_EPILOGUE(dst);
@@ -218,7 +218,7 @@ rdpCreateGC(GCPtr pGC)
     ScreenPtr pScreen;
     rdpGCPtr priv;
 
-    LLOGLN(10, ("rdpCreateGC:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCreateGC:");
     pScreen = pGC->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     priv = (rdpGCPtr)rdpGetGCPrivate(pGC, dev->privateKeyRecGC);

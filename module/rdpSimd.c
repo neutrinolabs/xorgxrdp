@@ -322,7 +322,7 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
 
     dev = XRDPPTR(pScrn);
     /* assign functions */
-    LLOGLN(0, ("rdpSimdInit: assigning yuv functions"));
+    LOG(LOG_LEVEL_INFO, "rdpSimdInit: assigning yuv functions");
     dev->yv12_to_rgb32 = YV12_to_RGB32;
     dev->i420_to_rgb32 = I420_to_RGB32;
     dev->yuy2_to_rgb32 = YUY2_to_RGB32;
@@ -337,8 +337,8 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
 #if defined(__x86_64__) || defined(__AMD64__) || defined (_M_AMD64)
         int ax, bx, cx, dx;
         cpuid_amd64(1, 0, &ax, &bx, &cx, &dx);
-        LLOGLN(0, ("rdpSimdInit: cpuid ax 1 cx 0 return ax 0x%8.8x bx "
-               "0x%8.8x cx 0x%8.8x dx 0x%8.8x", ax, bx, cx, dx));
+        LOG(LOG_LEVEL_INFO, "rdpSimdInit: cpuid ax 1 cx 0 return ax 0x%8.8x bx "
+            "0x%8.8x cx 0x%8.8x dx 0x%8.8x", ax, bx, cx, dx);
         if (dx & (1 << 26)) /* SSE 2 */
         {
             dev->yv12_to_rgb32 = yv12_to_rgb32_amd64_sse2;
@@ -349,13 +349,13 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
             dev->a8r8g8b8_to_nv12_box = a8r8g8b8_to_nv12_box_amd64_sse2_wrap;
             dev->a8r8g8b8_to_nv12_709fr_box = a8r8g8b8_to_nv12_709fr_box_amd64_sse2_wrap;
             dev->a8r8g8b8_to_yuvalp_box = a8r8g8b8_to_yuvalp_box_amd64_sse2_wrap;
-            LLOGLN(0, ("rdpSimdInit: sse2 amd64 yuv functions assigned"));
+            LOG(LOG_LEVEL_INFO, "rdpSimdInit: sse2 amd64 yuv functions assigned");
         }
 #elif defined(__x86__) || defined(_M_IX86) || defined(__i386__)
         int ax, bx, cx, dx;
         cpuid_x86(1, 0, &ax, &bx, &cx, &dx);
-        LLOGLN(0, ("rdpSimdInit: cpuid ax 1 cx 0 return ax 0x%8.8x bx "
-               "0x%8.8x cx 0x%8.8x dx 0x%8.8x", ax, bx, cx, dx));
+        LOG(LOG_LEVEL_INFO, "rdpSimdInit: cpuid ax 1 cx 0 return ax 0x%8.8x bx "
+            "0x%8.8x cx 0x%8.8x dx 0x%8.8x", ax, bx, cx, dx);
         if (dx & (1 << 26)) /* SSE 2 */
         {
             dev->yv12_to_rgb32 = yv12_to_rgb32_x86_sse2;
@@ -366,7 +366,7 @@ rdpSimdInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
             dev->a8r8g8b8_to_nv12_box = a8r8g8b8_to_nv12_box_x86_sse2_wrap;
             dev->a8r8g8b8_to_nv12_709fr_box = a8r8g8b8_to_nv12_709fr_box_x86_sse2_wrap;
             dev->a8r8g8b8_to_yuvalp_box = a8r8g8b8_to_yuvalp_box_x86_sse2_wrap;
-            LLOGLN(0, ("rdpSimdInit: sse2 x86 yuv functions assigned"));
+            LOG(LOG_LEVEL_INFO, "rdpSimdInit: sse2 x86 yuv functions assigned");
         }
 #endif
     }

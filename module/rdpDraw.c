@@ -305,7 +305,7 @@ rdpCopyWindow(WindowPtr pWin, DDXPointRec ptOldOrg, RegionPtr pOldRegion)
     BoxPtr box;
     BoxRec box1;
 
-    LLOGLN(10, ("rdpCopyWindow:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCopyWindow:");
     pScreen = pWin->drawable.pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     dev->counts.rdpCopyWindowCallCount++;
@@ -331,7 +331,7 @@ rdpCopyWindow(WindowPtr pWin, DDXPointRec ptOldOrg, RegionPtr pOldRegion)
     {
         if ((num_clip_rects > 16) || (num_reg_rects > 16))
         {
-            LLOGLN(10, ("rdpCopyWindow: big list"));
+            LOG(LOG_LEVEL_TRACE, "rdpCopyWindow: big list");
             box = rdpRegionExtents(&reg);
             box1 = *box;
             box1.x1 += dx;
@@ -360,7 +360,7 @@ rdpCloseScreen(int index, ScreenPtr pScreen)
     rdpPtr dev;
     Bool rv;
 
-    LLOGLN(10, ("rdpCloseScreen:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCloseScreen:");
     dev = rdpGetDevFromScreen(pScreen);
     dev->pScreen->CloseScreen = dev->CloseScreen;
     rv = dev->pScreen->CloseScreen(index, pScreen);
@@ -378,7 +378,7 @@ rdpCloseScreen(ScreenPtr pScreen)
     rdpPtr dev;
     Bool rv;
 
-    LLOGLN(10, ("rdpCloseScreen:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCloseScreen:");
     dev = rdpGetDevFromScreen(pScreen);
     dev->pScreen->CloseScreen = dev->CloseScreen;
     rv = dev->pScreen->CloseScreen(pScreen);
