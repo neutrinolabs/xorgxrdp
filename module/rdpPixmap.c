@@ -57,7 +57,7 @@ rdpCreatePixmap(ScreenPtr pScreen, int width, int height, int depth,
     rdpPtr dev;
     PixmapPtr rv;
 
-    LLOGLN(10, ("rdpCreatePixmap: width %d height %d depth %d",
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpCreatePixmap: width %d height %d depth %d",
            width, height, depth));
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreatePixmap = dev->CreatePixmap;
@@ -75,7 +75,7 @@ rdpCreatePixmap(ScreenPtr pScreen, int width, int height, int depth)
     rdpPtr dev;
     PixmapPtr rv;
 
-    LLOGLN(10, ("rdpCreatePixmap: width %d height %d depth %d",
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpCreatePixmap: width %d height %d depth %d",
            width, height, depth));
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreatePixmap = dev->CreatePixmap;
@@ -94,7 +94,7 @@ rdpDestroyPixmap(PixmapPtr pPixmap)
     ScreenPtr pScreen;
     rdpPtr dev;
 
-    LLOGLN(10, ("rdpDestroyPixmap: refcnt %d", pPixmap->refcnt));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpDestroyPixmap: refcnt %d", pPixmap->refcnt));
     pScreen = pPixmap->drawable.pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->DestroyPixmap = dev->DestroyPixmap;
@@ -112,7 +112,7 @@ rdpModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
     ScreenPtr pScreen;
     rdpPtr dev;
 
-    LLOGLN(10, ("rdpModifyPixmapHeader:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpModifyPixmapHeader:"));
     pScreen = pPixmap->drawable.pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->ModifyPixmapHeader = dev->ModifyPixmapHeader;

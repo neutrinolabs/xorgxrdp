@@ -71,7 +71,7 @@ rdpCopyPlane(DrawablePtr pSrc, DrawablePtr pDst,
     int cd;
     BoxRec box;
 
-    LLOGLN(10, ("rdpCopyPlane:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpCopyPlane:"));
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpCopyPlaneCallCount++;
     box.x1 = pDst->x + dstx;
@@ -81,7 +81,7 @@ rdpCopyPlane(DrawablePtr pSrc, DrawablePtr pDst,
     rdpRegionInit(&reg, &box, 0);
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDst, pGC);
-    LLOGLN(10, ("rdpCopyPlane: cd %d", cd));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpCopyPlane: cd %d", cd));
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

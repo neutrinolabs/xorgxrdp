@@ -57,7 +57,7 @@ static pointer
 xorgxrdpSetup(pointer Module, pointer Options,
               int *ErrorMajor, int *ErrorMinor)
 {
-    LLOGLN(10, ("xorgxrdpSetup:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpSetup:"));
     if (!g_initialised)
     {
         g_initialised = TRUE;
@@ -71,18 +71,18 @@ xorgxrdpSetup(pointer Module, pointer Options,
 static void
 xorgxrdpTearDown(pointer Module)
 {
-    LLOGLN(10, ("xorgxrdpTearDown:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpTearDown:"));
 }
 
 /*****************************************************************************/
 void
 xorgxrdpDownDown(ScreenPtr pScreen)
 {
-    LLOGLN(10, ("xorgxrdpDownDown:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpDownDown:"));
     if (g_initialised)
     {
         g_initialised = FALSE;
-        LLOGLN(0, ("xorgxrdpDownDown: 1"));
+        LLOGLN(LOG_LEVEL_INFO, ("xorgxrdpDownDown: 1"));
         rdpClientConDeinit(rdpGetDevFromScreen(pScreen));
     }
 }

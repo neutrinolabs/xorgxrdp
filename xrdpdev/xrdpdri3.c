@@ -65,9 +65,9 @@ rdpDri3PixmapFromFd(ScreenPtr screen, int fd,
 {
     PixmapPtr rv;
 
-    LLOGLN(10, ("rdpDri3PixmapFromFd:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3PixmapFromFd:"));
     rv = glamor_pixmap_from_fd(screen, fd, width, height, stride, depth, bpp);
-    LLOGLN(10, ("rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv));
     return rv;
 }
 
@@ -78,9 +78,9 @@ rdpDri3FdFromPixmap(ScreenPtr screen, PixmapPtr pixmap,
 {
     int rv;
 
-    LLOGLN(10, ("rdpDri3FdFromPixmap:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3FdFromPixmap:"));
     rv = glamor_fd_from_pixmap(screen, pixmap, stride, size);
-    LLOGLN(10, ("rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap));
     return rv;
 }
 
@@ -91,9 +91,9 @@ rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
 {
     int fd;
 
-    LLOGLN(10, ("rdpDri3OpenClient:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3OpenClient:"));
     fd = open(g_drm_device, O_RDWR | O_CLOEXEC);
-    LLOGLN(10, ("rdpDri3OpenClient: fd %d", fd));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpDri3OpenClient: fd %d", fd));
     if (fd < 0)
     {
         return BadAlloc;
@@ -115,7 +115,7 @@ rdpDri3Init(ScreenPtr pScreen)
     rdp_dri3_info.open_client = rdpDri3OpenClient;
     if (!dri3_screen_init(pScreen, &rdp_dri3_info))
     {
-        LLOGLN(0, ("rdpScreenInit: dri3_screen_init failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: dri3_screen_init failed"));
         return 1;
     }
     return 0;

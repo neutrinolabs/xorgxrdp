@@ -485,21 +485,21 @@ KbdSync(rdpKeyboard *keyboard, int param1)
 
     if ((!(xkb_state & 0x02)) != (!(param1 & 4))) /* caps lock */
     {
-        LLOGLN(0, ("KbdSync: toggling caps lock"));
+        LLOGLN(LOG_LEVEL_INFO, ("KbdSync: toggling caps lock"));
         KbdAddEvent(keyboard, 1, 58, 0, 58, 0);
         KbdAddEvent(keyboard, 0, 58, 49152, 58, 49152);
     }
 
     if ((!(xkb_state & 0x10)) != (!(param1 & 2))) /* num lock */
     {
-        LLOGLN(0, ("KbdSync: toggling num lock"));
+        LLOGLN(LOG_LEVEL_INFO, ("KbdSync: toggling num lock"));
         KbdAddEvent(keyboard, 1, 69, 0, 69, 0);
         KbdAddEvent(keyboard, 0, 69, 49152, 69, 49152);
     }
 
     if ((!(keyboard->scroll_lock_down)) != (!(param1 & 1))) /* scroll lock */
     {
-        LLOGLN(0, ("KbdSync: toggling scroll lock"));
+        LLOGLN(LOG_LEVEL_INFO, ("KbdSync: toggling scroll lock"));
         KbdAddEvent(keyboard, 1, 70, 0, 70, 0);
         KbdAddEvent(keyboard, 0, 70, 49152, 70, 49152);
     }
@@ -513,7 +513,7 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
     rdpKeyboard *keyboard;
 
     keyboard = &(dev->keyboard);
-    LLOGLN(10, ("rdpInputKeyboard:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpInputKeyboard:"));
     switch (msg)
     {
         case 15: /* key down */
@@ -537,8 +537,8 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
 {
     int i;
 
-    LLOGLN(0, ("rdpkeybDeviceInit:"));
-    LLOGLN(10, ("  MAP_LENGTH %d GLYPHS_PER_KEY %d N_PREDEFINED_KEYS %d",
+    LLOGLN(LOG_LEVEL_INFO, ("rdpkeybDeviceInit:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("  MAP_LENGTH %d GLYPHS_PER_KEY %d N_PREDEFINED_KEYS %d",
            MAP_LENGTH, GLYPHS_PER_KEY, (int) N_PREDEFINED_KEYS));
 
     for (i = 0; i < MAP_LENGTH; i++)
@@ -562,7 +562,7 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
     pKeySyms->map = g_new0(KeySym, MAP_LENGTH * GLYPHS_PER_KEY);
     if (pKeySyms->map == 0)
     {
-        LLOGLN(0, ("rdpkeybDeviceInit: out of memory"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpkeybDeviceInit: out of memory"));
         exit(1);
     }
 
@@ -581,21 +581,21 @@ rdpkeybDeviceInit(DeviceIntPtr pDevice, KeySymsPtr pKeySyms, CARD8 *pModMap)
 static void
 rdpkeybDeviceOn(void)
 {
-    LLOGLN(10, ("rdpkeybDeviceOn:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpkeybDeviceOn:"));
 }
 
 /******************************************************************************/
 static void
 rdpkeybDeviceOff(void)
 {
-    LLOGLN(10, ("rdpkeybDeviceOff:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpkeybDeviceOff:"));
 }
 
 /******************************************************************************/
 static void
 rdpkeybBell(int volume, DeviceIntPtr pDev, pointer ctrl, int cls)
 {
-    LLOGLN(10, ("rdpkeybBell:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpkeybBell:"));
 }
 
 /******************************************************************************/
@@ -606,7 +606,7 @@ rdpInDeferredRepeatCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     DeviceIntPtr it;
     Bool found;
 
-    LLOGLN(10, ("rdpInDeferredRepeatCallback:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpInDeferredRepeatCallback:"));
     TimerFree(timer);
     pDev = (DeviceIntPtr) arg;
     found = FALSE;
@@ -633,7 +633,7 @@ rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
 {
     XkbControlsPtr ctrls;
 
-    LLOGLN(10, ("rdpkeybChangeKeyboardControl:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpkeybChangeKeyboardControl:"));
     ctrls = 0;
     if (pDev != 0)
     {
@@ -655,14 +655,14 @@ rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
     {
         if (ctrls->enabled_ctrls & XkbRepeatKeysMask)
         {
-            LLOGLN(0, ("rdpkeybChangeKeyboardControl: autoRepeat on"));
+            LLOGLN(LOG_LEVEL_INFO, ("rdpkeybChangeKeyboardControl: autoRepeat on"));
             /* schedule to turn off the autorepeat after 100 ms so any app
              * polling it will be happy it's on */
             TimerSet(NULL, 0, 100, rdpInDeferredRepeatCallback, pDev);
         }
         else
         {
-            LLOGLN(0, ("rdpkeybChangeKeyboardControl: autoRepeat off"));
+            LLOGLN(LOG_LEVEL_INFO, ("rdpkeybChangeKeyboardControl: autoRepeat off"));
         }
     }
 }
@@ -677,7 +677,7 @@ rdpkeybControl(DeviceIntPtr device, int what)
     XkbRMLVOSet set;
     rdpPtr dev;
 
-    LLOGLN(0, ("rdpkeybControl: what %d", what));
+    LLOGLN(LOG_LEVEL_INFO, ("rdpkeybControl: what %d", what));
     pDev = (DevicePtr)device;
 
     switch (what)
@@ -725,7 +725,7 @@ rdpkeybPreInit(InputDriverPtr drv, IDevPtr dev, int flags)
 {
     InputInfoPtr info;
 
-    LLOGLN(0, ("rdpkeybPreInit: drv %p dev %p, flags 0x%x",
+    LLOGLN(LOG_LEVEL_INFO, ("rdpkeybPreInit: drv %p dev %p, flags 0x%x",
            drv, dev, flags));
     info = xf86AllocateInput(drv, 0);
     info->name = dev->identifier;
@@ -748,7 +748,7 @@ rdpkeybPreInit(InputDriverPtr drv, IDevPtr dev, int flags)
 static int
 rdpkeybPreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
-    LLOGLN(0, ("rdpkeybPreInit: drv %p info %p, flags 0x%x",
+    LLOGLN(LOG_LEVEL_INFO, ("rdpkeybPreInit: drv %p info %p, flags 0x%x",
            drv, info, flags));
     info->device_control = rdpkeybControl;
     info->type_name = g_Keyboard_str;
@@ -762,7 +762,7 @@ rdpkeybPreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 static void
 rdpkeybUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
-    LLOGLN(0, ("rdpkeybUnInit: drv %p info %p, flags 0x%x",
+    LLOGLN(LOG_LEVEL_INFO, ("rdpkeybUnInit: drv %p info %p, flags 0x%x",
            drv, info, flags));
     rdpUnregisterInputCallback(rdpInputKeyboard);
 }
@@ -783,7 +783,7 @@ static InputDriverRec rdpkeyb =
 static pointer
 rdpkeybPlug(pointer module, pointer options, int *errmaj, int *errmin)
 {
-    LLOGLN(10, ("rdpkeybPlug:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpkeybPlug:"));
     xf86AddInputDriver(&rdpkeyb, module, 0);
     return module;
 }
@@ -792,7 +792,7 @@ rdpkeybPlug(pointer module, pointer options, int *errmaj, int *errmin)
 static void
 rdpkeybUnplug(pointer p)
 {
-    LLOGLN(10, ("rdpkeybUnplug:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpkeybUnplug:"));
 }
 
 /******************************************************************************/
@@ -821,7 +821,7 @@ reload_xkb(DeviceIntPtr keyboard, XkbRMLVOSet *set)
     if (!InitKeyboardDeviceStruct(keyboard, set, rdpkeybBell,
                                   rdpkeybChangeKeyboardControl))
     {
-        LLOGLN(0, ("rdpLoadLayout: InitKeyboardDeviceStruct failed"));
+        LLOGLN(LOG_LEVEL_INFO, ("rdpLoadLayout: InitKeyboardDeviceStruct failed"));
         return 1;
     }
 
@@ -859,7 +859,7 @@ rdpLoadLayout(rdpKeyboard *keyboard, struct xrdp_client_info *client_info)
 
     int keylayout = client_info->keylayout;
 
-    LLOGLN(0, ("rdpLoadLayout: keylayout 0x%8.8x variant %s",
+    LLOGLN(LOG_LEVEL_INFO, ("rdpLoadLayout: keylayout 0x%8.8x variant %s",
                keylayout, client_info->variant));
     memset(&set, 0, sizeof(set));
     set.rules = g_base_str;

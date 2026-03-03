@@ -67,14 +67,14 @@ rdpPolyGlyphBlt(DrawablePtr pDrawable, GCPtr pGC,
     int cd;
     BoxRec box;
 
-    LLOGLN(10, ("rdpPolyGlyphBlt:"));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyGlyphBlt:"));
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolyGlyphBltCallCount++;
     GetTextBoundingBox(pDrawable, pGC->font, x, y, nglyph, &box);
     rdpRegionInit(&reg, &box, 0);
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(10, ("rdpPolyGlyphBlt: cd %d", cd));
+    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyGlyphBlt: cd %d", cd));
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);
