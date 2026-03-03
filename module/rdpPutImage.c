@@ -66,7 +66,7 @@ rdpPutImage(DrawablePtr pDst, GCPtr pGC, int depth, int x, int y,
     int cd;
     BoxRec box;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPutImage:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPutImage:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPutImageCallCount++;
     box.x1 = x + pDst->x;
@@ -76,7 +76,7 @@ rdpPutImage(DrawablePtr pDst, GCPtr pGC, int depth, int x, int y,
     rdpRegionInit(&reg, &box, 0);
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDst, pGC);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPutImage: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPutImage: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

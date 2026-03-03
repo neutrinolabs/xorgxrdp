@@ -66,7 +66,7 @@ rdpCompositeRects(CARD8 op, PicturePtr dst, xRenderColor * color,
     PictureScreenPtr ps;
     RegionPtr reg;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpCompositeRects:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCompositeRects:");
     pScreen = dst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     dev->counts.rdpCompositeRectsCallCount++;

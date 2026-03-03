@@ -101,7 +101,7 @@ static uint8_t g_reverse_byte[0x100] =
 Bool
 rdpSpriteRealizeCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteRealizeCursor:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteRealizeCursor:");
     return TRUE;
 }
 
@@ -109,7 +109,7 @@ rdpSpriteRealizeCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs)
 Bool
 rdpSpriteUnrealizeCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteUnrealizeCursor:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteUnrealizeCursor:");
     return TRUE;
 }
 
@@ -249,10 +249,10 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
     int can_do_large;
     int cursor_id;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteSetCursorCon:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursorCon:");
     if (clientCon->suppress_output)
     {
-        LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteSetCursorCon: suppress_output set"));
+        LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursorCon: suppress_output set");
         return;
     }
     if (clientCon->client_info.size == 0)
@@ -279,8 +279,8 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
     {
         /* None cursor */
         cursor_id = 0; /* SYSPTR_NULL */
-        LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteSetCursorCon: sending cursor system "
-                "pointer 0x%8.8X", cursor_id));
+        LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursorCon: sending cursor system "
+                "pointer 0x%8.8X", cursor_id);
         rdpClientConBeginUpdate(clientCon->dev, clientCon);
         rdpClientConSetCursorSystem(clientCon->dev, clientCon, cursor_id);
         rdpClientConEndUpdate(clientCon->dev, clientCon);
@@ -307,10 +307,10 @@ rdpSpriteSetCursorCon(rdpClientCon *clientCon,
         }
         sending_width = server_width > 32 ? client_max_width : 32;
         sending_height = server_height > 32 ? client_max_height : 32;
-        LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteSetCursorCon: sending_width %d "
+        LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursorCon: sending_width %d "
                "sending_height %d server_width %d server_height %d "
                "sending_bpp %d", sending_width, sending_height,
-               server_width, server_height, sending_bpp));
+               server_width, server_height, sending_bpp);
         if (sending_bpp == 32)
         {
             paddedRowBytes = PixmapBytePad(server_width, 32);
@@ -401,12 +401,12 @@ rdpSpriteSetCursor(DeviceIntPtr pDev, ScreenPtr pScr, CursorPtr pCurs,
     rdpClientCon *clientCon;
     int do_move;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteSetCursor:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursor:");
     dev = rdpGetDevFromScreen(pScr);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteSetCursor: x %d y %d cursor_x %d cursor_y %d",
-           x, y, dev->pointer.cursor_x, dev->pointer.cursor_y));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursor: x %d y %d cursor_x %d cursor_y %d",
+           x, y, dev->pointer.cursor_x, dev->pointer.cursor_y);
     do_move = (dev->pointer.cursor_x != x) || (dev->pointer.cursor_y != y);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteSetCursor: x %d y %d do_move %d", x, y, do_move));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteSetCursor: x %d y %d do_move %d", x, y, do_move);
     clientCon = dev->clientConHead;
     while (clientCon != NULL)
     {
@@ -420,7 +420,7 @@ static void
 rdpSpriteMoveCursorCon(rdpClientCon *clientCon,
                       DeviceIntPtr pDev, ScreenPtr pScr, int x, int y)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteMoveCursorCon:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteMoveCursorCon:");
     rdpClientConBeginUpdate(clientCon->dev, clientCon);
     rdpClientConMoveCursor(clientCon->dev, clientCon, x, y);
     rdpClientConEndUpdate(clientCon->dev, clientCon);
@@ -434,12 +434,12 @@ rdpSpriteMoveCursor(DeviceIntPtr pDev, ScreenPtr pScr, int x, int y)
     rdpClientCon *clientCon;
     int do_move;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteMoveCursor:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteMoveCursor:");
     dev = rdpGetDevFromScreen(pScr);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteMoveCursor: x %d y %d cursor_x %d cursor_y %d",
-      x, y, dev->pointer.cursor_x, dev->pointer.cursor_y));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteMoveCursor: x %d y %d cursor_x %d cursor_y %d",
+      x, y, dev->pointer.cursor_x, dev->pointer.cursor_y);
     do_move = (dev->pointer.cursor_x != x) || (dev->pointer.cursor_y != y);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteMoveCursor: x %d y %d do_move %d", x, y, do_move));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteMoveCursor: x %d y %d do_move %d", x, y, do_move);
     if (!do_move)
     {
         return;
@@ -456,7 +456,7 @@ rdpSpriteMoveCursor(DeviceIntPtr pDev, ScreenPtr pScr, int x, int y)
 Bool
 rdpSpriteDeviceCursorInitialize(DeviceIntPtr pDev, ScreenPtr pScr)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteDeviceCursorInitialize:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteDeviceCursorInitialize:");
     return TRUE;
 }
 
@@ -464,5 +464,5 @@ rdpSpriteDeviceCursorInitialize(DeviceIntPtr pDev, ScreenPtr pScr)
 void
 rdpSpriteDeviceCursorCleanup(DeviceIntPtr pDev, ScreenPtr pScr)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSpriteDeviceCursorCleanup:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSpriteDeviceCursorCleanup:");
 }

@@ -68,14 +68,14 @@ rdpPolyText8(DrawablePtr pDrawable, GCPtr pGC,
     int cd;
     BoxRec box;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyText8:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyText8:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolyText8CallCount++;
     GetTextBoundingBox(pDrawable, pGC->font, x, y, count, &box);
     rdpRegionInit(&reg, &box, 0);
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyText8: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyText8: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

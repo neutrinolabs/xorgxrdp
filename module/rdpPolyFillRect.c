@@ -64,7 +64,7 @@ rdpPolyFillRect(DrawablePtr pDrawable, GCPtr pGC, int nrectFill,
     RegionPtr reg;
     int cd;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyFillRect:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyFillRect:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolyFillRectCallCount++;
     /* make a copy of rects */
@@ -72,7 +72,7 @@ rdpPolyFillRect(DrawablePtr pDrawable, GCPtr pGC, int nrectFill,
     rdpRegionTranslate(reg, pDrawable->x, pDrawable->y);
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyFillRect: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyFillRect: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(reg, &clip_reg, reg);

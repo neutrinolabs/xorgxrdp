@@ -70,7 +70,7 @@ rdpPolylines(DrawablePtr pDrawable, GCPtr pGC, int mode,
     int y2;
     BoxRec box;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolylines:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPolylines:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolylinesCallCount++;
     rdpRegionInit(&reg, NullBox, 0);
@@ -88,7 +88,7 @@ rdpPolylines(DrawablePtr pDrawable, GCPtr pGC, int mode,
     }
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolylines: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPolylines: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

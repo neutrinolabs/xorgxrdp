@@ -110,7 +110,7 @@ static XF86ModuleVersionInfo g_VersRec =
 static Bool
 rdpAllocRec(ScrnInfoPtr pScrn)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpAllocRec:"));
+    LOG(LOG_LEVEL_TRACE, "rdpAllocRec:");
     if (pScrn->driverPrivate != 0)
     {
         return TRUE;
@@ -124,7 +124,7 @@ rdpAllocRec(ScrnInfoPtr pScrn)
 static void
 rdpFreeRec(ScrnInfoPtr pScrn)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpFreeRec:"));
+    LOG(LOG_LEVEL_TRACE, "rdpFreeRec:");
     if (pScrn->driverPrivate == 0)
     {
         return;
@@ -148,7 +148,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     DisplayModePtr mode;
     rdpPtr dev;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPreInit:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPreInit:");
     if (flags & PROBE_DETECT)
     {
         return FALSE;
@@ -172,14 +172,14 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     dev->fd = open(g_drm_device, O_RDWR, 0);
     if (dev->fd == -1)
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: %s open failed", g_drm_device));
+        LOG(LOG_LEVEL_INFO, "rdpPreInit: %s open failed", g_drm_device);
     }
     else
     {
         struct drm_version dver;
         char delim[] = " ";
         char *token;
-        LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: %s open ok, fd %d", g_drm_device, dev->fd));
+        LOG(LOG_LEVEL_INFO, "rdpPreInit: %s open ok, fd %d", g_drm_device, dev->fd);
         memset(&dver, 0, sizeof(dver));
         dver.name_len = 256;
         dver.name = g_new0(char, dver.name_len);
@@ -189,30 +189,30 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
         dver.desc = g_new0(char, dver.desc_len);
         if (ioctl(dev->fd, DRM_IOCTL_VERSION, &dver) != -1)
         {
-            LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: name [%s]", dver.name));
-            LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: date [%s]", dver.date));
-            LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: desc [%s]", dver.desc));
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: name [%s]", dver.name);
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: date [%s]", dver.date);
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: desc [%s]", dver.desc);
             token = strtok(g_drm_allow_list, delim);
             while (token != NULL)
             {
-                LLOGLN(LOG_LEVEL_TRACE, ("rdpPreInit: token [%s]", token));
+                LOG(LOG_LEVEL_TRACE, "rdpPreInit: token [%s]", token);
                 if (strstr(dver.name, token) != NULL)
                 {
                     dev->glamor = TRUE;
-                    LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: drm device looks ok, "
-                           "use glamor set"));
+                    LOG(LOG_LEVEL_INFO, "rdpPreInit: drm device looks ok, "
+                           "use glamor set");
                     break;
                 }
                 token = strtok(NULL, delim);
             }
             if (dev->glamor == FALSE)
             {
-                LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: unsupported render node"));
+                LOG(LOG_LEVEL_INFO, "rdpPreInit: unsupported render node");
             }
         }
         else
         {
-            LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: DRM_IOCTL_VERSION failed"));
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: DRM_IOCTL_VERSION failed");
         }
         free(dver.name);
         free(dver.date);
@@ -246,7 +246,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
                          Support24bppFb | Support32bppFb |
                          SupportConvert32to24 | SupportConvert24to32))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: xf86SetDepthBpp failed"));
+        LOG(LOG_LEVEL_INFO, "rdpPreInit: xf86SetDepthBpp failed");
         rdpFreeRec(pScrn);
         return FALSE;
     }
@@ -254,27 +254,27 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     g_memset(&zeros1, 0, sizeof(zeros1));
     if (!xf86SetWeight(pScrn, zeros1, zeros1))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: xf86SetWeight failed"));
+        LOG(LOG_LEVEL_INFO, "rdpPreInit: xf86SetWeight failed");
         rdpFreeRec(pScrn);
         return FALSE;
     }
     g_memset(&zeros2, 0, sizeof(zeros2));
     if (!xf86SetGamma(pScrn, zeros2))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: xf86SetGamma failed"));
+        LOG(LOG_LEVEL_INFO, "rdpPreInit: xf86SetGamma failed");
         rdpFreeRec(pScrn);
         return FALSE;
     }
     if (!xf86SetDefaultVisual(pScrn, -1))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: xf86SetDefaultVisual failed"));
+        LOG(LOG_LEVEL_INFO, "rdpPreInit: xf86SetDefaultVisual failed");
         rdpFreeRec(pScrn);
         return FALSE;
     }
     xf86SetDpi(pScrn, 0, 0);
     if (0 == pScrn->display->modes)
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: modes error"));
+        LOG(LOG_LEVEL_INFO, "rdpPreInit: modes error");
         rdpFreeRec(pScrn);
         return FALSE;
     }
@@ -287,7 +287,7 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     {
         for (mode = pScrn->monitor->Modes; mode != 0; mode = mode->next)
         {
-            LLOGLN(LOG_LEVEL_TRACE, ("%s %s", mode->name, *modename));
+            LOG(LOG_LEVEL_TRACE, "%s %s", mode->name, *modename);
             if (0 == strcmp(mode->name, *modename))
             {
                 break;
@@ -300,8 +300,8 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
             continue;
         }
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "\tmode \"%s\" ok\n", *modename);
-        LLOGLN(LOG_LEVEL_TRACE, ("%d %d %d %d", mode->HDisplay, dev->width,
-               mode->VDisplay, dev->height));
+        LOG(LOG_LEVEL_TRACE, "%d %d %d %d", mode->HDisplay, dev->width,
+               mode->VDisplay, dev->height);
         if ((mode->HDisplay == dev->width) && (mode->VDisplay == dev->height))
         {
             pScrn->virtualX = mode->HDisplay;
@@ -319,11 +319,11 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
     }
     pScrn->currentMode = pScrn->modes;
     xf86PrintModes(pScrn);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPreInit: out fPtr->num_modes %d", dev->num_modes));
+    LOG(LOG_LEVEL_TRACE, "rdpPreInit: out fPtr->num_modes %d", dev->num_modes);
     if (!got_res_match)
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: could not find screen resolution %dx%d",
-               dev->width, dev->height));
+        LOG(LOG_LEVEL_INFO, "rdpPreInit: could not find screen resolution %dx%d",
+               dev->width, dev->height);
         return FALSE;
     }
     if (dev->glamor)
@@ -331,20 +331,20 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
 #if defined(XORGXRDP_GLAMOR)
         if (xf86LoadSubModule(pScrn, GLAMOR_EGL_MODULE_NAME))
         {
-            LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: glamor module load ok"));
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: glamor module load ok");
             if (glamor_egl_init(pScrn, dev->fd))
             {
-                LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: glamor init ok"));
+                LOG(LOG_LEVEL_INFO, "rdpPreInit: glamor init ok");
             }
             else
             {
-                LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: glamor init failed"));
+                LOG(LOG_LEVEL_INFO, "rdpPreInit: glamor init failed");
                 dev->glamor = FALSE;
             }
         }
         else
         {
-            LLOGLN(LOG_LEVEL_INFO, ("rdpPreInit: glamor module load failed"));
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: glamor module load failed");
             dev->glamor = FALSE;
         }
 #endif
@@ -368,7 +368,7 @@ static miPointerSpriteFuncRec g_rdpSpritePointerFuncs =
 static Bool
 rdpSaveScreen(ScreenPtr pScreen, int on)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSaveScreen:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSaveScreen:");
     return TRUE;
 }
 
@@ -381,7 +381,7 @@ rdpResizeSession(rdpPtr dev, int width, int height)
     ScrnInfoPtr pScrn;
     Bool ok;
 
-    LLOGLN(LOG_LEVEL_INFO, ("rdpResizeSession: width %d height %d", width, height));
+    LOG(LOG_LEVEL_INFO, "rdpResizeSession: width %d height %d", width, height);
     pScrn = xf86Screens[dev->pScreen->myNum];
     mmwidth = PixelToMM(width, pScrn->xDpi);
     mmheight = PixelToMM(height, pScrn->yDpi);
@@ -389,11 +389,11 @@ rdpResizeSession(rdpPtr dev, int width, int height)
     ok = TRUE;
     if ((dev->width != width) || (dev->height != height))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("  calling RRScreenSizeSet"));
+        LOG(LOG_LEVEL_INFO, "  calling RRScreenSizeSet");
         dev->allow_screen_resize = 1;
         ok = RRScreenSizeSet(dev->pScreen, width, height, mmwidth, mmheight);
         dev->allow_screen_resize = 0;
-        LLOGLN(LOG_LEVEL_INFO, ("  RRScreenSizeSet ok %d", ok));
+        LOG(LOG_LEVEL_INFO, "  RRScreenSizeSet ok %d", ok);
     }
     return ok;
 }
@@ -405,7 +405,7 @@ xorgxrdpDamageReport(DamagePtr pDamage, RegionPtr pRegion, void *closure)
     rdpPtr dev;
     ScreenPtr pScreen;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpDamageReport:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpDamageReport:");
     pScreen = (ScreenPtr)closure;
     dev = rdpGetDevFromScreen(pScreen);
     rdpClientConAddAllReg(dev, pRegion, &(pScreen->root->drawable));
@@ -415,7 +415,7 @@ xorgxrdpDamageReport(DamagePtr pDamage, RegionPtr pRegion, void *closure)
 static void
 xorgxrdpDamageDestroy(DamagePtr pDamage, void *closure)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("xorgxrdpDamageDestroy:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpDamageDestroy:");
 }
 
 /******************************************************************************/
@@ -453,11 +453,11 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
 
     pScreen = (ScreenPtr) arg;
     dev = rdpGetDevFromScreen(pScreen);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpDeferredRandR:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDeferredRandR:");
     pRRScrPriv = rrGetScrPriv(pScreen);
     if (pRRScrPriv == 0)
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpDeferredRandR: rrGetScrPriv failed"));
+        LOG(LOG_LEVEL_INFO, "rdpDeferredRandR: rrGetScrPriv failed");
         return 1;
     }
 
@@ -474,18 +474,18 @@ rdpDeferredRandR(OsTimerPtr timer, CARD32 now, pointer arg)
     dev->rrGetPanning         = pRRScrPriv->rrGetPanning;
     dev->rrSetPanning         = pRRScrPriv->rrSetPanning;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrSetConfig = %p", dev->rrSetConfig));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrGetInfo = %p", dev->rrGetInfo));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrScreenSetSize = %p", dev->rrScreenSetSize));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrCrtcSet = %p", dev->rrCrtcSet));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrCrtcSetGamma = %p", dev->rrCrtcSetGamma));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrCrtcGetGamma = %p", dev->rrCrtcGetGamma));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrOutputSetProperty = %p", dev->rrOutputSetProperty));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrOutputValidateMode = %p", dev->rrOutputValidateMode));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrModeDestroy = %p", dev->rrModeDestroy));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrOutputGetProperty = %p", dev->rrOutputGetProperty));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrGetPanning = %p", dev->rrGetPanning));
-    LLOGLN(LOG_LEVEL_TRACE, ("  rrSetPanning = %p", dev->rrSetPanning));
+    LOG(LOG_LEVEL_TRACE, "  rrSetConfig = %p", dev->rrSetConfig);
+    LOG(LOG_LEVEL_TRACE, "  rrGetInfo = %p", dev->rrGetInfo);
+    LOG(LOG_LEVEL_TRACE, "  rrScreenSetSize = %p", dev->rrScreenSetSize);
+    LOG(LOG_LEVEL_TRACE, "  rrCrtcSet = %p", dev->rrCrtcSet);
+    LOG(LOG_LEVEL_TRACE, "  rrCrtcSetGamma = %p", dev->rrCrtcSetGamma);
+    LOG(LOG_LEVEL_TRACE, "  rrCrtcGetGamma = %p", dev->rrCrtcGetGamma);
+    LOG(LOG_LEVEL_TRACE, "  rrOutputSetProperty = %p", dev->rrOutputSetProperty);
+    LOG(LOG_LEVEL_TRACE, "  rrOutputValidateMode = %p", dev->rrOutputValidateMode);
+    LOG(LOG_LEVEL_TRACE, "  rrModeDestroy = %p", dev->rrModeDestroy);
+    LOG(LOG_LEVEL_TRACE, "  rrOutputGetProperty = %p", dev->rrOutputGetProperty);
+    LOG(LOG_LEVEL_TRACE, "  rrGetPanning = %p", dev->rrGetPanning);
+    LOG(LOG_LEVEL_TRACE, "  rrSetPanning = %p", dev->rrSetPanning);
 
     pRRScrPriv->rrSetConfig          = rdpRRSetConfig;
     pRRScrPriv->rrGetInfo            = rdpRRGetInfo;
@@ -555,7 +555,7 @@ rdpSetPixmapVisitWindow(WindowPtr window, void *data)
 {
     ScreenPtr screen;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSetPixmapVisitWindow:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSetPixmapVisitWindow:");
     screen = window->drawable.pScreen;
     if (screen->GetWindowPixmap(window) == data)
     {
@@ -573,7 +573,7 @@ rdpCreateScreenResources(ScreenPtr pScreen)
     Bool ret;
     rdpPtr dev;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpCreateScreenResources:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCreateScreenResources:");
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreateScreenResources = dev->CreateScreenResources;
     ret = pScreen->CreateScreenResources(pScreen);
@@ -590,8 +590,8 @@ rdpCreateScreenResources(ScreenPtr pScreen)
         PixmapPtr screen_pixmap;
         uint32_t screen_tex;
         old_screen_pixmap = dev->screenSwPixmap;
-        LLOGLN(LOG_LEVEL_INFO, ("rdpCreateScreenResources: create screen pixmap w %d h %d",
-               pScreen->width, pScreen->height));
+        LOG(LOG_LEVEL_INFO, "rdpCreateScreenResources: create screen pixmap w %d h %d",
+               pScreen->width, pScreen->height);
         screen_pixmap = pScreen->CreatePixmap(pScreen,
                                               pScreen->width,
                                               pScreen->height,
@@ -602,7 +602,7 @@ rdpCreateScreenResources(ScreenPtr pScreen)
             return FALSE;
         }
         screen_tex = glamor_get_pixmap_texture(screen_pixmap);
-        LLOGLN(LOG_LEVEL_INFO, ("rdpCreateScreenResources: screen_tex 0x%8.8x", screen_tex));
+        LOG(LOG_LEVEL_INFO, "rdpCreateScreenResources: screen_tex 0x%8.8x", screen_tex);
         pScreen->SetScreenPixmap(screen_pixmap);
         if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
         {
@@ -637,23 +637,23 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     miSetVisualTypes(pScrn->depth, miGetDefaultVisualMask(pScrn->depth),
                      pScrn->rgbBits, TrueColor);
     miSetPixmapDepths();
-    LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: virtualX %d virtualY %d rgbBits %d depth %d",
-           pScrn->virtualX, pScrn->virtualY, pScrn->rgbBits, pScrn->depth));
+    LOG(LOG_LEVEL_INFO, "rdpScreenInit: virtualX %d virtualY %d rgbBits %d depth %d",
+           pScrn->virtualX, pScrn->virtualY, pScrn->rgbBits, pScrn->depth);
 
     dev->depth = pScrn->depth;
     dev->paddedWidthInBytes = PixmapBytePad(dev->width, dev->depth);
     dev->bitsPerPixel = rdpBitsPerPixel(dev->depth);
     dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
-    LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: pfbMemory bytes %d", dev->sizeInBytes));
+    LOG(LOG_LEVEL_INFO, "rdpScreenInit: pfbMemory bytes %d", dev->sizeInBytes);
     dev->pfbMemory_alloc = g_new0(uint8_t, dev->sizeInBytes + 16);
     dev->pfbMemory = (uint8_t *) RDPALIGN(dev->pfbMemory_alloc, 16);
-    LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: pfbMemory %p", dev->pfbMemory));
+    LOG(LOG_LEVEL_INFO, "rdpScreenInit: pfbMemory %p", dev->pfbMemory);
     if (!fbScreenInit(pScreen, dev->pfbMemory,
                       pScrn->virtualX, pScrn->virtualY,
                       pScrn->xDpi, pScrn->yDpi, pScrn->displayWidth,
                       pScrn->bitsPerPixel))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: fbScreenInit failed"));
+        LOG(LOG_LEVEL_INFO, "rdpScreenInit: fbScreenInit failed");
         return FALSE;
     }
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 14, 0, 0, 0)
@@ -685,32 +685,32 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         /* it's not that we don't want dri3, we just want to init it ourself */
         if (glamor_init(pScreen, GLAMOR_USE_EGL_SCREEN | GLAMOR_NO_DRI3))
         {
-            LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: glamor_init ok"));
+            LOG(LOG_LEVEL_INFO, "rdpScreenInit: glamor_init ok");
         }
         else
         {
-            LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: glamor_init failed"));
+            LOG(LOG_LEVEL_INFO, "rdpScreenInit: glamor_init failed");
         }
         if (g_use_dri2)
         {
             if (rdpDri2Init(pScreen) != 0)
             {
-                LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: rdpDri2Init failed"));
+                LOG(LOG_LEVEL_INFO, "rdpScreenInit: rdpDri2Init failed");
             }
             else
             {
-                LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: rdpDri2Init ok"));
+                LOG(LOG_LEVEL_INFO, "rdpScreenInit: rdpDri2Init ok");
             }
         }
         if (g_use_dri3)
         {
             if (rdpDri3Init(pScreen) != 0)
             {
-                LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: rdpDri3Init failed"));
+                LOG(LOG_LEVEL_INFO, "rdpScreenInit: rdpDri3Init failed");
             }
             else
             {
-                LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: rdpDri3Init ok"));
+                LOG(LOG_LEVEL_INFO, "rdpScreenInit: rdpDri3Init ok");
             }
         }
 #endif
@@ -746,7 +746,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     }
     if (!vis_found)
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: no root visual"));
+        LOG(LOG_LEVEL_INFO, "rdpScreenInit: no root visual");
         return FALSE;
     }
 
@@ -801,7 +801,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
     if (rdpClientConInit(dev) != 0)
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: rdpClientConInit failed"));
+        LOG(LOG_LEVEL_INFO, "rdpScreenInit: rdpClientConInit failed");
     }
 
     dev->Bpp_mask = 0x00FFFFFF;
@@ -812,7 +812,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     /* XVideo */
     if (!rdpXvInit(pScreen, pScrn))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: rdpXvInit failed"));
+        LOG(LOG_LEVEL_INFO, "rdpScreenInit: rdpXvInit failed");
     }
 #endif
 
@@ -823,7 +823,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
 #endif
     }
 
-    LLOGLN(LOG_LEVEL_INFO, ("rdpScreenInit: out"));
+    LOG(LOG_LEVEL_INFO, "rdpScreenInit: out");
     return TRUE;
 }
 
@@ -835,7 +835,7 @@ rdpSwitchMode(int a, DisplayModePtr b, int c)
 rdpSwitchMode(ScrnInfoPtr a, DisplayModePtr b)
 #endif
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpSwitchMode:"));
+    LOG(LOG_LEVEL_TRACE, "rdpSwitchMode:");
     return TRUE;
 }
 
@@ -847,7 +847,7 @@ rdpAdjustFrame(int a, int b, int c, int d)
 rdpAdjustFrame(ScrnInfoPtr a, int b, int c)
 #endif
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpAdjustFrame:"));
+    LOG(LOG_LEVEL_TRACE, "rdpAdjustFrame:");
 }
 
 /*****************************************************************************/
@@ -858,7 +858,7 @@ rdpEnterVT(int a, int b)
 rdpEnterVT(ScrnInfoPtr a)
 #endif
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpEnterVT:"));
+    LOG(LOG_LEVEL_TRACE, "rdpEnterVT:");
     return TRUE;
 }
 
@@ -870,7 +870,7 @@ rdpLeaveVT(int a, int b)
 rdpLeaveVT(ScrnInfoPtr a)
 #endif
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpLeaveVT:"));
+    LOG(LOG_LEVEL_TRACE, "rdpLeaveVT:");
 }
 
 /*****************************************************************************/
@@ -881,7 +881,7 @@ rdpValidMode(int a, DisplayModePtr b, Bool c, int d)
 rdpValidMode(ScrnInfoPtr a, DisplayModePtr b, Bool c, int d)
 #endif
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpValidMode:"));
+    LOG(LOG_LEVEL_TRACE, "rdpValidMode:");
     return 0;
 }
 
@@ -893,7 +893,7 @@ rdpFreeScreen(int a, int b)
 rdpFreeScreen(ScrnInfoPtr a)
 #endif
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpFreeScreen:"));
+    LOG(LOG_LEVEL_TRACE, "rdpFreeScreen:");
 }
 
 /*****************************************************************************/
@@ -908,7 +908,7 @@ rdpProbe(DriverPtr drv, int flags)
     ScrnInfoPtr pscrn;
     const char *val;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpProbe:"));
+    LOG(LOG_LEVEL_TRACE, "rdpProbe:");
     if (flags & PROBE_DETECT)
     {
         return FALSE;
@@ -916,14 +916,14 @@ rdpProbe(DriverPtr drv, int flags)
     /* fbScreenInit, fbPictureInit, ... */
     if (!xf86LoadDrvSubModule(drv, "fb"))
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpProbe: xf86LoadDrvSubModule for fb failed"));
+        LOG(LOG_LEVEL_INFO, "rdpProbe: xf86LoadDrvSubModule for fb failed");
         return FALSE;
     }
 
     num_dev_sections = xf86MatchDevice(XRDP_DRIVER_NAME, &dev_sections);
     if (num_dev_sections <= 0)
     {
-        LLOGLN(LOG_LEVEL_INFO, ("rdpProbe: xf86MatchDevice failed"));
+        LOG(LOG_LEVEL_INFO, "rdpProbe: xf86MatchDevice failed");
         return FALSE;
     }
 
@@ -937,7 +937,7 @@ rdpProbe(DriverPtr drv, int flags)
 #if defined(XORGXRDP_GLAMOR)
             strncpy(g_drm_device, val, 127);
             g_drm_device[127] = 0;
-            LLOGLN(LOG_LEVEL_INFO, ("rdpProbe: found DRMDevice xorg.conf value [%s]", val));
+            LOG(LOG_LEVEL_INFO, "rdpProbe: found DRMDevice xorg.conf value [%s]", val);
 #endif
         }
         val = xf86FindOptionValue(dev_sections[i]->options, "DRI2");
@@ -950,7 +950,7 @@ rdpProbe(DriverPtr drv, int flags)
             {
                g_use_dri2 = 0;
             }
-            LLOGLN(LOG_LEVEL_INFO, ("rdpProbe: found DRI2 xorg.conf value [%s]", val));
+            LOG(LOG_LEVEL_INFO, "rdpProbe: found DRI2 xorg.conf value [%s]", val);
 #endif
         }
         val = xf86FindOptionValue(dev_sections[i]->options, "DRI3");
@@ -963,7 +963,7 @@ rdpProbe(DriverPtr drv, int flags)
             {
                g_use_dri3 = 0;
             }
-            LLOGLN(LOG_LEVEL_INFO, ("rdpProbe: found DRI3 xorg.conf value [%s]", val));
+            LOG(LOG_LEVEL_INFO, "rdpProbe: found DRI3 xorg.conf value [%s]", val);
 #endif
         }
         val = xf86FindOptionValue(dev_sections[i]->options, "DRMAllowList");
@@ -972,14 +972,14 @@ rdpProbe(DriverPtr drv, int flags)
 #if defined(XORGXRDP_GLAMOR)
             strncpy(g_drm_allow_list, val, 127);
             g_drm_allow_list[127] = 0;
-            LLOGLN(LOG_LEVEL_INFO, ("rdpProbe: found DRMAllowList xorg.conf value [%s]", val));
+            LOG(LOG_LEVEL_INFO, "rdpProbe: found DRMAllowList xorg.conf value [%s]", val);
 #endif
         }
         entity = xf86ClaimFbSlot(drv, 0, dev_sections[i], 1);
         pscrn = xf86ConfigFbEntity(pscrn, 0, entity, 0, 0, 0, 0);
         if (pscrn)
         {
-            LLOGLN(LOG_LEVEL_TRACE, ("rdpProbe: found screen"));
+            LOG(LOG_LEVEL_TRACE, "rdpProbe: found screen");
             found_screen = 1;
             pscrn->driverVersion = XRDP_VERSION;
             pscrn->driverName    = g_xrdp_driver_name;
@@ -1004,7 +1004,7 @@ rdpProbe(DriverPtr drv, int flags)
 static const OptionInfoRec *
 rdpAvailableOptions(int chipid, int busid)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpAvailableOptions:"));
+    LOG(LOG_LEVEL_TRACE, "rdpAvailableOptions:");
     return 0;
 }
 
@@ -1020,7 +1020,7 @@ rdpDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr)
     int rv;
 
     rv = FALSE;
-    LLOGLN(LOG_LEVEL_INFO, ("rdpDriverFunc: op %d", (int)op));
+    LOG(LOG_LEVEL_INFO, "rdpDriverFunc: op %d", (int)op);
     if (op == GET_REQUIRED_HW_INTERFACES)
     {
         flags = (xorgHWFlags *) ptr;
@@ -1034,7 +1034,7 @@ rdpDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr)
 static void
 rdpIdentify(int flags)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpIdentify:"));
+    LOG(LOG_LEVEL_TRACE, "rdpIdentify:");
     xf86PrintChipsets(XRDP_DRIVER_NAME, "driver for xrdp", g_Chipsets);
 }
 
@@ -1055,7 +1055,7 @@ _X_EXPORT DriverRec g_DriverRec =
 static pointer
 xrdpdevSetup(pointer module, pointer opts, int *errmaj, int *errmin)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("xrdpdevSetup:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpdevSetup:");
     if (!g_setup_done)
     {
         g_setup_done = 1;
@@ -1076,7 +1076,7 @@ xrdpdevSetup(pointer module, pointer opts, int *errmaj, int *errmin)
 static void
 xrdpdevTearDown(pointer Module)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("xrdpdevTearDown:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpdevTearDown:");
 }
 
 /* <drivername>ModuleData */

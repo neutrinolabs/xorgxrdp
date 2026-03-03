@@ -62,28 +62,28 @@ static char g_xrdp_mouse_name[] = XRDP_MOUSE_NAME;
 static void
 rdpmouseDeviceInit(void)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpmouseDeviceInit:"));
+    LOG(LOG_LEVEL_TRACE, "rdpmouseDeviceInit:");
 }
 
 /******************************************************************************/
 static void
 rdpmouseDeviceOn(DeviceIntPtr pDev)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpmouseDeviceOn:"));
+    LOG(LOG_LEVEL_TRACE, "rdpmouseDeviceOn:");
 }
 
 /******************************************************************************/
 static void
 rdpmouseDeviceOff(void)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpmouseDeviceOff:"));
+    LOG(LOG_LEVEL_TRACE, "rdpmouseDeviceOff:");
 }
 
 /******************************************************************************/
 static void
 rdpmouseCtrl(DeviceIntPtr pDevice, PtrCtrl *pCtrl)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpmouseCtrl:"));
+    LOG(LOG_LEVEL_TRACE, "rdpmouseCtrl:");
 }
 
 /******************************************************************************/
@@ -98,7 +98,7 @@ l_bound_by(int val, int low, int high)
 static void
 rdpEnqueueMotion(DeviceIntPtr device, int x, int y)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpEnqueueMotion:"));
+    LOG(LOG_LEVEL_TRACE, "rdpEnqueueMotion:");
     xf86PostMotionEvent(device, TRUE, 0, 2, x, y);
 }
 
@@ -106,7 +106,7 @@ rdpEnqueueMotion(DeviceIntPtr device, int x, int y)
 static void
 rdpEnqueueButton(DeviceIntPtr device, int type, int buttons)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpEnqueueButton:"));
+    LOG(LOG_LEVEL_TRACE, "rdpEnqueueButton:");
     xf86PostButtonEvent(device, FALSE, buttons, type == ButtonPress, 0, 0);
 }
 
@@ -118,7 +118,7 @@ PtrAddEvent(rdpPointer *pointer)
     int type;
     int buttons;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("PtrAddEvent: x %d y %d", pointer->cursor_x, pointer->cursor_y));
+    LOG(LOG_LEVEL_TRACE, "PtrAddEvent: x %d y %d", pointer->cursor_x, pointer->cursor_y);
 
     if ((pointer->old_cursor_x != pointer->cursor_x) ||
             (pointer->old_cursor_y != pointer->cursor_y))
@@ -161,7 +161,7 @@ PtrAddScrollEvent(rdpPointer *pointer, int vertical, int delta)
     int mask_pos;
     int scaled_delta;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("PtrAddScrollEvent: vertical %d y %d", vertical, delta));
+    LOG(LOG_LEVEL_TRACE, "PtrAddScrollEvent: vertical %d y %d", vertical, delta);
 
     scroll_events_mask = valuator_mask_new(NAXES);
     mask_pos = vertical ? 2 : 3;
@@ -192,8 +192,8 @@ rdpInputMouse(rdpPtr dev, int msg,
 {
     rdpPointer *pointer;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpInputMouse: msg %d param1 %ld param2 %ld param3 %ld param4 %ld",
-                msg, param1, param2, param3, param4));
+    LOG(LOG_LEVEL_TRACE, "rdpInputMouse: msg %d param1 %ld param2 %ld param3 %ld param4 %ld",
+                msg, param1, param2, param3, param4);
     pointer = &(dev->pointer);
     switch (msg)
     {
@@ -297,7 +297,7 @@ rdpmouseControl(DeviceIntPtr device, int what)
     rdpPtr dev;
     int i;
 
-    LLOGLN(LOG_LEVEL_INFO, ("rdpmouseControl: what %d", what));
+    LOG(LOG_LEVEL_INFO, "rdpmouseControl: what %d", what);
     pDev = (DevicePtr)device;
 
     switch (what)
@@ -374,8 +374,8 @@ rdpmousePreInit(InputDriverPtr drv, IDevPtr dev, int flags)
 {
     InputInfoPtr info;
 
-    LLOGLN(LOG_LEVEL_INFO, ("rdpmousePreInit: drv %p dev %p, flags 0x%x",
-               drv, dev, flags));
+    LOG(LOG_LEVEL_INFO, "rdpmousePreInit: drv %p dev %p, flags 0x%x",
+               drv, dev, flags);
     info = xf86AllocateInput(drv, 0);
     info->name = dev->identifier;
     info->device_control = rdpmouseControl;
@@ -397,8 +397,8 @@ rdpmousePreInit(InputDriverPtr drv, IDevPtr dev, int flags)
 static int
 rdpmousePreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
-    LLOGLN(LOG_LEVEL_INFO, ("rdpmousePreInit: drv %p info %p, flags 0x%x",
-               drv, info, flags));
+    LOG(LOG_LEVEL_INFO, "rdpmousePreInit: drv %p info %p, flags 0x%x",
+               drv, info, flags);
     info->device_control = rdpmouseControl;
     info->type_name = g_Mouse_str;
     return 0;
@@ -410,8 +410,8 @@ rdpmousePreInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 static void
 rdpmouseUnInit(InputDriverPtr drv, InputInfoPtr info, int flags)
 {
-    LLOGLN(LOG_LEVEL_INFO, ("rdpmouseUnInit: drv %p info %p, flags 0x%x",
-               drv, info, flags));
+    LOG(LOG_LEVEL_INFO, "rdpmouseUnInit: drv %p info %p, flags 0x%x",
+               drv, info, flags);
     rdpUnregisterInputCallback(rdpInputMouse);
 }
 
@@ -431,7 +431,7 @@ static InputDriverRec rdpmouse =
 static pointer
 rdpmousePlug(pointer module, pointer options, int *errmaj, int *errmin)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpmousePlug:"));
+    LOG(LOG_LEVEL_TRACE, "rdpmousePlug:");
     xf86AddInputDriver(&rdpmouse, module, 0);
     return module;
 }
@@ -440,7 +440,7 @@ rdpmousePlug(pointer module, pointer options, int *errmaj, int *errmin)
 static void
 rdpmouseUnplug(pointer p)
 {
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpmouseUnplug:"));
+    LOG(LOG_LEVEL_TRACE, "rdpmouseUnplug:");
 }
 
 /******************************************************************************/

@@ -66,7 +66,7 @@ rdpPolyPoint(DrawablePtr pDrawable, GCPtr pGC, int mode,
     int index;
     BoxRec box;
 
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyPoint:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyPoint:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolyPointCallCount++;
     rdpRegionInit(&reg, NullBox, 0);
@@ -80,7 +80,7 @@ rdpPolyPoint(DrawablePtr pDrawable, GCPtr pGC, int mode,
     }
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(LOG_LEVEL_TRACE, ("rdpPolyPoint: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyPoint: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);
