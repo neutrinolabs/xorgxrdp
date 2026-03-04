@@ -40,10 +40,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdpInput.h"
 #include "rdpMisc.h"
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #define MAX_INPUT_PROC 4
 
 struct input_proc_list
@@ -58,7 +54,7 @@ static struct input_proc_list g_input_proc[MAX_INPUT_PROC];
 int
 rdpRegisterInputCallback(int type, rdpInputEventProcPtr proc)
 {
-    LLOGLN(0, ("rdpRegisterInputCallback: type %d proc %p", type, proc));
+    LOG(LOG_LEVEL_INFO, "rdpRegisterInputCallback: type %d proc %p", type, proc);
     if (type == 0)
     {
         g_input_proc[0].proc = proc;
@@ -80,7 +76,7 @@ rdpUnregisterInputCallback(rdpInputEventProcPtr proc)
 {
     int index;
 
-    LLOGLN(0, ("rdpUnregisterInputCallback: proc %p", proc));
+    LOG(LOG_LEVEL_INFO, "rdpUnregisterInputCallback: proc %p", proc);
     for (index = 0; index < MAX_INPUT_PROC; index++)
     {
         if (g_input_proc[index].proc == proc)

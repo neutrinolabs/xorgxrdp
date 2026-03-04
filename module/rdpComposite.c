@@ -43,13 +43,9 @@ composite(alpha blending) calls
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
+#include "rdpMisc.h"
 #include "rdpReg.h"
 #include "rdpComposite.h"
-
-/******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 static void
@@ -76,7 +72,7 @@ rdpComposite(CARD8 op, PicturePtr pSrc, PicturePtr pMask, PicturePtr pDst,
     BoxRec box;
     RegionRec reg;
 
-    LLOGLN(10, ("rdpComposite:"));
+    LOG(LOG_LEVEL_TRACE, "rdpComposite:");
     pScreen = pDst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     dev->counts.rdpCompositeCallCount++;

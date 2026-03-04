@@ -46,13 +46,10 @@ rdp module main
 #include "rdpInput.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
+#include "rdpMisc.h"
 #include "rdpMain.h"
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 static Bool g_initialised = FALSE;
 
 /*****************************************************************************/
@@ -60,7 +57,7 @@ static pointer
 xorgxrdpSetup(pointer Module, pointer Options,
               int *ErrorMajor, int *ErrorMinor)
 {
-    LLOGLN(0, ("xorgxrdpSetup:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpSetup:");
     if (!g_initialised)
     {
         g_initialised = TRUE;
@@ -74,18 +71,18 @@ xorgxrdpSetup(pointer Module, pointer Options,
 static void
 xorgxrdpTearDown(pointer Module)
 {
-    LLOGLN(0, ("xorgxrdpTearDown:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpTearDown:");
 }
 
 /*****************************************************************************/
 void
 xorgxrdpDownDown(ScreenPtr pScreen)
 {
-    LLOGLN(0, ("xorgxrdpDownDown:"));
+    LOG(LOG_LEVEL_TRACE, "xorgxrdpDownDown:");
     if (g_initialised)
     {
         g_initialised = FALSE;
-        LLOGLN(0, ("xorgxrdpDownDown: 1"));
+        LOG(LOG_LEVEL_INFO, "xorgxrdpDownDown: 1");
         rdpClientConDeinit(rdpGetDevFromScreen(pScreen));
     }
 }

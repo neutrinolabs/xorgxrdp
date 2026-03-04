@@ -37,11 +37,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "rdp.h"
 #include "rdpDraw.h"
+#include "rdpMisc.h"
 #include "rdpFillSpans.h"
-
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 static void
@@ -60,7 +57,7 @@ void
 rdpFillSpans(DrawablePtr pDrawable, GCPtr pGC, int nInit,
              DDXPointPtr pptInit, int *pwidthInit, int fSorted)
 {
-    LLOGLN(0, ("rdpFillSpans:"));
+    LOG(LOG_LEVEL_TRACE, "rdpFillSpans:");
     /* do original call */
     rdpFillSpansOrg(pDrawable, pGC, nInit, pptInit, pwidthInit, fSorted);
 }

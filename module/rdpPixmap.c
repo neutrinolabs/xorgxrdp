@@ -39,6 +39,7 @@ pixmap calls
 
 #include "rdp.h"
 #include "rdpDraw.h"
+#include "rdpMisc.h"
 #include "rdpPixmap.h"
 
 #ifndef XRDP_PIX
@@ -46,10 +47,6 @@ pixmap calls
 #endif
 
 /******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #if XRDP_PIX == 2
 
 /*****************************************************************************/
@@ -60,8 +57,8 @@ rdpCreatePixmap(ScreenPtr pScreen, int width, int height, int depth,
     rdpPtr dev;
     PixmapPtr rv;
 
-    LLOGLN(10, ("rdpCreatePixmap: width %d height %d depth %d",
-           width, height, depth));
+    LOG(LOG_LEVEL_TRACE, "rdpCreatePixmap: width %d height %d depth %d",
+        width, height, depth);
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreatePixmap = dev->CreatePixmap;
     rv = pScreen->CreatePixmap(pScreen, width, height, depth, usage_hint);
@@ -78,8 +75,8 @@ rdpCreatePixmap(ScreenPtr pScreen, int width, int height, int depth)
     rdpPtr dev;
     PixmapPtr rv;
 
-    LLOGLN(10, ("rdpCreatePixmap: width %d height %d depth %d",
-           width, height, depth));
+    LOG(LOG_LEVEL_TRACE, "rdpCreatePixmap: width %d height %d depth %d",
+        width, height, depth);
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->CreatePixmap = dev->CreatePixmap;
     rv = pScreen->CreatePixmap(pScreen, width, height, depth);
@@ -97,7 +94,7 @@ rdpDestroyPixmap(PixmapPtr pPixmap)
     ScreenPtr pScreen;
     rdpPtr dev;
 
-    LLOGLN(10, ("rdpDestroyPixmap: refcnt %d", pPixmap->refcnt));
+    LOG(LOG_LEVEL_TRACE, "rdpDestroyPixmap: refcnt %d", pPixmap->refcnt);
     pScreen = pPixmap->drawable.pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->DestroyPixmap = dev->DestroyPixmap;
@@ -115,7 +112,7 @@ rdpModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
     ScreenPtr pScreen;
     rdpPtr dev;
 
-    LLOGLN(10, ("rdpModifyPixmapHeader:"));
+    LOG(LOG_LEVEL_TRACE, "rdpModifyPixmapHeader:");
     pScreen = pPixmap->drawable.pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     pScreen->ModifyPixmapHeader = dev->ModifyPixmapHeader;

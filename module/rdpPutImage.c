@@ -38,12 +38,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
+#include "rdpMisc.h"
 #include "rdpReg.h"
 #include "rdpPutImage.h"
-
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 static void
@@ -69,7 +66,7 @@ rdpPutImage(DrawablePtr pDst, GCPtr pGC, int depth, int x, int y,
     int cd;
     BoxRec box;
 
-    LLOGLN(10, ("rdpPutImage:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPutImage:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPutImageCallCount++;
     box.x1 = x + pDst->x;
@@ -79,7 +76,7 @@ rdpPutImage(DrawablePtr pDst, GCPtr pGC, int depth, int x, int y,
     rdpRegionInit(&reg, &box, 0);
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDst, pGC);
-    LLOGLN(10, ("rdpPutImage: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPutImage: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

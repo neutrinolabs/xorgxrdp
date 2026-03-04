@@ -38,12 +38,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
+#include "rdpMisc.h"
 #include "rdpReg.h"
 #include "rdpPolylines.h"
-
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 static void
@@ -73,7 +70,7 @@ rdpPolylines(DrawablePtr pDrawable, GCPtr pGC, int mode,
     int y2;
     BoxRec box;
 
-    LLOGLN(10, ("rdpPolylines:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPolylines:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolylinesCallCount++;
     rdpRegionInit(&reg, NullBox, 0);
@@ -91,7 +88,7 @@ rdpPolylines(DrawablePtr pDrawable, GCPtr pGC, int mode,
     }
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(10, ("rdpPolylines: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPolylines: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

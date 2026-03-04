@@ -284,10 +284,6 @@ void main()\n\
                         ((crc >> 24) & 0xFF) / 255.0);\n\
 }\n";
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 /******************************************************************************/
 void *
 rdpEglCreate(ScreenPtr screen)
@@ -325,20 +321,20 @@ rdpEglCreate(ScreenPtr screen)
     glShaderSource(egl->fragment_shader[0], 1, &fsource, &flength);
     glCompileShader(egl->vertex_shader[0]);
     glGetShaderiv(egl->vertex_shader[0], GL_COMPILE_STATUS, &compiled);
-    LLOGLN(0, ("rdpEglCreate: vertex_shader compiled %d", compiled));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: vertex_shader compiled %d", compiled);
     glCompileShader(egl->fragment_shader[0]);
     glGetShaderiv(egl->fragment_shader[0], GL_COMPILE_STATUS, &compiled);
-    LLOGLN(0, ("rdpEglCreate: fragment_shader compiled %d", compiled));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: fragment_shader compiled %d", compiled);
     egl->program[0] = glCreateProgram();
     glAttachShader(egl->program[0], egl->vertex_shader[0]);
     glAttachShader(egl->program[0], egl->fragment_shader[0]);
     glLinkProgram(egl->program[0]);
     glGetProgramiv(egl->program[0], GL_LINK_STATUS, &linked);
-    LLOGLN(0, ("rdpEglCreate: linked %d", linked));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: linked %d", linked);
     egl->tex_loc[0] = glGetUniformLocation(egl->program[0], "tex");
     egl->tex_size_loc[0] = glGetUniformLocation(egl->program[0], "tex_size");
-    LLOGLN(0, ("rdpEglCreate: copy_tex_loc %d copy_tex_size_loc %d",
-           egl->tex_loc[0], egl->tex_size_loc[0]));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: copy_tex_loc %d copy_tex_size_loc %d",
+        egl->tex_loc[0], egl->tex_size_loc[0]);
     /* create yuv shader */
     vsource = g_vs;
     fsource = g_fs_rfx_rgb_to_yuv;
@@ -350,20 +346,20 @@ rdpEglCreate(ScreenPtr screen)
     glShaderSource(egl->fragment_shader[1], 1, &fsource, &flength);
     glCompileShader(egl->vertex_shader[1]);
     glGetShaderiv(egl->vertex_shader[1], GL_COMPILE_STATUS, &compiled);
-    LLOGLN(0, ("rdpEglCreate: vertex_shader compiled %d", compiled));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: vertex_shader compiled %d", compiled);
     glCompileShader(egl->fragment_shader[1]);
     glGetShaderiv(egl->fragment_shader[1], GL_COMPILE_STATUS, &compiled);
-    LLOGLN(0, ("rdpEglCreate: fragment_shader compiled %d", compiled));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: fragment_shader compiled %d", compiled);
     egl->program[1] = glCreateProgram();
     glAttachShader(egl->program[1], egl->vertex_shader[1]);
     glAttachShader(egl->program[1], egl->fragment_shader[1]);
     glLinkProgram(egl->program[1]);
     glGetProgramiv(egl->program[1], GL_LINK_STATUS, &linked);
-    LLOGLN(0, ("rdpEglCreate: linked %d", linked));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: linked %d", linked);
     egl->tex_loc[1] = glGetUniformLocation(egl->program[1], "tex");
     egl->tex_size_loc[1] = glGetUniformLocation(egl->program[1], "tex_size");
-    LLOGLN(0, ("rdpEglCreate: yuv_tex_loc %d yuv_tex_size_loc %d",
-           egl->tex_loc[1], egl->tex_size_loc[1]));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: yuv_tex_loc %d yuv_tex_size_loc %d",
+        egl->tex_loc[1], egl->tex_size_loc[1]);
     /* create yuvlp shader */
     vsource = g_vs;
     fsource = g_fs_rfx_yuv_to_yuvlp;
@@ -375,20 +371,20 @@ rdpEglCreate(ScreenPtr screen)
     glShaderSource(egl->fragment_shader[2], 1, &fsource, &flength);
     glCompileShader(egl->vertex_shader[2]);
     glGetShaderiv(egl->vertex_shader[2], GL_COMPILE_STATUS, &compiled);
-    LLOGLN(0, ("rdpEglCreate: vertex_shader compiled %d", compiled));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: vertex_shader compiled %d", compiled);
     glCompileShader(egl->fragment_shader[2]);
     glGetShaderiv(egl->fragment_shader[2], GL_COMPILE_STATUS, &compiled);
-    LLOGLN(0, ("rdpEglCreate: fragment_shader compiled %d", compiled));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: fragment_shader compiled %d", compiled);
     egl->program[2] = glCreateProgram();
     glAttachShader(egl->program[2], egl->vertex_shader[2]);
     glAttachShader(egl->program[2], egl->fragment_shader[2]);
     glLinkProgram(egl->program[2]);
     glGetProgramiv(egl->program[2], GL_LINK_STATUS, &linked);
-    LLOGLN(0, ("rdpEglCreate: linked %d", linked));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: linked %d", linked);
     egl->tex_loc[2] = glGetUniformLocation(egl->program[2], "tex");
     egl->tex_size_loc[2] = glGetUniformLocation(egl->program[2], "tex_size");
-    LLOGLN(0, ("rdpEglCreate: yuvlp_tex_loc %d yuvlp_tex_size_loc %d",
-           egl->tex_loc[2], egl->tex_size_loc[2]));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: yuvlp_tex_loc %d yuvlp_tex_size_loc %d",
+        egl->tex_loc[2], egl->tex_size_loc[2]);
     /* create crc shader */
     vsource = g_vs;
     fsource = g_fs_rfx_crc;
@@ -400,20 +396,20 @@ rdpEglCreate(ScreenPtr screen)
     glShaderSource(egl->fragment_shader[3], 1, &fsource, &flength);
     glCompileShader(egl->vertex_shader[3]);
     glGetShaderiv(egl->vertex_shader[3], GL_COMPILE_STATUS, &compiled);
-    LLOGLN(0, ("rdpEglCreate: vertex_shader compiled %d", compiled));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: vertex_shader compiled %d", compiled);
     glCompileShader(egl->fragment_shader[3]);
     glGetShaderiv(egl->fragment_shader[3], GL_COMPILE_STATUS, &compiled);
-    LLOGLN(0, ("rdpEglCreate: fragment_shader compiled %d", compiled));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: fragment_shader compiled %d", compiled);
     egl->program[3] = glCreateProgram();
     glAttachShader(egl->program[3], egl->vertex_shader[3]);
     glAttachShader(egl->program[3], egl->fragment_shader[3]);
     glLinkProgram(egl->program[3]);
     glGetProgramiv(egl->program[3], GL_LINK_STATUS, &linked);
-    LLOGLN(0, ("rdpEglCreate: linked %d", linked));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: linked %d", linked);
     egl->tex_loc[3] = glGetUniformLocation(egl->program[3], "tex");
     egl->tex_size_loc[3] = glGetUniformLocation(egl->program[3], "tex_size");
-    LLOGLN(0, ("rdpEglCreate: crc_tex_loc %d crc_tex_size_loc %d",
-           egl->tex_loc[3], egl->tex_size_loc[3]));
+    LOG(LOG_LEVEL_INFO, "rdpEglCreate: crc_tex_loc %d crc_tex_size_loc %d",
+        egl->tex_loc[3], egl->tex_size_loc[3]);
     return egl;
 }
 
@@ -448,7 +444,7 @@ rdpEglRfxRgbToYuv(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LLOGLN(0, ("rdpEglRfxRgbToYuv: glCheckFramebufferStatus error"));
+        LOG(LOG_LEVEL_INFO, "rdpEglRfxRgbToYuv: glCheckFramebufferStatus error");
     }
     glViewport(0, 0, width, height);
     glUseProgram(egl->program[1]);
@@ -479,7 +475,7 @@ rdpEglRfxYuvToYuvlp(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LLOGLN(0, ("rdpEglRfxYuvToYuvlp: glCheckFramebufferStatus error"));
+        LOG(LOG_LEVEL_INFO, "rdpEglRfxYuvToYuvlp: glCheckFramebufferStatus error");
     }
     glViewport(0, 0, width, height);
     glUseProgram(egl->program[2]);
@@ -514,7 +510,7 @@ rdpEglRfxCrc(struct rdp_egl *egl, GLuint src_tex, GLuint dst_tex,
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LLOGLN(0, ("rdpEglRfxCrc: glCheckFramebufferStatus error"));
+        LOG(LOG_LEVEL_INFO, "rdpEglRfxCrc: glCheckFramebufferStatus error");
     }
     glViewport(0, 0, w_div_64, h_div_64);
     glUseProgram(egl->program[3]);
@@ -562,7 +558,7 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LLOGLN(0, ("rdpEglOut: glCheckFramebufferStatus error"));
+        LOG(LOG_LEVEL_INFO, "rdpEglOut: glCheckFramebufferStatus error");
     }
     dst = id->shmem_pixels;
     dst_stride = ((id->width + 63) & ~63) * 4;
@@ -571,8 +567,8 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
     num_crcs = crc_stride * ((id->height + 63) / 64);
     if (num_crcs != clientCon->num_rfx_crcs_alloc[mon_index])
     {
-        LLOGLN(0, ("rdpEglOut: resize the crc list was %d now %d",
-               clientCon->num_rfx_crcs_alloc[mon_index], num_crcs));
+        LOG(LOG_LEVEL_INFO, "rdpEglOut: resize the crc list was %d now %d",
+            clientCon->num_rfx_crcs_alloc[mon_index], num_crcs);
         /* resize the crc list */
         clientCon->num_rfx_crcs_alloc[mon_index] = num_crcs;
         free(clientCon->rfx_crcs[mon_index]);
@@ -590,12 +586,12 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
             rect.y1 = y;
             rect.x2 = rect.x1 + 64;
             rect.y2 = rect.y1 + 64;
-            LLOGLN(10, ("rdpEglOut: x1 %d y1 %d x2 %d y2 %d",
-                   rect.x1, rect.y1, rect.x2, rect.y2));
+            LOG(LOG_LEVEL_TRACE, "rdpEglOut: x1 %d y1 %d x2 %d y2 %d",
+                rect.x1, rect.y1, rect.x2, rect.y2);
             rcode = rdpRegionContainsRect(in_reg, &rect);
             if (rcode == rgnOUT)
             {
-                LLOGLN(10, ("rdpEglOut: rgnOUT"));
+                LOG(LOG_LEVEL_TRACE, "rdpEglOut: rgnOUT");
                 rdpRegionInit(&tile_reg, &rect, 0);
                 rdpRegionSubtract(in_reg, in_reg, &tile_reg);
                 rdpRegionUninit(&tile_reg);
@@ -614,17 +610,17 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                 crc = crc_end(crc);
                 if (crc != crcs[(ly / 64) * tile_extents_stride + (lx / 64)])
                 {
-                    LLOGLN(0, ("rdpEglOut: error crc no match "
-                           "0x%" PRIx64 " 0x%" PRIx64,
-                           crc,
-                           crcs[(ly / 64) * tile_extents_stride + (lx / 64)]));
+                    LOG(LOG_LEVEL_INFO, "rdpEglOut: error crc no match "
+                        "0x%" PRIx64 " 0x%" PRIx64,
+                        crc,
+                        crcs[(ly / 64) * tile_extents_stride + (lx / 64)]);
                 }
 #endif
                 crc = crcs[(ly / 64) * tile_extents_stride + (lx / 64)];
                 crc_offset = (y / 64) * crc_stride + (x / 64);
                 if (crc == clientCon->rfx_crcs[mon_index][crc_offset])
                 {
-                    LLOGLN(10, ("rdpEglOut: crc skip at x %d y %d", x, y));
+                    LOG(LOG_LEVEL_TRACE, "rdpEglOut: crc skip at x %d y %d", x, y);
                     rdpRegionInit(&tile_reg, &rect, 0);
                     rdpRegionSubtract(in_reg, in_reg, &tile_reg);
                     rdpRegionUninit(&tile_reg);
@@ -641,8 +637,8 @@ rdpEglOut(rdpClientCon *clientCon, struct rdp_egl *egl, RegionPtr in_reg,
                     }
                     else
                     {
-                        LLOGLN(0, ("rdpEglOut: too many out rects %d",
-                               out_rect_index));
+                        LOG(LOG_LEVEL_INFO, "rdpEglOut: too many out rects %d",
+                            out_rect_index);
                     }
                 }
 
@@ -723,7 +719,7 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     tile_extents_rect.y2 = (extents_rect.y2 + 63) & ~63;
     width = tile_extents_rect.x2 - tile_extents_rect.x1;
     height = tile_extents_rect.y2 - tile_extents_rect.y1;
-    LLOGLN(10, ("rdpEglCaptureRfx: width %d height %d", width, height));
+    LOG(LOG_LEVEL_TRACE, "rdpEglCaptureRfx: width %d height %d", width, height);
     crcs = g_new(int, (width / 64) * (height / 64));
     if (crcs == NULL)
     {
@@ -773,25 +769,25 @@ rdpEglCaptureRfx(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
                 }
                 else
                 {
-                    LLOGLN(0, ("rdpEglCaptureRfx: CreatePixmap failed"));
+                    LOG(LOG_LEVEL_INFO, "rdpEglCaptureRfx: CreatePixmap failed");
                 }
                 pScreen->DestroyPixmap(crc_pixmap);
             }
             else
             {
-                LLOGLN(0, ("rdpEglCaptureRfx: CreatePixmap failed"));
+                LOG(LOG_LEVEL_INFO, "rdpEglCaptureRfx: CreatePixmap failed");
             }
             pScreen->DestroyPixmap(pixmap);
         }
         else
         {
-            LLOGLN(0, ("rdpEglCaptureRfx: CreatePixmap failed"));
+            LOG(LOG_LEVEL_INFO, "rdpEglCaptureRfx: CreatePixmap failed");
         }
         FreeScratchGC(rfxGC);
     }
     else
     {
-        LLOGLN(0, ("rdpEglCaptureRfx: GetScratchGC failed"));
+        LOG(LOG_LEVEL_INFO, "rdpEglCaptureRfx: GetScratchGC failed");
     }
     free(crcs);
     return TRUE;

@@ -55,10 +55,6 @@ XVideo
 
 static char g_xv_image[] = "XV_IMAGE";
 
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
-
 #define T_NUM_ENCODINGS 1
 static XF86VideoEncodingRec g_xrdpVidEncodings[T_NUM_ENCODINGS] =
 { { 0, g_xv_image, 2046, 2046, { 1, 1 } } };
@@ -96,7 +92,7 @@ xrdpVidPutVideo(ScrnInfoPtr pScrn, short vid_x, short vid_y,
                 short drw_w, short drw_h, RegionPtr clipBoxes,
                 pointer data, DrawablePtr pDraw)
 {
-    LLOGLN(0, ("xrdpVidPutVideo:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidPutVideo:");
     return Success;
 }
 
@@ -107,7 +103,7 @@ xrdpVidPutStill(ScrnInfoPtr pScrn, short vid_x, short vid_y,
                 short drw_w, short drw_h, RegionPtr clipBoxes,
                 pointer data, DrawablePtr pDraw)
 {
-    LLOGLN(0, ("xrdpVidPutStill:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidPutStill:");
     return Success;
 }
 
@@ -118,7 +114,7 @@ xrdpVidGetVideo(ScrnInfoPtr pScrn, short vid_x, short vid_y,
                 short drw_w, short drw_h, RegionPtr clipBoxes,
                 pointer data, DrawablePtr pDraw)
 {
-    LLOGLN(0, ("xrdpVidGetVideo:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidGetVideo:");
     return Success;
 }
 
@@ -129,7 +125,7 @@ xrdpVidGetStill(ScrnInfoPtr pScrn, short vid_x, short vid_y,
                 short drw_w, short drw_h, RegionPtr clipBoxes,
                 pointer data, DrawablePtr pDraw)
 {
-    LLOGLN(0, ("FBDevTIVidGetStill:"));
+    LOG(LOG_LEVEL_TRACE, "FBDevTIVidGetStill:");
     return Success;
 }
 
@@ -137,7 +133,7 @@ xrdpVidGetStill(ScrnInfoPtr pScrn, short vid_x, short vid_y,
 static void
 xrdpVidStopVideo(ScrnInfoPtr pScrn, pointer data, Bool Cleanup)
 {
-    LLOGLN(0, ("xrdpVidStopVideo:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidStopVideo:");
 }
 
 /*****************************************************************************/
@@ -145,7 +141,7 @@ static int
 xrdpVidSetPortAttribute(ScrnInfoPtr pScrn, Atom attribute,
                         INT32 value, pointer data)
 {
-    LLOGLN(0, ("xrdpVidSetPortAttribute:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidSetPortAttribute:");
     return Success;
 }
 
@@ -154,7 +150,7 @@ static int
 xrdpVidGetPortAttribute(ScrnInfoPtr pScrn, Atom attribute,
                         INT32 *value, pointer data)
 {
-    LLOGLN(0, ("xrdpVidGetPortAttribute:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidGetPortAttribute:");
     return Success;
 }
 
@@ -164,7 +160,7 @@ xrdpVidQueryBestSize(ScrnInfoPtr pScrn, Bool motion,
                      short vid_w, short vid_h, short drw_w, short drw_h,
                      unsigned int *p_w, unsigned int *p_h, pointer data)
 {
-    LLOGLN(0, ("xrdpVidQueryBestSize:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidQueryBestSize:");
 }
 
 /*****************************************************************************/
@@ -398,9 +394,9 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
     int *src32;
     int *dst32;
 
-    LLOGLN(10, ("stretch_RGB32_RGB32: oh 0x%8.8x ov 0x%8.8x", oh, ov));
     oh = (src_w << 16) / dst_w;
     ov = (src_h << 16) / dst_h;
+    LOG(LOG_LEVEL_TRACE, "stretch_RGB32_RGB32: oh 0x%8.8x ov 0x%8.8x", oh, ov);
     iv = ov;
     lndex = src_y;
     last_lndex = -1;
@@ -409,7 +405,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
         if (lndex == last_lndex)
         {
             /* repeat line */
-            LLOGLN(10, ("stretch_RGB32_RGB32: repeat line"));
+            LOG(LOG_LEVEL_TRACE, "stretch_RGB32_RGB32: repeat line");
             dst32 = dst + index * dst_w;
             src32 = dst32 - dst_w;
             g_memcpy(dst32, src32, dst_w * 4);
@@ -444,7 +440,7 @@ stretch_RGB32_RGB32(int *src, int src_width, int src_height,
         iv += ov;
 
     }
-    LLOGLN(10, ("stretch_RGB32_RGB32: out"));
+    LOG(LOG_LEVEL_TRACE, "stretch_RGB32_RGB32: out");
     return 0;
 }
 
@@ -455,7 +451,7 @@ rdpDeferredXvCleanup(OsTimerPtr timer, CARD32 now, pointer arg)
 {
     rdpPtr dev;
 
-    LLOGLN(0, ("rdpDeferredXvCleanup:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDeferredXvCleanup:");
     dev = (rdpPtr) arg;
     dev->xv_timer_scheduled = 0;
     dev->xv_data_bytes = 0;
@@ -482,8 +478,8 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     int error;
     GCPtr tempGC;
 
-    LLOGLN(10, ("xrdpVidPutImage: format 0x%8.8x", format));
-    LLOGLN(10, ("xrdpVidPutImage: src_x %d srcy_y %d", src_x, src_y));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidPutImage: format 0x%8.8x", format);
+    LOG(LOG_LEVEL_TRACE, "xrdpVidPutImage: src_x %d srcy_y %d", src_x, src_y);
     dev = XRDPPTR(pScrn);
 
     if (dev->xv_timer_scheduled)
@@ -506,7 +502,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
         dev->xv_data = g_new(uint8_t, index);
         if (dev->xv_data == NULL)
         {
-            LLOGLN(0, ("xrdpVidPutImage: memory alloc error"));
+            LOG(LOG_LEVEL_INFO, "xrdpVidPutImage: memory alloc error");
             dev->xv_data_bytes = 0;
             return Success;
         }
@@ -520,23 +516,23 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     switch (format)
     {
         case FOURCC_YV12:
-            LLOGLN(10, ("xrdpVidPutImage: FOURCC_YV12"));
+            LOG(LOG_LEVEL_TRACE, "xrdpVidPutImage: FOURCC_YV12");
             error = dev->yv12_to_rgb32(buf, width, height, rgborg32);
             break;
         case FOURCC_I420:
-            LLOGLN(10, ("xrdpVidPutImage: FOURCC_I420"));
+            LOG(LOG_LEVEL_TRACE, "xrdpVidPutImage: FOURCC_I420");
             error = dev->i420_to_rgb32(buf, width, height, rgborg32);
             break;
         case FOURCC_YUY2:
-            LLOGLN(10, ("xrdpVidPutImage: FOURCC_YUY2"));
+            LOG(LOG_LEVEL_TRACE, "xrdpVidPutImage: FOURCC_YUY2");
             error = dev->yuy2_to_rgb32(buf, width, height, rgborg32);
             break;
         case FOURCC_UYVY:
-            LLOGLN(10, ("xrdpVidPutImage: FOURCC_UYVY"));
+            LOG(LOG_LEVEL_TRACE, "xrdpVidPutImage: FOURCC_UYVY");
             error = dev->uyvy_to_rgb32(buf, width, height, rgborg32);
             break;
         default:
-            LLOGLN(0, ("xrdpVidPutImage: unknown format 0x%8.8x", format));
+            LOG(LOG_LEVEL_INFO, "xrdpVidPutImage: unknown format 0x%8.8x", format);
             return Success;
     }
     if (error != 0)
@@ -545,7 +541,7 @@ xrdpVidPutImage(ScrnInfoPtr pScrn,
     }
     if ((width == drw_w) && (height == drw_h))
     {
-        LLOGLN(10, ("xrdpVidPutImage: stretch skip"));
+        LOG(LOG_LEVEL_TRACE, "xrdpVidPutImage: stretch skip");
         rgbend32 = rgborg32;
     }
     else
@@ -582,7 +578,7 @@ xrdpVidQueryImageAttributes(ScrnInfoPtr pScrn, int id,
 {
     int size, tmp;
 
-    LLOGLN(10, ("xrdpVidQueryImageAttributes:"));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidQueryImageAttributes:");
     /* this is same code as all drivers currently have */
     if (*w > 2046)
     {
@@ -642,10 +638,10 @@ xrdpVidQueryImageAttributes(ScrnInfoPtr pScrn, int id,
             size *= *h;
             break;
         default:
-            LLOGLN(0, ("xrdpVidQueryImageAttributes: Unsupported image"));
+            LOG(LOG_LEVEL_INFO, "xrdpVidQueryImageAttributes: Unsupported image");
             return 0;
     }
-    LLOGLN(10, ("xrdpVidQueryImageAttributes: finished size %d id 0x%x", size, id));
+    LOG(LOG_LEVEL_TRACE, "xrdpVidQueryImageAttributes: finished size %d id 0x%x", size, id);
     return size;
 }
 
@@ -698,14 +694,14 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
         adaptor = glamor_xv_init(pScreen, 16);
         if (adaptor == 0)
         {
-            LLOGLN(0, ("rdpXvInit: glamor_xv_init failed"));
+            LOG(LOG_LEVEL_INFO, "rdpXvInit: glamor_xv_init failed");
             return 0;
         }
         dev->xvPutImage = adaptor->PutImage;
         adaptor->PutImage = xrdpXvPutImageWrap;
         if (!xf86XVScreenInit(pScreen, &adaptor, 1))
         {
-            LLOGLN(0, ("rdpXvInit: xf86XVScreenInit failed"));
+            LOG(LOG_LEVEL_INFO, "rdpXvInit: xf86XVScreenInit failed");
             return 0;
         }
 #endif
@@ -715,7 +711,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
         adaptor = xf86XVAllocateVideoAdaptorRec(pScrn);
         if (adaptor == 0)
         {
-            LLOGLN(0, ("rdpXvInit: xf86XVAllocateVideoAdaptorRec failed"));
+            LOG(LOG_LEVEL_INFO, "rdpXvInit: xf86XVAllocateVideoAdaptorRec failed");
             return 0;
         }
         adaptor->type = XvInputMask | XvImageMask | XvVideoMask | XvStillMask | XvWindowMask | XvPixmapMask;
@@ -730,7 +726,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
         adaptor->nFormats = T_NUM_FORMATS;
         adaptor->pFormats = &(g_xrdpVidFormats[0]);
         adaptor->pFormats[0].depth = pScrn->depth;
-        LLOGLN(0, ("rdpXvInit: depth %d", pScrn->depth));
+        LOG(LOG_LEVEL_INFO, "rdpXvInit: depth %d", pScrn->depth);
         adaptor->nImages = sizeof(g_xrdpVidImages) / sizeof(XF86ImageRec);
         adaptor->pImages = g_xrdpVidImages;
         adaptor->nAttributes = 0;
@@ -750,7 +746,7 @@ rdpXvInit(ScreenPtr pScreen, ScrnInfoPtr pScrn)
         adaptor->QueryImageAttributes = xrdpVidQueryImageAttributes;
         if (!xf86XVScreenInit(pScreen, &adaptor, 1))
         {
-            LLOGLN(0, ("rdpXvInit: xf86XVScreenInit failed"));
+            LOG(LOG_LEVEL_INFO, "rdpXvInit: xf86XVScreenInit failed");
             return 0;
         }
         xf86XVFreeVideoAdaptorRec(adaptor);

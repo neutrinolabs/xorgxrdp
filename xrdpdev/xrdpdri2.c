@@ -51,24 +51,13 @@ dri2
 #include <xf86Modes.h>
 
 #include "rdp.h"
+#include "rdpMisc.h"
 #include "rdpPri.h"
 #include "rdpDraw.h"
 
 #if defined(XORGXRDP_GLAMOR)
 #include <glamor.h>
 #endif
-
-#define LLOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-  do \
-  { \
-    if (_level < LLOG_LEVEL) \
-    { \
-      ErrorF _args ; \
-      ErrorF("\n"); \
-    } \
-  } \
-  while (0)
 
 static DevPrivateKeyRec g_rdpDri2ClientKey;
 
@@ -77,14 +66,14 @@ static DRI2Buffer2Ptr
 rdpDri2CreateBuffer(DrawablePtr drawable, unsigned int attachment,
                     unsigned int format)
 {
-    LLOGLN(0, ("rdpDri2CreateBuffer:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2CreateBuffer:");
     return 0;
 }
 
 /*****************************************************************************/
 static void rdpDri2DestroyBuffer(DrawablePtr drawable, DRI2Buffer2Ptr buffer)
 {
-    LLOGLN(0, ("rdpDri2DestroyBuffer:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2DestroyBuffer:");
 }
 
 /*****************************************************************************/
@@ -92,7 +81,7 @@ static void
 rdpDri2CopyRegion(DrawablePtr drawable, RegionPtr pRegion,
                   DRI2BufferPtr destBuffer, DRI2BufferPtr sourceBuffer)
 {
-    LLOGLN(0, ("rdpDri2CopyRegion:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2CopyRegion:");
 }
 
 /*****************************************************************************/
@@ -102,7 +91,7 @@ rdpDri2ScheduleSwap(ClientPtr client, DrawablePtr draw,
                     CARD64 *target_msc, CARD64 divisor,
                     CARD64 remainder, DRI2SwapEventPtr func, void *data)
 {
-    LLOGLN(0, ("rdpDri2ScheduleSwap:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2ScheduleSwap:");
     return 0;
 }
 
@@ -110,7 +99,7 @@ rdpDri2ScheduleSwap(ClientPtr client, DrawablePtr draw,
 static int
 rdpDri2GetMSC(DrawablePtr draw, CARD64 *ust, CARD64 *msc)
 {
-    LLOGLN(0, ("rdpDri2GetMSC:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2GetMSC:");
     return 0;
 }
 
@@ -119,7 +108,7 @@ static int
 rdpDri2ScheduleWaitMSC(ClientPtr client, DrawablePtr draw, CARD64 target_msc,
                        CARD64 divisor, CARD64 remainder)
 {
-    LLOGLN(0, ("rdpDri2ScheduleWaitMSC:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2ScheduleWaitMSC:");
     return 0;
 }
 
@@ -128,7 +117,7 @@ static DRI2Buffer2Ptr
 rdpDri2CreateBuffer2(ScreenPtr screen, DrawablePtr drawable,
                      unsigned int attachment, unsigned int format)
 {
-    LLOGLN(0, ("rdpDri2CreateBuffer2:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2CreateBuffer2:");
     return 0;
 }
 
@@ -137,7 +126,7 @@ static void
 rdpDri2DestroyBuffer2(ScreenPtr unused, DrawablePtr unused2,
                       DRI2Buffer2Ptr buffer)
 {
-    LLOGLN(0, ("rdpDri2DestroyBuffer2:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2DestroyBuffer2:");
 }
 
 /*****************************************************************************/
@@ -145,7 +134,7 @@ static void
 rdpDri2CopyRegion2(ScreenPtr screen, DrawablePtr drawable, RegionPtr pRegion,
                    DRI2BufferPtr destBuffer, DRI2BufferPtr sourceBuffer)
 {
-    LLOGLN(0, ("rdpDri2CopyRegion2:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2CopyRegion2:");
 }
 
 /*****************************************************************************/
@@ -158,7 +147,7 @@ rdpDri2Init(ScreenPtr pScreen)
     const char *driver_names[2] = { NULL, NULL };
 #endif
 
-    LLOGLN(0, ("rdpDri2Init:"));
+    LOG(LOG_LEVEL_INFO, "rdpDri2Init:");
     dev = rdpGetDevFromScreen(pScreen);
     if (!dixRegisterPrivateKey(&g_rdpDri2ClientKey,
                                PRIVATE_CLIENT, sizeof(XID)))

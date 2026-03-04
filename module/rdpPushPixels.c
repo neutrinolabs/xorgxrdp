@@ -37,11 +37,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "rdp.h"
 #include "rdpDraw.h"
+#include "rdpMisc.h"
 #include "rdpPushPixels.h"
-
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 static void
@@ -60,7 +57,7 @@ void
 rdpPushPixels(GCPtr pGC, PixmapPtr pBitMap, DrawablePtr pDst,
               int w, int h, int x, int y)
 {
-    LLOGLN(0, ("rdpPushPixels:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPushPixels:");
     /* do original call */
     rdpPushPixelsOrg(pGC, pBitMap, pDst, w, h, x, y);
 }

@@ -38,12 +38,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
+#include "rdpMisc.h"
 #include "rdpReg.h"
 #include "rdpPolyGlyphBlt.h"
-
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 void
@@ -70,14 +67,14 @@ rdpPolyGlyphBlt(DrawablePtr pDrawable, GCPtr pGC,
     int cd;
     BoxRec box;
 
-    LLOGLN(0, ("rdpPolyGlyphBlt:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyGlyphBlt:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolyGlyphBltCallCount++;
     GetTextBoundingBox(pDrawable, pGC->font, x, y, nglyph, &box);
     rdpRegionInit(&reg, &box, 0);
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(10, ("rdpPolyGlyphBlt: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPolyGlyphBlt: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

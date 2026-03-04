@@ -41,13 +41,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
+#include "rdpMisc.h"
 #include "rdpReg.h"
 #include "rdpCompositeRects.h"
-
-/******************************************************************************/
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 static void
@@ -70,7 +66,7 @@ rdpCompositeRects(CARD8 op, PicturePtr dst, xRenderColor * color,
     PictureScreenPtr ps;
     RegionPtr reg;
 
-    LLOGLN(10, ("rdpCompositeRects:"));
+    LOG(LOG_LEVEL_TRACE, "rdpCompositeRects:");
     pScreen = dst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
     dev->counts.rdpCompositeRectsCallCount++;

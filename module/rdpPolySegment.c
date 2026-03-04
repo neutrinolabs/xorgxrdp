@@ -38,12 +38,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rdp.h"
 #include "rdpDraw.h"
 #include "rdpClientCon.h"
+#include "rdpMisc.h"
 #include "rdpReg.h"
 #include "rdpPolySegment.h"
-
-#define LOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-    do { if (_level < LOG_LEVEL) { ErrorF _args ; ErrorF("\n"); } } while (0)
 
 /******************************************************************************/
 void
@@ -71,7 +68,7 @@ rdpPolySegment(DrawablePtr pDrawable, GCPtr pGC, int nseg, xSegment *pSegs)
     int y2;
     BoxRec box;
 
-    LLOGLN(10, ("rdpPolySegment:"));
+    LOG(LOG_LEVEL_TRACE, "rdpPolySegment:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
     dev->counts.rdpPolySegmentCallCount++;
     rdpRegionInit(&reg, NullBox, 0);
@@ -89,7 +86,7 @@ rdpPolySegment(DrawablePtr pDrawable, GCPtr pGC, int nseg, xSegment *pSegs)
     }
     rdpRegionInit(&clip_reg, NullBox, 0);
     cd = rdpDrawGetClip(dev, &clip_reg, pDrawable, pGC);
-    LLOGLN(10, ("rdpPolySegment: cd %d", cd));
+    LOG(LOG_LEVEL_TRACE, "rdpPolySegment: cd %d", cd);
     if (cd == XRDP_CD_CLIP)
     {
         rdpRegionIntersect(&reg, &clip_reg, &reg);

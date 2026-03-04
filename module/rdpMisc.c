@@ -634,3 +634,47 @@ g_free_unmap_fd(void *addr, int fd, size_t size)
     munmap(addr, size);
     close(fd);
 }
+
+/******************************************************************************/
+void
+g_log_msg(enum logLevels log_level, const char *format, ...)
+{
+    va_list ap;
+    MessageType type;
+    int verb = 0;
+
+    switch (log_level)
+    {
+        case LOG_LEVEL_ERROR:
+            type = X_ERROR;
+            break;
+
+        case LOG_LEVEL_WARNING:
+            type = X_WARNING;
+            break;
+
+        case LOG_LEVEL_INFO:
+            type = X_INFO;
+            break;
+
+        case LOG_LEVEL_DEBUG:
+            type = X_DEBUG;
+            verb = 4;
+            break;
+
+        case LOG_LEVEL_TRACE:
+            type = X_DEBUG;
+            verb = 5;
+            break;
+
+        default:
+            type = X_UNKNOWN;
+    }
+    va_start(ap, format);
+    LogVMessageVerb(type, verb, format, ap);
+    va_end(ap);
+    // Also need to terminate message. This seems the simplest way.
+    va_start(ap, format);
+    LogVMessageVerb(X_NONE, verb, "\n", ap);
+    va_end(ap);
+}

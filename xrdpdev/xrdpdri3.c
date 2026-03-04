@@ -49,24 +49,13 @@ dri3
 #include <xf86Modes.h>
 
 #include "rdp.h"
+#include "rdpMisc.h"
 #include "rdpPri.h"
 
 #include <glamor.h>
 #include <dri3.h>
 
 extern char g_drm_device[]; /* in xrdpdev.c */
-
-#define LLOG_LEVEL 1
-#define LLOGLN(_level, _args) \
-  do \
-  { \
-    if (_level < LLOG_LEVEL) \
-    { \
-      ErrorF _args ; \
-      ErrorF("\n"); \
-    } \
-  } \
-  while (0)
 
 /*****************************************************************************/
 static PixmapPtr
@@ -76,9 +65,9 @@ rdpDri3PixmapFromFd(ScreenPtr screen, int fd,
 {
     PixmapPtr rv;
 
-    LLOGLN(10, ("rdpDri3PixmapFromFd:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3PixmapFromFd:");
     rv = glamor_pixmap_from_fd(screen, fd, width, height, stride, depth, bpp);
-    LLOGLN(10, ("rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3PixmapFromFd: fd %d pixmap %p", fd, rv);
     return rv;
 }
 
@@ -89,9 +78,9 @@ rdpDri3FdFromPixmap(ScreenPtr screen, PixmapPtr pixmap,
 {
     int rv;
 
-    LLOGLN(10, ("rdpDri3FdFromPixmap:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3FdFromPixmap:");
     rv = glamor_fd_from_pixmap(screen, pixmap, stride, size);
-    LLOGLN(10, ("rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3FdFromPixmap: fd %d pixmap %p", rv, pixmap);
     return rv;
 }
 
@@ -102,9 +91,9 @@ rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
 {
     int fd;
 
-    LLOGLN(10, ("rdpDri3OpenClient:"));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3OpenClient:");
     fd = open(g_drm_device, O_RDWR | O_CLOEXEC);
-    LLOGLN(10, ("rdpDri3OpenClient: fd %d", fd));
+    LOG(LOG_LEVEL_TRACE, "rdpDri3OpenClient: fd %d", fd);
     if (fd < 0)
     {
         return BadAlloc;
@@ -126,7 +115,7 @@ rdpDri3Init(ScreenPtr pScreen)
     rdp_dri3_info.open_client = rdpDri3OpenClient;
     if (!dri3_screen_init(pScreen, &rdp_dri3_info))
     {
-        LLOGLN(0, ("rdpScreenInit: dri3_screen_init failed"));
+        LOG(LOG_LEVEL_INFO, "rdpScreenInit: dri3_screen_init failed");
         return 1;
     }
     return 0;
