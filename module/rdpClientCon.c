@@ -863,7 +863,7 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
 
     LOG(LOG_LEVEL_TRACE, "rdpClientConResizeAllMemoryAreas:");
 
-    // Updare the rdp size from the client size
+    // Update the rdp size from the client size
     clientCon->rdp_width = width;
     clientCon->rdp_height = height;
 
@@ -907,7 +907,6 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
         default:
             LOG(LOG_LEVEL_INFO,
                 "rdpClientConProcessMsgClientInfo: got normal capture");
-            clientCon->cap_width = width;
             clientCon->cap_width = width;
             clientCon->cap_height = height;
 
@@ -2830,14 +2829,14 @@ rdpClientConRemoveOsBitmap(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
         return 1;
     }
 
-    LOG(LOG_LEVEL_TRACE, "rdpClientConRemoveOsBitmap: index %d stamp %d",
-        rdpindex, clientCon->osBitmaps[rdpindex].stamp);
-
-    if ((rdpindex < 0) && (rdpindex >= clientCon->maxOsBitmaps))
+    if ((rdpindex < 0) || (rdpindex >= clientCon->maxOsBitmaps))
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConRemoveOsBitmap: test error 2");
         return 1;
     }
+
+    LOG(LOG_LEVEL_TRACE, "rdpClientConRemoveOsBitmap: index %d stamp %d",
+        rdpindex, clientCon->osBitmaps[rdpindex].stamp);
 
     if (clientCon->osBitmaps[rdpindex].used)
     {
@@ -2876,13 +2875,15 @@ rdpClientConUpdateOsUse(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
         return 1;
     }
 
-    LOG(LOG_LEVEL_TRACE, "rdpClientConUpdateOsUse: index %d stamp %d",
-        rdpindex, clientCon->osBitmaps[rdpindex].stamp);
-
-    if ((rdpindex < 0) && (rdpindex >= clientCon->maxOsBitmaps))
+    if ((rdpindex < 0) || (rdpindex >= clientCon->maxOsBitmaps))
     {
+        LOG(LOG_LEVEL_ERROR, "rdpClientConUpdateOsUse: bad index %d",
+            rdpindex);
         return 1;
     }
+
+    LOG(LOG_LEVEL_TRACE, "rdpClientConUpdateOsUse: index %d stamp %d",
+        rdpindex, clientCon->osBitmaps[rdpindex].stamp);
 
     if (clientCon->osBitmaps[rdpindex].used)
     {
