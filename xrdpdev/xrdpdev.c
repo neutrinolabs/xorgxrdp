@@ -983,7 +983,7 @@ rdpProbe(DriverPtr drv, int flags)
         {
 #if defined(XORGXRDP_GLAMOR)
             strncpy(g_drm_allow_list, val, 127);
-            g_drm_device[127] = 0;
+            g_drm_allow_list[127] = 0;
             LLOGLN(0, ("rdpProbe: found DRMAllowList xorg.conf value [%s]", val));
 #endif
         }
