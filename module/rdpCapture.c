@@ -1191,13 +1191,13 @@ rdpCaptureSufA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     while (index < num_rects)
     {
         rect = psrc_rects[index];
-        LLOGLN(10, ("old x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.x2,
+        LLOGLN(10, ("old x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.y1,
                rect.x2, rect.y2));
         rect.x1 -= rect.x1 & 1;
         rect.y1 -= rect.y1 & 1;
         rect.x2 += rect.x2 & 1;
         rect.y2 += rect.y2 & 1;
-        LLOGLN(10, ("new x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.x2,
+        LLOGLN(10, ("new x1 %d y1 %d x2 %d y2 %d", rect.x1, rect.y1,
                rect.x2, rect.y2));
         (*out_rects)[index] = rect;
         index++;

@@ -771,7 +771,7 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
 
     enum shared_memory_status shmemstatus;
 
-    // Updare the rdp size from the client size
+    // Update the rdp size from the client size
     clientCon->rdp_width = width;
     clientCon->rdp_height = height;
 
@@ -812,7 +812,6 @@ rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon)
             break;
         default:
             LLOGLN(0, ("rdpClientConProcessMsgClientInfo: got normal capture"));
-            clientCon->cap_width = width;
             clientCon->cap_width = width;
             clientCon->cap_height = height;
 
@@ -2498,14 +2497,14 @@ rdpClientConRemoveOsBitmap(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
         return 1;
     }
 
-    LLOGLN(10, ("rdpClientConRemoveOsBitmap: index %d stamp %d",
-           rdpindex, clientCon->osBitmaps[rdpindex].stamp));
-
-    if ((rdpindex < 0) && (rdpindex >= clientCon->maxOsBitmaps))
+    if ((rdpindex < 0) || (rdpindex >= clientCon->maxOsBitmaps))
     {
         LLOGLN(10, ("rdpClientConRemoveOsBitmap: test error 2"));
         return 1;
     }
+
+    LLOGLN(10, ("rdpClientConRemoveOsBitmap: index %d stamp %d",
+           rdpindex, clientCon->osBitmaps[rdpindex].stamp));
 
     if (clientCon->osBitmaps[rdpindex].used)
     {
@@ -2544,13 +2543,15 @@ rdpClientConUpdateOsUse(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
         return 1;
     }
 
-    LLOGLN(10, ("rdpClientConUpdateOsUse: index %d stamp %d",
-           rdpindex, clientCon->osBitmaps[rdpindex].stamp));
-
-    if ((rdpindex < 0) && (rdpindex >= clientCon->maxOsBitmaps))
+    if ((rdpindex < 0) || (rdpindex >= clientCon->maxOsBitmaps))
     {
+        LLOGLN(0, ("rdpClientConUpdateOsUse: bad index %d",
+            rdpindex));
         return 1;
     }
+
+    LLOGLN(10, ("rdpClientConUpdateOsUse: index %d stamp %d",
+           rdpindex, clientCon->osBitmaps[rdpindex].stamp));
 
     if (clientCon->osBitmaps[rdpindex].used)
     {
