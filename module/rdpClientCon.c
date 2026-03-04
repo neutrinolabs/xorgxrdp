@@ -808,9 +808,8 @@ rdpClientConAllocateSharedMemory(rdpClientCon *clientCon, int bytes)
     }
     if (g_alloc_shm_map_fd(&shmemptr, &shmemfd, bytes) != 0)
     {
-        LOG(LOG_LEVEL_INFO,
-            "rdpClientConAllocateSharedMemory: g_alloc_shm_map_fd "
-            "failed");
+        FatalError("rdpClientConAllocateSharedMemory:"
+                   " g_alloc_shm_map_fd failed");
     }
     clientCon->shmemptr = shmemptr;
     clientCon->shmemfd = shmemfd;
@@ -2554,9 +2553,7 @@ rdpClientConSetCursorShmFd(rdpPtr dev, rdpClientCon *clientCon,
         shmsize = width * height * Bpp + width * height / 8;
         if (g_alloc_shm_map_fd(&addr, &fd, shmsize) != 0)
         {
-            LOG(LOG_LEVEL_INFO,
-                "rdpClientConSetCursorShmFd: rdpGetShmFd failed");
-            return 0;
+            FatalError("rdpClientConSetCursorShmFd: g_alloc_shm_map_fd failed");
         }
         shmemptr = (uint8_t *)addr;
         size = 14;
