@@ -220,11 +220,7 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
             break;
 
         default:
-            if (x_keycode > 0)
-            {
-                sendDownUpKeyEvent(keyboard->device, type, x_keycode);
-            }
-
+            sendDownUpKeyEvent(keyboard->device, type, x_keycode);
             break;
     }
 }
@@ -248,19 +244,16 @@ KbdSync(rdpKeyboard *keyboard, int param1)
     xkb_state = XkbStateFieldFromRec(&(keyboard->device->key->xkbInfo->state));
 
     /* MS-RDPBCGR 2.2.8.1.1.3.1.1.5: Reset lock keys to UP state */
-    if (keyboard->x11_keycode_caps_lock > 0)
-        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_caps_lock);
-    if (keyboard->x11_keycode_num_lock > 0)
-        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_num_lock);
-    if (keyboard->x11_keycode_scroll_lock > 0)
-        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_scroll_lock);
+    rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_caps_lock);
+    rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_num_lock);
+    rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_scroll_lock);
 
     keyboard->scroll_lock_down = 0;
 
     /* Caps Lock alignment */
     target = (param1 & TS_SYNC_CAPS_LOCK) ? 1 : 0;
     current = (xkb_state & LockMask) ? 1 : 0;
-    if (keyboard->x11_keycode_caps_lock > 0 && (current != target))
+    if (current != target)
     {
         LOG(LOG_LEVEL_INFO, "KbdSync: Aligning Caps Lock (current=%d, target=%d)", current, target);
         rdpEnqueueKey(keyboard->device, KeyPress, keyboard->x11_keycode_caps_lock);
@@ -270,7 +263,7 @@ KbdSync(rdpKeyboard *keyboard, int param1)
     /* Num Lock alignment */
     target = (param1 & TS_SYNC_NUM_LOCK) ? 1 : 0;
     current = (xkb_state & Mod2Mask) ? 1 : 0;
-    if (keyboard->x11_keycode_num_lock > 0 && (current != target))
+    if (current != target)
     {
         LOG(LOG_LEVEL_INFO, "KbdSync: Aligning Num Lock (current=%d, target=%d)", current, target);
         rdpEnqueueKey(keyboard->device, KeyPress, keyboard->x11_keycode_num_lock);
@@ -280,7 +273,7 @@ KbdSync(rdpKeyboard *keyboard, int param1)
     /* Scroll Lock alignment */
     target = (param1 & TS_SYNC_SCROLL_LOCK) ? 1 : 0;
     current = keyboard->scroll_lock_state ? 1 : 0;
-    if (keyboard->x11_keycode_scroll_lock > 0 && (current != target))
+    if (current != target)
     {
         LOG(LOG_LEVEL_INFO, "KbdSync: Aligning Scroll Lock (current=%d, target=%d)", current, target);
         rdpEnqueueKey(keyboard->device, KeyPress, keyboard->x11_keycode_scroll_lock);
