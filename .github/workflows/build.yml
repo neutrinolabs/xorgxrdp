@@ -67,7 +67,7 @@ jobs:
       CFLAGS: ${{matrix.CFLAGS }}
       XRDP_CFLAGS: -I${{ github.workspace }}/xrdp/common
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: sudo scripts/install_xorgxrdp_build_dependencies_with_apt.sh ${{ matrix.arch }} --allow-downgrades --allow-remove-essential --allow-change-held-packages
       - run: git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git ${{ github.workspace}}/xrdp
       - run: ./bootstrap
@@ -99,11 +99,11 @@ jobs:
         id: os
         run: echo "image=$ImageOS" >>$GITHUB_OUTPUT
         shell: sh
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: sudo scripts/install_xorgxrdp_build_dependencies_with_apt.sh ${{ matrix.arch }} --allow-downgrades --allow-remove-essential --allow-change-held-packages
       - run: git clone --depth 1 --branch=devel https://github.com/neutrinolabs/xrdp.git ${{ github.workspace}}/xrdp
       - name: Cache xorg-build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-name: cache-xorg-build
         with:
