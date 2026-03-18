@@ -69,6 +69,10 @@ static char g_empty_str[] = "";
 static char g_Keyboard_str[] = XI_KEYBOARD;
 
 static char g_xrdp_keyb_name[] = XRDP_KEYB_NAME;
+static int g_initial_sync_completed = 0;
+static int g_deferred_sync_flags = 0;
+/* Forward declaration for deferred synchronization */
+static void KbdSync(rdpKeyboard *keyboard, int param1);
 
 static int
 rdpLoadLayout(rdpKeyboard *keyboard, struct xup_client_info *client_info);
@@ -123,6 +127,14 @@ static void
 KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
             int param3, int param4)
 {
+
+    /* Perform deferred synchronization on the first keyboard interaction */
+    if (!g_initial_sync_completed && down)
+    {
+        g_initial_sync_completed = 1;
+        LOG(LOG_LEVEL_DEBUG, "KbdAddEvent: First key press, enforcing deferred sync");
+        KbdSync(keyboard, g_deferred_sync_flags);
+    }
     int x_keycode = param1;
     int rdp_scancode = SCANCODE_FROM_KBD_EVENT(param3, param4);
     int type = down ? KeyPress : KeyRelease;
@@ -208,11 +220,7 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
             break;
 
         default:
-            if (x_keycode > 0)
-            {
-                sendDownUpKeyEvent(keyboard->device, type, x_keycode);
-            }
-
+            sendDownUpKeyEvent(keyboard->device, type, x_keycode);
             break;
     }
 }
@@ -222,50 +230,55 @@ static void
 KbdSync(rdpKeyboard *keyboard, int param1)
 {
     int xkb_state;
+    int target, current;
 
+    if (keyboard->device == NULL || keyboard->device->key == NULL ||
+        keyboard->device->key->xkbInfo == NULL)
+    {
+        /* Save flags to be replayed when device is ready */
+        g_deferred_sync_flags = param1;
+        return;
+    }
+
+    g_deferred_sync_flags = param1;
     xkb_state = XkbStateFieldFromRec(&(keyboard->device->key->xkbInfo->state));
-    LOG(LOG_LEVEL_TRACE, "KbdSync: xkb_state=%04X", xkb_state);
 
-    // Make sure the modifiers are released
-    rdpEnqueueKey(keyboard->device, KeyRelease,
-                  keyboard->x11_keycode_caps_lock);
-    rdpEnqueueKey(keyboard->device, KeyRelease,
-                  keyboard->x11_keycode_num_lock);
-    rdpEnqueueKey(keyboard->device, KeyRelease,
-                  keyboard->x11_keycode_scroll_lock);
+    /* MS-RDPBCGR 2.2.8.1.1.3.1.1.5: Reset lock keys to UP state */
+    rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_caps_lock);
+    rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_num_lock);
+    rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_scroll_lock);
+
     keyboard->scroll_lock_down = 0;
 
-    // Caps_Lock is a specific modifier */
-    if ((!(xkb_state & LockMask)) != (!(param1 & TS_SYNC_CAPS_LOCK)))
+    /* Caps Lock alignment */
+    target = (param1 & TS_SYNC_CAPS_LOCK) ? 1 : 0;
+    current = (xkb_state & LockMask) ? 1 : 0;
+    if (current != target)
     {
-        LOG(LOG_LEVEL_INFO, "KbdSync: toggling caps lock");
-        rdpEnqueueKey(keyboard->device, KeyPress,
-                      keyboard->x11_keycode_caps_lock);
-        rdpEnqueueKey(keyboard->device, KeyRelease,
-                      keyboard->x11_keycode_caps_lock);
+        LOG(LOG_LEVEL_INFO, "KbdSync: Aligning Caps Lock (current=%d, target=%d)", current, target);
+        rdpEnqueueKey(keyboard->device, KeyPress, keyboard->x11_keycode_caps_lock);
+        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_caps_lock);
     }
 
-    // Num_Lock is normally mapped to mod2 (see 'xmodmap -pm')
-    if ((!(xkb_state & Mod2Mask)) != (!(param1 & TS_SYNC_NUM_LOCK)))
+    /* Num Lock alignment */
+    target = (param1 & TS_SYNC_NUM_LOCK) ? 1 : 0;
+    current = (xkb_state & Mod2Mask) ? 1 : 0;
+    if (current != target)
     {
-        LOG(LOG_LEVEL_INFO, "KbdSync: toggling num lock");
-        rdpEnqueueKey(keyboard->device, KeyPress,
-                      keyboard->x11_keycode_num_lock);
-        rdpEnqueueKey(keyboard->device, KeyRelease,
-                      keyboard->x11_keycode_num_lock);
+        LOG(LOG_LEVEL_INFO, "KbdSync: Aligning Num Lock (current=%d, target=%d)", current, target);
+        rdpEnqueueKey(keyboard->device, KeyPress, keyboard->x11_keycode_num_lock);
+        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_num_lock);
     }
 
-    // Scroll lock doesn't have its own modifier, so we need to track
-    // it ourselves
-    if ((!(keyboard->scroll_lock_state)) != (!(param1 & TS_SYNC_SCROLL_LOCK)))
+    /* Scroll Lock alignment */
+    target = (param1 & TS_SYNC_SCROLL_LOCK) ? 1 : 0;
+    current = keyboard->scroll_lock_state ? 1 : 0;
+    if (current != target)
     {
-        LOG(LOG_LEVEL_INFO, "KbdSync: toggling scroll lock");
-        rdpEnqueueKey(keyboard->device, KeyPress,
-                      keyboard->x11_keycode_scroll_lock);
-        rdpEnqueueKey(keyboard->device, KeyRelease,
-                      keyboard->x11_keycode_scroll_lock);
-
-        keyboard->scroll_lock_state = !keyboard->scroll_lock_state;
+        LOG(LOG_LEVEL_INFO, "KbdSync: Aligning Scroll Lock (current=%d, target=%d)", current, target);
+        rdpEnqueueKey(keyboard->device, KeyPress, keyboard->x11_keycode_scroll_lock);
+        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_scroll_lock);
+        keyboard->scroll_lock_state = target;
     }
 }
 
@@ -618,6 +631,9 @@ rdpLoadLayout(rdpKeyboard *keyboard, struct xup_client_info *client_info)
 
     reload_xkb(keyboard->device, &set);
     reload_xkb(inputInfo.keyboard, &set);
+
+    /* Allow re-synchronization on session reconnect */
+    g_initial_sync_completed = 0;
 
     return 0;
 }
