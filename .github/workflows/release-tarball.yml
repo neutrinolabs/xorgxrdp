@@ -24,7 +24,7 @@ jobs:
         run: echo "timestamp=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.tag }}
 
@@ -53,7 +53,7 @@ jobs:
           echo "tarball=$TARBALL" >> $GITHUB_ENV
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name:  ${{ github.event.repository.name }}-${{ github.event.inputs.tag }}-${{ env.timestamp }}
           path: "${{ env.tarball }}"
