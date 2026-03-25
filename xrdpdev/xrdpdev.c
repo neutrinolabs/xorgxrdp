@@ -66,9 +66,8 @@ This is the main driver file
 #include "xrdpdri2.h"
 #include "xrdpdri3.h"
 #include "rdpEgl.h"
-#include <drm.h>
+#include <xf86drm.h>
 #include <glamor.h>
-#include <sys/ioctl.h>
 /* use environment variable XORGXRDP_DRM_DEVICE to override
  * also read from xorg.conf file */
 char g_drm_device[128] = "/dev/dri/renderD128";
@@ -169,34 +168,34 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
         strncpy(g_drm_device, getenv("XORGXRDP_DRM_DEVICE"), 127);
         g_drm_device[127] = 0;
     }
-    dev->fd = open(g_drm_device, O_RDWR, 0);
+    dev->fd = open(g_drm_device, O_RDWR | O_CLOEXEC, 0);
     if (dev->fd == -1)
     {
         LOG(LOG_LEVEL_INFO, "rdpPreInit: %s open failed", g_drm_device);
     }
     else
     {
-        struct drm_version dver;
+        drmVersionPtr dver;
         char delim[] = " ";
         char *token;
+        const char *drm_name;
+        const char *drm_date;
+        const char *drm_desc;
         LOG(LOG_LEVEL_INFO, "rdpPreInit: %s open ok, fd %d", g_drm_device, dev->fd);
-        memset(&dver, 0, sizeof(dver));
-        dver.name_len = 256;
-        dver.name = g_new0(char, dver.name_len);
-        dver.date_len = 256;
-        dver.date = g_new0(char, dver.date_len);
-        dver.desc_len = 256;
-        dver.desc = g_new0(char, dver.desc_len);
-        if (ioctl(dev->fd, DRM_IOCTL_VERSION, &dver) != -1)
+        dver = drmGetVersion(dev->fd);
+        if (dver != NULL)
         {
-            LOG(LOG_LEVEL_INFO, "rdpPreInit: name [%s]", dver.name);
-            LOG(LOG_LEVEL_INFO, "rdpPreInit: date [%s]", dver.date);
-            LOG(LOG_LEVEL_INFO, "rdpPreInit: desc [%s]", dver.desc);
+            drm_name = (dver->name != NULL) ? dver->name : "";
+            drm_date = (dver->date != NULL) ? dver->date : "";
+            drm_desc = (dver->desc != NULL) ? dver->desc : "";
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: name [%s]", drm_name);
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: date [%s]", drm_date);
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: desc [%s]", drm_desc);
             token = strtok(g_drm_allow_list, delim);
             while (token != NULL)
             {
                 LOG(LOG_LEVEL_TRACE, "rdpPreInit: token [%s]", token);
-                if (strstr(dver.name, token) != NULL)
+                if (strstr(drm_name, token) != NULL)
                 {
                     dev->glamor = TRUE;
                     LOG(LOG_LEVEL_INFO, "rdpPreInit: drm device looks ok, "
@@ -212,11 +211,12 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
         }
         else
         {
-            LOG(LOG_LEVEL_INFO, "rdpPreInit: DRM_IOCTL_VERSION failed");
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: drmGetVersion failed");
         }
-        free(dver.name);
-        free(dver.date);
-        free(dver.desc);
+        if (dver != NULL)
+        {
+            drmFreeVersion(dver);
+        }
     }
 #endif
 
