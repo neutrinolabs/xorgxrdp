@@ -584,7 +584,7 @@ rdpClientConSendMsg(rdpPtr dev, rdpClientCon *clientCon)
         }
 
         s_pop_layer(s, iso_hdr);
-        out_uint16_le(s, 3);
+        out_uint16_le(s, XUP_MSG_ORDER_LIST);
         out_uint16_le(s, clientCon->count);
         out_uint32_le(s, len - 8);
         rv = rdpClientConSend(dev, clientCon, s->data, len);
@@ -607,7 +607,7 @@ rdpClientConSendPending(rdpPtr dev, rdpClientCon *clientCon)
     rv = 0;
     if (clientCon->connected && clientCon->begin)
     {
-        out_uint16_le(clientCon->out_s, 2); /* XR_SERVER_END_UPDATE */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_END_UPDATE);
         out_uint16_le(clientCon->out_s, 4); /* size */
         clientCon->count++;
         s_mark_end(clientCon->out_s);
@@ -736,7 +736,7 @@ rdpClientConSendCaps(rdpPtr dev, rdpClientCon *clientCon)
     cap_count++;
 #endif
 
-    out_uint16_le(ls, 100);   /* Version capability */
+    out_uint16_le(ls, XUP_CAPS_VERSION);
     out_uint16_le(ls, 2 + 2 + 4);
     out_uint32_le(ls, XUP_CLIENT_INFO_CURRENT_VERSION);
     cap_count++;
@@ -744,7 +744,7 @@ rdpClientConSendCaps(rdpPtr dev, rdpClientCon *clientCon)
     s_mark_end(ls);
     len = (int)(ls->end - ls->data);
     s_pop_layer(ls, iso_hdr);
-    out_uint16_le(ls, 2); /* caps */
+    out_uint16_le(ls, XUP_MSG_CAPS);
     out_uint16_le(ls, cap_count); /* num caps */
     out_uint32_le(ls, len - 8); /* caps len after header */
 
@@ -1062,7 +1062,7 @@ rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
     {
         rdpInputMouseEvent(dev, msg, param1, param2, param3, param4);
     }
-    else if (msg == 200) /* invalidate */
+    else if (msg == XUP_CLIENT_DATA_INVALIDATE)
     {
         x = (param1 >> 16) & 0xffff;
         y = param1 & 0xffff;
@@ -1073,17 +1073,17 @@ rdpClientConProcessMsgClientInput(rdpPtr dev, rdpClientCon *clientCon)
             "cx %d cy %d", x, y, cx, cy);
         rdpClientConAddDirtyScreen(dev, clientCon, x, y, cx, cy);
     }
-    else if (msg == 300) /* resize desktop */
+    else if (msg == XUP_CLIENT_DATA_DESKTOP_RESIZE)
     {
         LOG(LOG_LEVEL_INFO,
             "rdpClientConProcessMsgClientInput: obsolete msg %d", msg);
     }
-    else if (msg == 301) /* version */
+    else if (msg == XUP_CLIENT_DATA_VERSION)
     {
         rdpClientConProcessMsgVersion(dev, clientCon,
                                       param1, param2, param3, param4);
     }
-    else if (msg == 302) /* monitor update */
+    else if (msg == XUP_CLIENT_DATA_MONITOR_UPDATE)
     {
         if (param3 > 0 && param3 < CLIENT_MONITOR_DATA_MAXIMUM_MONITORS)
         {
@@ -1195,14 +1195,14 @@ rdpSendAccelAssistMonitors(rdpPtr dev, rdpClientCon *clientCon)
     rdpClientConSendPending(dev, clientCon);
     init_stream(clientCon->out_s, 0);
     s_push_layer(clientCon->out_s, iso_hdr, layer_size);
-    out_uint16_le(clientCon->out_s, 1); /* clear monitors */
+    out_uint16_le(clientCon->out_s, XUP_METADATA_CLEAR_MONITORS);
     out_uint16_le(clientCon->out_s, 4); /* size */
     clientCon->count++;
     if (dev->monitorCount < 1)
     {
         width = dev->width;
         height = dev->height;
-        out_uint16_le(clientCon->out_s, 2);
+        out_uint16_le(clientCon->out_s, XUP_METADATA_ADD_MONITOR);
         out_uint16_le(clientCon->out_s, 20); /* size */
         out_uint16_le(clientCon->out_s, width);
         out_uint16_le(clientCon->out_s, height);
@@ -1217,7 +1217,7 @@ rdpSendAccelAssistMonitors(rdpPtr dev, rdpClientCon *clientCon)
         {
             width = dev->minfo[index].right - dev->minfo[index].left + 1;
             height = dev->minfo[index].bottom - dev->minfo[index].top + 1;
-            out_uint16_le(clientCon->out_s, 2);
+            out_uint16_le(clientCon->out_s, XUP_METADATA_ADD_MONITOR);
             out_uint16_le(clientCon->out_s, 20); /* size */
             out_uint16_le(clientCon->out_s, width);
             out_uint16_le(clientCon->out_s, height);
@@ -1230,7 +1230,7 @@ rdpSendAccelAssistMonitors(rdpPtr dev, rdpClientCon *clientCon)
     s_mark_end(clientCon->out_s);
     len = (int) (clientCon->out_s->end - clientCon->out_s->data);
     s_pop_layer(clientCon->out_s, iso_hdr);
-    out_uint16_le(clientCon->out_s, 100);
+    out_uint16_le(clientCon->out_s, XUP_MSG_METADATA);
     out_uint16_le(clientCon->out_s, clientCon->count);
     out_uint32_le(clientCon->out_s, len - layer_size);
     rv = rdpClientConSend(dev, clientCon, clientCon->out_s->data, len);
@@ -1274,14 +1274,15 @@ rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon)
     init_stream(clientCon->out_s, 0);
     s_push_layer(clientCon->out_s, iso_hdr, layer_size);
     clientCon->count++;
-    out_uint16_le(clientCon->out_s, 3); /* code: memory allocation complete */
+    out_uint16_le(clientCon->out_s,
+                  XUP_METADATA_MEMORY_ALLOCATION_COMPLETE);
     out_uint16_le(clientCon->out_s, 8); /* size */
     out_uint16_le(clientCon->out_s, width);
     out_uint16_le(clientCon->out_s, height);
     s_mark_end(clientCon->out_s);
     len = (int) (clientCon->out_s->end - clientCon->out_s->data);
     s_pop_layer(clientCon->out_s, iso_hdr);
-    out_uint16_le(clientCon->out_s, 100); /* Metadata message to xrdp (or if using accel assist, signal) */
+    out_uint16_le(clientCon->out_s, XUP_MSG_METADATA);
     out_uint16_le(clientCon->out_s, clientCon->count);
     out_uint32_le(clientCon->out_s, len - layer_size);
     rv = rdpClientConSend(dev, clientCon, clientCon->out_s->data, len);
@@ -1609,19 +1610,19 @@ rdpClientConProcessMsg(rdpPtr dev, rdpClientCon *clientCon)
     LOG(LOG_LEVEL_TRACE, "rdpClientConProcessMsg: msg_type %d", msg_type);
     switch (msg_type)
     {
-        case 103: /* client input */
+        case XUP_MSG_CLIENT_DATA:
             rdpClientConProcessMsgClientInput(dev, clientCon);
             break;
-        case 104: /* client info */
+        case XUP_MSG_CLIENT_INFO:
             rdpClientConProcessMsgClientInfo(dev, clientCon);
             break;
-        case 105: /* client region */
+        case XUP_MSG_CLIENT_REGION:
             rdpClientConProcessMsgClientRegion(dev, clientCon);
             break;
-        case 106: /* client region ex */
+        case XUP_MSG_CLIENT_REGION_EX:
             rdpClientConProcessMsgClientRegionEx(dev, clientCon);
             break;
-        case 108: /* client suppress output */
+        case XUP_MSG_CLIENT_SUPPRESS_OUTPUT:
             rdpClientConProcessMsgClientSuppressOutput(dev, clientCon);
             break;
         default:
@@ -2042,7 +2043,7 @@ rdpClientConBeginUpdate(rdpPtr dev, rdpClientCon *clientCon)
     }
     init_stream(clientCon->out_s, 0);
     s_push_layer(clientCon->out_s, iso_hdr, 8);
-    out_uint16_le(clientCon->out_s, 1); /* begin update */
+    out_uint16_le(clientCon->out_s, XUP_ORDER_BEGIN_UPDATE);
     out_uint16_le(clientCon->out_s, 4); /* size */
     clientCon->begin = TRUE;
     clientCon->count = 1;
@@ -2110,7 +2111,7 @@ rdpClientConFillRect(rdpPtr dev, rdpClientCon *clientCon,
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConFillRect:");
         rdpClientConPreCheck(dev, clientCon, 12);
-        out_uint16_le(clientCon->out_s, 3); /* fill rect */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_FILL_RECT);
         out_uint16_le(clientCon->out_s, 12); /* size */
         clientCon->count++;
         out_uint16_le(clientCon->out_s, x);
@@ -2133,7 +2134,7 @@ rdpClientConScreenBlt(rdpPtr dev, rdpClientCon *clientCon,
             "srcx %d srcy %d",
             x, y, cx, cy, srcx, srcy);
         rdpClientConPreCheck(dev, clientCon, 16);
-        out_uint16_le(clientCon->out_s, 4); /* screen blt */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SCREEN_BLT);
         out_uint16_le(clientCon->out_s, 16); /* size */
         clientCon->count++;
         out_uint16_le(clientCon->out_s, x);
@@ -2156,7 +2157,7 @@ rdpClientConSetClip(rdpPtr dev, rdpClientCon *clientCon,
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConSetClip:");
         rdpClientConPreCheck(dev, clientCon, 12);
-        out_uint16_le(clientCon->out_s, 10); /* set clip */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_CLIP);
         out_uint16_le(clientCon->out_s, 12); /* size */
         clientCon->count++;
         out_uint16_le(clientCon->out_s, x);
@@ -2176,7 +2177,7 @@ rdpClientConResetClip(rdpPtr dev, rdpClientCon *clientCon)
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConResetClip:");
         rdpClientConPreCheck(dev, clientCon, 4);
-        out_uint16_le(clientCon->out_s, 11); /* reset clip */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_RESET_CLIP);
         out_uint16_le(clientCon->out_s, 4); /* size */
         clientCon->count++;
     }
@@ -2341,7 +2342,7 @@ rdpClientConSetFgcolor(rdpPtr dev, rdpClientCon *clientCon, int fgcolor)
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConSetFgcolor:");
         rdpClientConPreCheck(dev, clientCon, 8);
-        out_uint16_le(clientCon->out_s, 12); /* set fgcolor */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_FGCOLOR);
         out_uint16_le(clientCon->out_s, 8); /* size */
         clientCon->count++;
         fgcolor = fgcolor & dev->Bpp_mask;
@@ -2361,7 +2362,7 @@ rdpClientConSetBgcolor(rdpPtr dev, rdpClientCon *clientCon, int bgcolor)
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConSetBgcolor:");
         rdpClientConPreCheck(dev, clientCon, 8);
-        out_uint16_le(clientCon->out_s, 13); /* set bg color */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_BGCOLOR);
         out_uint16_le(clientCon->out_s, 8); /* size */
         clientCon->count++;
         bgcolor = bgcolor & dev->Bpp_mask;
@@ -2381,7 +2382,7 @@ rdpClientConSetOpcode(rdpPtr dev, rdpClientCon *clientCon, int opcode)
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConSetOpcode:");
         rdpClientConPreCheck(dev, clientCon, 6);
-        out_uint16_le(clientCon->out_s, 14); /* set opcode */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_OPCODE);
         out_uint16_le(clientCon->out_s, 6); /* size */
         clientCon->count++;
         out_uint16_le(clientCon->out_s, g_rdp_opcodes[opcode & 0xf]);
@@ -2398,7 +2399,7 @@ rdpClientConSetPen(rdpPtr dev, rdpClientCon *clientCon, int style, int width)
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConSetPen:");
         rdpClientConPreCheck(dev, clientCon, 8);
-        out_uint16_le(clientCon->out_s, 17); /* set pen */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_PEN);
         out_uint16_le(clientCon->out_s, 8); /* size */
         clientCon->count++;
         out_uint16_le(clientCon->out_s, style);
@@ -2417,7 +2418,7 @@ rdpClientConDrawLine(rdpPtr dev, rdpClientCon *clientCon,
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConDrawLine:");
         rdpClientConPreCheck(dev, clientCon, 12);
-        out_uint16_le(clientCon->out_s, 18); /* draw line */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_DRAW_LINE);
         out_uint16_le(clientCon->out_s, 12); /* size */
         clientCon->count++;
         out_uint16_le(clientCon->out_s, x1);
@@ -2441,7 +2442,7 @@ rdpClientConSetCursorSystem(rdpPtr dev, rdpClientCon *clientCon,
         LOG(LOG_LEVEL_TRACE, "rdpClientConSetCursor:");
         size = 2 + 2 + 4;
         rdpClientConPreCheck(dev, clientCon, size);
-        out_uint16_le(clientCon->out_s, 65); /* set cursor system */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_POINTER_SYSTEM);
         out_uint16_le(clientCon->out_s, size); /* size */
         clientCon->count++;
         out_uint32_le(clientCon->out_s, pointer_type);
@@ -2461,7 +2462,7 @@ rdpClientConMoveCursor(rdpPtr dev, rdpClientCon *clientCon, int x, int y)
         LOG(LOG_LEVEL_TRACE, "rdpClientConSetCursor:");
         size = 2 + 2 + 2 + 2;
         rdpClientConPreCheck(dev, clientCon, size);
-        out_uint16_le(clientCon->out_s, 66); /* move cursor */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_POINTER_POSITION);
         out_uint16_le(clientCon->out_s, size); /* size */
         clientCon->count++;
         out_uint16_le(clientCon->out_s, x);
@@ -2483,7 +2484,7 @@ rdpClientConSetCursor(rdpPtr dev, rdpClientCon *clientCon,
         LOG(LOG_LEVEL_TRACE, "rdpClientConSetCursor:");
         size = 8 + 32 * (32 * 3) + 32 * (32 / 8);
         rdpClientConPreCheck(dev, clientCon, size);
-        out_uint16_le(clientCon->out_s, 19); /* set cursor */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_CURSOR);
         out_uint16_le(clientCon->out_s, size); /* size */
         clientCon->count++;
         x = RDPMAX(0, x);
@@ -2514,7 +2515,7 @@ rdpClientConSetCursorEx(rdpPtr dev, rdpClientCon *clientCon,
         Bpp = (bpp == 0) ? 3 : (bpp + 7) / 8;
         size = 10 + 32 * (32 * Bpp) + 32 * (32 / 8);
         rdpClientConPreCheck(dev, clientCon, size);
-        out_uint16_le(clientCon->out_s, 51); /* set cursor ex */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_CURSOR_EX);
         out_uint16_le(clientCon->out_s, size); /* size */
         clientCon->count++;
         x = RDPMAX(0, x);
@@ -2558,7 +2559,7 @@ rdpClientConSetCursorShmFd(rdpPtr dev, rdpClientCon *clientCon,
         shmemptr = (uint8_t *)addr;
         size = 14;
         rdpClientConPreCheck(dev, clientCon, size);
-        out_uint16_le(clientCon->out_s, 63); /* set cursor shmfd */
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SET_POINTER_SHMFD);
         out_uint16_le(clientCon->out_s, size); /* size */
         clientCon->count++;
         x = max(0, x);
@@ -2593,7 +2594,7 @@ rdpClientConCreateOsSurface(rdpPtr dev, rdpClientCon *clientCon,
         LOG(LOG_LEVEL_TRACE,
             "rdpClientConCreateOsSurface: width %d height %d", width, height);
         rdpClientConPreCheck(dev, clientCon, 12);
-        out_uint16_le(clientCon->out_s, 20);
+        out_uint16_le(clientCon->out_s, XUP_ORDER_CREATE_OS_SURFACE);
         out_uint16_le(clientCon->out_s, 12);
         clientCon->count++;
         out_uint32_le(clientCon->out_s, rdpindex);
@@ -2616,7 +2617,7 @@ rdpClientConCreateOsSurfaceBpp(rdpPtr dev, rdpClientCon *clientCon,
             "rdpClientConCreateOsSurfaceBpp: width %d height %d "
             "bpp %d", width, height, bpp);
         rdpClientConPreCheck(dev, clientCon, 13);
-        out_uint16_le(clientCon->out_s, 31);
+        out_uint16_le(clientCon->out_s, XUP_ORDER_CREATE_OS_SURFACE_BPP);
         out_uint16_le(clientCon->out_s, 13);
         clientCon->count++;
         out_uint32_le(clientCon->out_s, rdpindex);
@@ -2645,7 +2646,7 @@ rdpClientConSwitchOsSurface(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
             "rdpClientConSwitchOsSurface: rdpindex %d", rdpindex);
         /* switch surface */
         rdpClientConPreCheck(dev, clientCon, 8);
-        out_uint16_le(clientCon->out_s, 21);
+        out_uint16_le(clientCon->out_s, XUP_ORDER_SWITCH_OS_SURFACE);
         out_uint16_le(clientCon->out_s, 8);
         out_uint32_le(clientCon->out_s, rdpindex);
         clientCon->count++;
@@ -2664,7 +2665,7 @@ rdpClientConDeleteOsSurface(rdpPtr dev, rdpClientCon *clientCon, int rdpindex)
     {
         LOG(LOG_LEVEL_TRACE, "rdpClientConDeleteOsSurface: rdpindex %d", rdpindex);
         rdpClientConPreCheck(dev, clientCon, 8);
-        out_uint16_le(clientCon->out_s, 22);
+        out_uint16_le(clientCon->out_s, XUP_ORDER_DELETE_OS_SURFACE);
         out_uint16_le(clientCon->out_s, 8);
         clientCon->count++;
         out_uint32_le(clientCon->out_s, rdpindex);
@@ -3041,7 +3042,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         rdpClientConPreCheck(dev, clientCon, size);
 
         s = clientCon->out_s;
-        out_uint16_le(s, 64);
+        out_uint16_le(s, XUP_ORDER_PAINT_RECT_SHMFD);
         out_uint16_le(s, size);
         clientCon->count++;
 
@@ -3088,7 +3089,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
 
         rdpClientConPreCheck(dev, clientCon, size);
         s = clientCon->out_s;
-        out_uint16_le(s, 62);
+        out_uint16_le(s, XUP_ORDER_EGFX_SHMFD);
         out_uint16_le(s, size);
         clientCon->count++;
 
@@ -3160,7 +3161,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
 
         rdpClientConPreCheck(dev, clientCon, size);
         s = clientCon->out_s;
-        out_uint16_le(s, 62);
+        out_uint16_le(s, XUP_ORDER_EGFX_SHMFD);
         out_uint16_le(s, size);
         clientCon->count++;
 
