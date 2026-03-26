@@ -52,6 +52,12 @@ Client connection to xrdp
 #include "rdpInput.h"
 #include "rdpReg.h"
 #include "rdpCapture.h"
+#include "rdpPixmap.h"
+
+#if defined(XORGXRDP_GLAMOR)
+#include <glamor.h>
+#include <drm_fourcc.h>
+#endif
 
 #if defined(XORGXRDP_LRANDR)
 #include "rdpRandR.h"
@@ -217,6 +223,217 @@ rdpRemoveClientConFromDev(rdpPtr dev, rdpClientCon *clientCon)
     }
 }
 
+static void
+rdpClientConDestroyDmabufSurfaces(rdpClientCon *clientCon)
+{
+#if defined(XORGXRDP_GLAMOR)
+    ScreenPtr pScreen;
+    int index;
+
+    pScreen = clientCon->dev->pScreen;
+    for (index = 0; index < 16; ++index)
+    {
+        if (clientCon->dmabufFds[index] >= 0)
+        {
+            close(clientCon->dmabufFds[index]);
+            clientCon->dmabufFds[index] = -1;
+        }
+        clientCon->dmabufWidths[index] = 0;
+        clientCon->dmabufHeights[index] = 0;
+        clientCon->dmabufStrides[index] = 0;
+        clientCon->dmabufFourccs[index] = 0;
+        clientCon->dmabufSizes[index] = 0;
+        if (clientCon->dmabufPixmaps[index] != NULL)
+        {
+            pScreen->DestroyPixmap(clientCon->dmabufPixmaps[index]);
+            clientCon->dmabufPixmaps[index] = NULL;
+        }
+    }
+#else
+    (void) clientCon;
+#endif
+}
+
+#if defined(XORGXRDP_GLAMOR)
+/******************************************************************************/
+static Bool
+rdpClientConCanUseDmabufTransport(rdpPtr dev, rdpClientCon *clientCon)
+{
+    if ((clientCon->client_info.capture_transport_flags &
+            XUP_CAPTURE_TRANSPORT_DMABUF) == 0)
+    {
+        return FALSE;
+    }
+    if ((clientCon->client_info.capture_code != CC_SUF_A2) &&
+            (clientCon->client_info.capture_code != CC_GFX_A2))
+    {
+        return FALSE;
+    }
+    if (!dev->glamor)
+    {
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConCanUseDmabufTransport: glamor not active");
+        return FALSE;
+    }
+    if (!glamor_supports_pixmap_import_export(dev->pScreen))
+    {
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConCanUseDmabufTransport: glamor dma-buf export "
+            "unsupported");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/******************************************************************************/
+static PixmapPtr
+rdpClientConCreateDmabufPixmap(ScreenPtr pScreen, int width, int height)
+{
+#if XRDP_PIX == 2
+    return pScreen->CreatePixmap(pScreen, width, height, 24,
+                                 GLAMOR_CREATE_NO_LARGE);
+#else
+    return pScreen->CreatePixmap(pScreen, width, height, 24);
+#endif
+}
+
+/******************************************************************************/
+static int
+rdpClientConExportDmabufPixmap(rdpPtr dev, PixmapPtr pixmap,
+                               int *width, int *height,
+                               CARD16 *stride, CARD32 *size,
+                               int *fd)
+{
+    if (pixmap == NULL)
+    {
+        LOG(LOG_LEVEL_ERROR,
+            "rdpClientConExportDmabufPixmap: pixmap is NULL");
+        return 1;
+    }
+
+    *width = pixmap->drawable.width;
+    *height = pixmap->drawable.height;
+    *fd = glamor_shareable_fd_from_pixmap(dev->pScreen, pixmap, stride, size);
+    if (*fd < 0)
+    {
+        LOG(LOG_LEVEL_ERROR,
+            "rdpClientConExportDmabufPixmap: export failed for %dx%d pixmap",
+            *width, *height);
+        return 1;
+    }
+
+    return 0;
+}
+
+#endif
+
+/******************************************************************************/
+static int
+rdpClientConRefreshDmabufSurfaces(rdpPtr dev, rdpClientCon *clientCon)
+{
+#if defined(XORGXRDP_GLAMOR)
+    ScreenPtr pScreen;
+    PixmapPtr pixmaps[16];
+    int count;
+    int index;
+    int fd;
+    CARD16 stride;
+    CARD32 size;
+    int width;
+    int height;
+
+    g_memset(pixmaps, 0, sizeof(pixmaps));
+    rdpClientConDestroyDmabufSurfaces(clientCon);
+
+    if (!rdpClientConCanUseDmabufTransport(dev, clientCon))
+    {
+        return 0;
+    }
+
+    pScreen = dev->pScreen;
+    count = dev->monitorCount;
+    if (count < 1)
+    {
+        count = 1;
+    }
+    if (count > 16)
+    {
+        LOG(LOG_LEVEL_WARNING,
+            "rdpClientConRefreshDmabufSurfaces: monitor count %d too large",
+            count);
+        return 1;
+    }
+
+    for (index = 0; index < count; ++index)
+    {
+        if (dev->monitorCount > 0)
+        {
+            width = dev->minfo[index].right - dev->minfo[index].left + 1;
+            height = dev->minfo[index].bottom - dev->minfo[index].top + 1;
+        }
+        else
+        {
+            width = clientCon->rdp_width;
+            height = clientCon->rdp_height;
+        }
+
+        width = RDPALIGN(dev->width, XRDP_H264_ALIGN);
+        height = RDPALIGN(dev->height, XRDP_H264_ALIGN);
+
+        pixmaps[index] = rdpClientConCreateDmabufPixmap(pScreen, width,
+                                                        height);
+        if (pixmaps[index] == NULL)
+        {
+            LOG(LOG_LEVEL_ERROR,
+                "rdpClientConRefreshDmabufSurfaces: CreatePixmap failed for "
+                "surface %d (%dx%d)", index, width, height);
+            goto error;
+        }
+    }
+
+    for (index = 0; index < count; ++index)
+    {
+        stride = 0;
+        size = 0;
+        fd = -1;
+        if (rdpClientConExportDmabufPixmap(dev, pixmaps[index],
+                                           &width, &height,
+                                           &stride, &size, &fd) != 0)
+        {
+            goto error;
+        }
+        clientCon->dmabufPixmaps[index] = pixmaps[index];
+        pixmaps[index] = NULL;
+        clientCon->dmabufFds[index] = fd;
+        clientCon->dmabufWidths[index] = width;
+        clientCon->dmabufHeights[index] = height;
+        clientCon->dmabufStrides[index] = stride;
+        clientCon->dmabufFourccs[index] = DRM_FORMAT_XRGB8888;
+        clientCon->dmabufSizes[index] = size;
+    }
+
+    LOG(LOG_LEVEL_INFO,
+        "rdpClientConRefreshDmabufSurfaces: prepared %d local dma-buf pixmaps",
+        count);
+    return 0;
+
+error:
+    for (index = 0; index < 16; ++index)
+    {
+        if (pixmaps[index] != NULL)
+        {
+            pScreen->DestroyPixmap(pixmaps[index]);
+        }
+    }
+    rdpClientConDestroyDmabufSurfaces(clientCon);
+    return 1;
+#else
+    (void) dev;
+    (void) clientCon;
+    return 0;
+#endif
+}
+
 /******************************************************************************/
 static int
 rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
@@ -230,6 +447,10 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     clientCon->updateRetries = 0;
     clientCon->dev = dev;
     clientCon->shmemfd = -1;
+    for (new_sck = 0; new_sck < 16; ++new_sck)
+    {
+        clientCon->dmabufFds[new_sck] = -1;
+    }
     dev->last_event_time_ms = GetTimeInMillis();
     dev->do_dirty_ons = 1;
 
@@ -415,6 +636,11 @@ rdpClientConUseAccelAssist(rdpPtr dev, rdpClientCon *clientCon)
 {
     const char *xrdp_use_accel_assist = getenv("XRDP_USE_ACCEL_ASSIST");
 
+    if ((clientCon->client_info.capture_transport_flags &
+            XUP_CAPTURE_TRANSPORT_DMABUF) != 0)
+    {
+        return FALSE;
+    }
     if (xrdp_use_accel_assist == NULL)
     {
         return FALSE;
@@ -501,6 +727,7 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     {
         rdpShutdownAccelAssist(dev, clientCon);
     }
+    rdpClientConDestroyDmabufSurfaces(clientCon);
     free(clientCon);
     return 0;
 }
@@ -620,6 +847,20 @@ rdpClientConSendPending(rdpPtr dev, rdpClientCon *clientCon)
     }
     clientCon->count = 0;
     clientCon->begin = FALSE;
+    return rv;
+}
+
+/******************************************************************************/
+static int
+rdpClientConSendFd(rdpPtr dev, rdpClientCon *clientCon, int fd)
+{
+    int rv;
+
+    rv = rdpClientConSendPending(dev, clientCon);
+    if (rv == 0)
+    {
+        rv = (g_sck_send_fd_set(clientCon->sck, "int", 4, &fd, 1) == 4) ? 0 : 1;
+    }
     return rv;
 }
 
@@ -1017,8 +1258,9 @@ rdpClientConProcessMonitorUpdateMsg(rdpPtr dev, rdpClientCon *clientCon,
     rdpClientConProcessClientInfoMonitors(dev, clientCon);
 
     /* Tell xrdp we're done */
-    rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, width, height);
     rdpSendMemoryAllocationComplete(dev, clientCon);
+    rdpClientConRefreshDmabufSurfaces(dev, clientCon);
+    rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, width, height);
 
     if (clientCon->use_accel_assist)
     {
@@ -1405,6 +1647,8 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     LOG(LOG_LEVEL_INFO, "  offscreen size %d", i1);
     i1 = clientCon->client_info.offscreen_cache_entries;
     LOG(LOG_LEVEL_INFO, "  offscreen entries %d", i1);
+    LOG(LOG_LEVEL_INFO, "  capture transport flags 0x%x",
+        clientCon->client_info.capture_transport_flags);
 
     /* Monitor info */
     int bpp = clientCon->client_info.bpp;
@@ -1485,6 +1729,7 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
                           0, 0, 0);
 
     rdpSendMemoryAllocationComplete(dev, clientCon);
+    rdpClientConRefreshDmabufSurfaces(dev, clientCon);
     rdpClientConAddDirtyScreen(dev, clientCon, 0, 0, clientCon->rdp_width,
                                clientCon->rdp_height);
 
@@ -2573,10 +2818,9 @@ rdpClientConSetCursorShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint16_le(clientCon->out_s, height);
         memcpy(shmemptr, cur_data, width * height * Bpp);
         memcpy(shmemptr + width * height * Bpp, cur_mask, width * height / 8);
-        rdpClientConSendPending(clientCon->dev, clientCon);
-        rv = g_sck_send_fd_set(clientCon->sck, "int", 4, &fd, 1);
+        rv = rdpClientConSendFd(clientCon->dev, clientCon, fd);
         LOG(LOG_LEVEL_TRACE,
-            "rdpClientConSetCursorShmFd: g_sck_send_fd_set rv %d", rv);
+            "rdpClientConSetCursorShmFd: send fd rv %d", rv);
         g_free_unmap_fd(shmemptr, fd, shmsize);
     }
     return rv;
@@ -2994,6 +3238,63 @@ out_rects_dr(struct stream *s,
 
 /******************************************************************************/
 static int
+rdpClientConOutCaptureBounds(struct stream *s, rdpClientCon *clientCon,
+                             struct image_data *id,
+                             enum xrdp_capture_code capture_code)
+{
+    if (capture_code == CC_SUF_RFX)
+    {
+        out_uint16_le(s, id->left);
+        out_uint16_le(s, id->top);
+        out_uint16_le(s, id->width);
+        out_uint16_le(s, id->height);
+    }
+    else
+    {
+        out_uint16_le(s, 0);
+        out_uint16_le(s, 0);
+        out_uint16_le(s, clientCon->cap_width);
+        out_uint16_le(s, clientCon->cap_height);
+    }
+
+    return 0;
+}
+
+/******************************************************************************/
+static int
+rdpClientConOutDmabufInfo(struct stream *s, struct image_data *id)
+{
+    out_uint32_le(s, id->dmabuf_width);
+    out_uint32_le(s, id->dmabuf_height);
+    out_uint32_le(s, id->dmabuf_stride);
+    out_uint32_le(s, id->dmabuf_fourcc);
+    out_uint32_le(s, id->dmabuf_size);
+    return 0;
+}
+
+/******************************************************************************/
+static int
+rdpClientConOutEgfxFrameData(rdpPtr dev, rdpClientCon *clientCon,
+                             struct stream *s, struct image_data *id,
+                             int use_dmabuf)
+{
+    if (use_dmabuf)
+    {
+        rdpClientConOutDmabufInfo(s, id);
+        return rdpClientConSendFd(dev, clientCon, id->dmabuf_fd);
+    }
+    if ((id->shmem_bytes > 0) && ((id->flags & 1) == 0))
+    {
+        out_uint32_le(s, id->shmem_bytes);
+        return rdpClientConSendFd(dev, clientCon, id->shmem_fd);
+    }
+
+    out_uint32_le(s, 0);
+    return 0;
+}
+
+/******************************************************************************/
+static int
 rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
                                struct image_data *id,
                                RegionPtr dirtyReg,
@@ -3009,6 +3310,8 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
     int wiretosurface2_bytes;
     int end_frame_bytes;
     int surface_id;
+    int use_dmabuf;
+    int rv;
 
     LOG(LOG_LEVEL_TRACE, "rdpClientConSendPaintRectShmFd:");
     LOG(LOG_LEVEL_TRACE,
@@ -3021,6 +3324,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         id->flags, id->left, id->top, id->width, id->height);
 
     capture_code = clientCon->client_info.capture_code;
+    use_dmabuf = (id->flags & XRDP_ENC_SOURCE_DMABUF) != 0;
     LOG(LOG_LEVEL_TRACE, "rdpClientConSendPaintRectShmFd: capture_code %d",
         capture_code);
 
@@ -3032,17 +3336,31 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         return 0;
     }
 
+    rv = 0;
+    surface_id = (id->flags >> 28) & 0xF;
+    if (use_dmabuf)
+    {
+        if (surface_id >= 16 || id->dmabuf_fd < 0)
+        {
+            LOG(LOG_LEVEL_ERROR,
+                "rdpClientConSendPaintRectShmFd: invalid dma-buf image data "
+                "surface_id %d fd %d", surface_id, id->dmabuf_fd);
+            return 1;
+        }
+    }
+
     rdpClientConBeginUpdate(dev, clientCon);
 
     if (capture_code < CC_GFX_PRO)
     {
-        /* non gfx */
         size = 2 + 2 + 2 + num_rects_d * 8 + 2 + num_rects_c * 8;
-        size += 4 + 4 + 4 + 4 + 2 + 2 + 2 + 2;
+        size += 4 + 4 + 2 + 2 + 2 + 2;
+        size += use_dmabuf ? (4 + 4 + 4 + 4 + 4) : (4 + 4);
         rdpClientConPreCheck(dev, clientCon, size);
 
         s = clientCon->out_s;
-        out_uint16_le(s, XUP_ORDER_PAINT_RECT_SHMFD);
+        out_uint16_le(s, use_dmabuf ? XUP_ORDER_PAINT_RECT_DMABUF :
+                       XUP_ORDER_PAINT_RECT_SHMFD);
         out_uint16_le(s, size);
         clientCon->count++;
 
@@ -3052,24 +3370,19 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint32_le(s, id->flags);
         ++clientCon->rect_id;
         out_uint32_le(s, clientCon->rect_id);
-        out_uint32_le(s, id->shmem_bytes);
-        out_uint32_le(s, id->shmem_offset);
-        if (capture_code == CC_SUF_RFX) /* rfx */
+        if (use_dmabuf)
         {
-            out_uint16_le(s, id->left);
-            out_uint16_le(s, id->top);
-            out_uint16_le(s, id->width);
-            out_uint16_le(s, id->height);
+            rdpClientConOutCaptureBounds(s, clientCon, id, capture_code);
+            rdpClientConOutDmabufInfo(s, id);
+            rv = rdpClientConSendFd(dev, clientCon, id->dmabuf_fd);
         }
         else
         {
-            out_uint16_le(s, 0);
-            out_uint16_le(s, 0);
-            out_uint16_le(s, clientCon->cap_width);
-            out_uint16_le(s, clientCon->cap_height);
+            out_uint32_le(s, id->shmem_bytes);
+            out_uint32_le(s, id->shmem_offset);
+            rdpClientConOutCaptureBounds(s, clientCon, id, capture_code);
+            rv = rdpClientConSendFd(dev, clientCon, id->shmem_fd);
         }
-        rdpClientConSendPending(clientCon->dev, clientCon);
-        g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
     }
     else if (capture_code == CC_GFX_PRO) /* gfx pro rfx */
     {
@@ -3085,11 +3398,12 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         size += start_frame_bytes;      /* start frame message */
         size += wiretosurface2_bytes;   /* frame message */
         size += end_frame_bytes;        /* end frame message */
-        size += 4;                      /* message 62 data_bytes */
+        size += use_dmabuf ? (4 + 4 + 4 + 4 + 4) : 4; /* dmabuf or shmfd info */
 
         rdpClientConPreCheck(dev, clientCon, size);
         s = clientCon->out_s;
-        out_uint16_le(s, XUP_ORDER_EGFX_SHMFD);
+        out_uint16_le(s, use_dmabuf ? XUP_ORDER_EGFX_DMABUF :
+                       XUP_ORDER_EGFX_SHMFD);
         out_uint16_le(s, size);
         clientCon->count++;
 
@@ -3105,8 +3419,6 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint32_le(s, start_frame_bytes);    /* cmd_bytes */
         out_uint32_le(s, clientCon->rect_id);   /* frame_id */
         out_uint32_le(s, 0);                    /* time_stamp */
-
-        surface_id = (id->flags >> 28) & 0xF;
         /* XR_RDPGFX_CMDID_WIRETOSURFACE_2 */
         out_uint16_le(s, 0x0002);
         out_uint16_le(s, 0);                    /* flags */
@@ -3132,16 +3444,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint32_le(s, end_frame_bytes);      /* cmd_bytes */
         out_uint32_le(s, clientCon->rect_id);   /* frame_id */
 
-        if ((id->shmem_bytes > 0) && ((id->flags & 1) == 0))
-        {
-            out_uint32_le(s, id->shmem_bytes);  /* shmem_bytes */
-            rdpClientConSendPending(clientCon->dev, clientCon);
-            g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
-        }
-        else
-        {
-            out_uint32_le(s, 0);                /* shmem_bytes */
-        }
+        rv = rdpClientConOutEgfxFrameData(dev, clientCon, s, id, use_dmabuf);
     }
     else if (capture_code == CC_GFX_A2) /* gfx h264 */
     {
@@ -3157,17 +3460,18 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         size += start_frame_bytes;      /* start frame message */
         size += wiretosurface1_bytes;   /* frame message */
         size += end_frame_bytes;        /* end frame message */
-        size += 4;                      /* message 62 data_bytes */
+        size += use_dmabuf ? (4 + 4 + 4 + 4 + 4) : 4; /* dmabuf or shmfd info */
 
         rdpClientConPreCheck(dev, clientCon, size);
         s = clientCon->out_s;
-        out_uint16_le(s, XUP_ORDER_EGFX_SHMFD);
+        out_uint16_le(s, use_dmabuf ? XUP_ORDER_EGFX_DMABUF :
+                       XUP_ORDER_EGFX_SHMFD);
         out_uint16_le(s, size);
         clientCon->count++;
 
         out_uint32_le(s, start_frame_bytes +
                         wiretosurface1_bytes +
-                        end_frame_bytes); /* total of cmd_bytes */
+                        end_frame_bytes);
 
         ++clientCon->rect_id;
 
@@ -3177,8 +3481,6 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint32_le(s, start_frame_bytes);    /* cmd_bytes */
         out_uint32_le(s, clientCon->rect_id);   /* frame_id */
         out_uint32_le(s, 0);                    /* time_stamp */
-
-        surface_id = (id->flags >> 28) & 0xF;
         /* XR_RDPGFX_CMDID_WIRETOSURFACE_1 */
         out_uint16_le(s, 0x0001);
         out_uint16_le(s, 0);                    /* flags */
@@ -3203,21 +3505,12 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         out_uint32_le(s, end_frame_bytes);      /* cmd_bytes */
         out_uint32_le(s, clientCon->rect_id);   /* frame_id */
 
-        if ((id->shmem_bytes > 0) && ((id->flags & 1) == 0))
-        {
-            out_uint32_le(s, id->shmem_bytes);  /* shmem_bytes */
-            rdpClientConSendPending(clientCon->dev, clientCon);
-            g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
-        }
-        else
-        {
-            out_uint32_le(s, 0);                /* shmem_bytes */
-        }
+        rv = rdpClientConOutEgfxFrameData(dev, clientCon, s, id, use_dmabuf);
     }
 
     rdpClientConEndUpdate(dev, clientCon);
 
-    return 0;
+    return rv;
 }
 
 /******************************************************************************/
@@ -3324,7 +3617,7 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
         cap_rect.y1 = 0;
         cap_rect.x2 = clientCon->rdp_width;
         cap_rect.y2 = clientCon->rdp_height;
-        rdpClientConGetScreenImageRect(clientCon->dev, clientCon, &id);
+        rdpClientConGetScreenImageRect(clientCon->dev, clientCon, 0, &id);
         id.left = cap_rect.x1;
         id.top = cap_rect.y1;
         id.width = cap_rect.x2 - cap_rect.x1;
@@ -3353,7 +3646,8 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
             cap_rect.y1 = clientCon->dev->minfo[index].top;
             cap_rect.x2 = clientCon->dev->minfo[index].right + 1;
             cap_rect.y2 = clientCon->dev->minfo[index].bottom + 1;
-            rdpClientConGetScreenImageRect(clientCon->dev, clientCon, &id);
+            rdpClientConGetScreenImageRect(clientCon->dev, clientCon, index,
+                                           &id);
             id.left = cap_rect.x1;
             id.top = cap_rect.y1;
             id.width = cap_rect.x2 - cap_rect.x1;
@@ -3454,6 +3748,7 @@ rdpClientConAddDirtyScreen(rdpPtr dev, rdpClientCon *clientCon,
 /******************************************************************************/
 void
 rdpClientConGetScreenImageRect(rdpPtr dev, rdpClientCon *clientCon,
+                               int monitor_index,
                                struct image_data *id)
 {
     id->left = 0;
@@ -3470,6 +3765,24 @@ rdpClientConGetScreenImageRect(rdpPtr dev, rdpClientCon *clientCon,
     id->shmem_bytes = clientCon->shmem_bytes;
     id->shmem_offset = 0;
     id->shmem_lineBytes = clientCon->shmem_lineBytes;
+    if (monitor_index >= 0 && monitor_index < 16)
+    {
+        id->dmabuf_fd = clientCon->dmabufFds[monitor_index];
+        id->dmabuf_width = clientCon->dmabufWidths[monitor_index];
+        id->dmabuf_height = clientCon->dmabufHeights[monitor_index];
+        id->dmabuf_stride = clientCon->dmabufStrides[monitor_index];
+        id->dmabuf_fourcc = clientCon->dmabufFourccs[monitor_index];
+        id->dmabuf_size = clientCon->dmabufSizes[monitor_index];
+    }
+    else
+    {
+        id->dmabuf_fd = -1;
+        id->dmabuf_width = 0;
+        id->dmabuf_height = 0;
+        id->dmabuf_stride = 0;
+        id->dmabuf_fourcc = 0;
+        id->dmabuf_size = 0;
+    }
 }
 
 /******************************************************************************/

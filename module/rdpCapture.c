@@ -793,6 +793,14 @@ isShmStatusActive(enum shared_memory_status status) {
 }
 
 /******************************************************************************/
+static Bool
+rdpClientConDmabufCaptureActive(rdpClientCon *clientCon, int monitor_index)
+{
+    return (monitor_index >= 0 && monitor_index < 16 &&
+            clientCon->dmabufPixmaps[monitor_index] != NULL);
+}
+
+/******************************************************************************/
 /* copy rects with no error checking */
 static uint64_t
 wyhash_rfx_tile(const uint8_t *src, int src_stride, int x, int y, uint64_t seed)
@@ -1278,26 +1286,6 @@ rdpCaptureSufA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
         return FALSE;
     }
 
-    monitor_index = (id->flags >> 28) & 0xF;
-    if (clientCon->accelAssistPixmaps[monitor_index] != NULL)
-    {
-        /* copy vmem to vmem */
-        rv = rdpCopyBoxList(clientCon,
-                            clientCon->accelAssistPixmaps[monitor_index],
-                            *out_rects, *num_out_rects,
-                            0, 0, id->left, id->top);
-        id->flags |= 1;
-        return rv;
-        /* accel assist will do the rest */
-    }
-    else if (clientCon->dev->glamor || clientCon->dev->nvidia)
-    {
-        /* copy vmem to smem */
-        rv = rdpCopyBoxList(clientCon, clientCon->dev->screenSwPixmap,
-                            *out_rects, *num_out_rects,
-                            0, 0, id->left, id->top);
-    }
-
     *num_out_rects = num_rects;
 
     *out_rects = g_new(BoxRec, num_rects * 4);
@@ -1315,6 +1303,49 @@ rdpCaptureSufA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             rect.x2, rect.y2);
         (*out_rects)[index] = rect;
         index++;
+    }
+
+    monitor_index = (id->flags >> 28) & 0xF;
+    if (rdpClientConDmabufCaptureActive(clientCon, monitor_index))
+    {
+        rv = rdpCopyBoxList(clientCon,
+                            clientCon->dmabufPixmaps[monitor_index],
+                            *out_rects, *num_out_rects,
+                            0, 0, id->left, id->top);
+        if (rv && id->dmabuf_fd < 0)
+        {
+            LOG(LOG_LEVEL_ERROR,
+                "rdpCaptureSufA2: missing dma-buf fd for monitor %d",
+                monitor_index);
+            rv = FALSE;
+        }
+        if (rv)
+        {
+            id->flags |= XRDP_ENC_SOURCE_DMABUF;
+            id->shmem_fd = -1;
+            id->shmem_bytes = 0;
+            id->shmem_offset = 0;
+        }
+        glamor_finish(clientCon->dev->pScreen);
+        return rv;
+    }
+    if (clientCon->accelAssistPixmaps[monitor_index] != NULL)
+    {
+        /* copy vmem to vmem */
+        rv = rdpCopyBoxList(clientCon,
+                            clientCon->accelAssistPixmaps[monitor_index],
+                            *out_rects, *num_out_rects,
+                            0, 0, id->left, id->top);
+        id->flags |= 1;
+        return rv;
+        /* accel assist will do the rest */
+    }
+    else if (clientCon->dev->glamor || clientCon->dev->nvidia)
+    {
+        /* copy vmem to smem */
+        rv = rdpCopyBoxList(clientCon, clientCon->dev->screenSwPixmap,
+                            *out_rects, *num_out_rects,
+                            0, 0, id->left, id->top);
     }
 
     src = id->pixels;
@@ -1416,6 +1447,29 @@ rdpCaptureGfxA2(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
     }
     rv = TRUE;
     monitor_index = (id->flags >> 28) & 0xF;
+    if (rdpClientConDmabufCaptureActive(clientCon, monitor_index))
+    {
+        rv = rdpCopyBoxList(clientCon,
+                            clientCon->dmabufPixmaps[monitor_index],
+                            *out_rects, num_rects,
+                            -id->left, -id->top, 0, 0);
+        if (rv && id->dmabuf_fd < 0)
+        {
+            LOG(LOG_LEVEL_ERROR,
+                "rdpCaptureGfxA2: missing dma-buf fd for monitor %d",
+                monitor_index);
+            rv = FALSE;
+        }
+        if (rv)
+        {
+            id->flags |= XRDP_ENC_SOURCE_DMABUF;
+            id->shmem_fd = -1;
+            id->shmem_bytes = 0;
+            id->shmem_offset = 0;
+        }
+        glamor_finish(clientCon->dev->pScreen);
+        return rv;
+    }
     if (clientCon->accelAssistPixmaps[monitor_index] != NULL)
     {
         LOG(LOG_LEVEL_TRACE,
