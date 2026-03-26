@@ -34,6 +34,10 @@ extern _X_EXPORT Bool
 rdpRRSetConfig(ScreenPtr pScreen, Rotation rotateKind, int rate,
                RRScreenSizePtr pSize);
 extern _X_EXPORT Bool
+rdpRRScreenDestroyBacking(ScreenPtr pScreen);
+extern _X_EXPORT Bool
+rdpRRScreenCreateBacking(ScreenPtr pScreen);
+extern _X_EXPORT Bool
 rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
                    CARD32 mmWidth, CARD32 mmHeight);
 extern _X_EXPORT Bool
