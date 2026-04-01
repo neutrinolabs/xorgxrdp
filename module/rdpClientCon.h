@@ -30,6 +30,10 @@ Client connection to xrdp
 
 #include "xup_client_info.h"
 
+#define XRDP_SCREEN_SLEEP_MODE_LAST 0
+#define XRDP_SCREEN_SLEEP_MODE_BLACK 1
+#define XRDP_SCREEN_SLEEP_MODE_REFRESH 2
+
 /* used in rdpGlyphs.c */
 struct font_cache
 {
@@ -155,6 +159,14 @@ extern _X_EXPORT int
 rdpClientConInit(rdpPtr dev);
 extern _X_EXPORT int
 rdpClientConDeinit(rdpPtr dev);
+extern _X_EXPORT int
+rdpScreenSleepWake(rdpPtr dev, const char *reason);
+extern _X_EXPORT int
+rdpScreenSleepBlockUpdates(rdpPtr dev);
+extern _X_EXPORT int
+rdpScreenSleepBlockDraws(rdpPtr dev);
+extern _X_EXPORT int
+rdpScreenSleepActivity(rdpPtr dev, CARD32 now);
 
 extern _X_EXPORT int
 rdpClientConDeleteOsSurface(rdpPtr dev, rdpClientCon *clientCon, int rdpindex);

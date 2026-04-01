@@ -75,6 +75,10 @@ rdpComposite(CARD8 op, PicturePtr pSrc, PicturePtr pMask, PicturePtr pDst,
     LOG(LOG_LEVEL_TRACE, "rdpComposite:");
     pScreen = pDst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
+    if (rdpScreenSleepBlockDraws(dev))
+    {
+        return;
+    }
     dev->counts.rdpCompositeCallCount++;
     box.x1 = xDst + pDst->pDrawable->x;
     box.y1 = yDst + pDst->pDrawable->y;

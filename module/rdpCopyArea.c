@@ -70,6 +70,10 @@ rdpCopyArea(DrawablePtr pSrc, DrawablePtr pDst, GCPtr pGC,
 
     LOG(LOG_LEVEL_TRACE, "rdpCopyArea:");
     dev = rdpGetDevFromScreen(pGC->pScreen);
+    if (rdpScreenSleepBlockDraws(dev))
+    {
+        return NULL;
+    }
     dev->counts.rdpCopyAreaCallCount++;
     box.x1 = dstx + pDst->x;
     box.y1 = dsty + pDst->y;

@@ -327,6 +327,17 @@ struct _rdpRec
     /* egl */
     void *egl;
     DamagePtr damage;
+    int screen_sleep_mode;
+    int screen_sleep_active;
+    int screen_sleep_time_ms;
+    int screen_sleep_refresh_interval_ms;
+    int screen_sleep_overlay_pending;
+    OsTimerPtr screen_sleep_enter_timer;
+    OsTimerPtr screen_sleep_refresh_timer;
+    OsTimerPtr screen_sleep_resume_timer;
+    int screen_sleep_refresh_pending;
+    CARD32 screen_sleep_start_time_ms;
+    CARD32 last_wakeup_refresh_time_ms;
 };
 typedef struct _rdpRec rdpRec;
 typedef struct _rdpRec * rdpPtr;
