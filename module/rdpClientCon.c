@@ -268,6 +268,20 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
     }
 #endif
 
+    /* reset disconnectTimer if reconnection */
+    if (dev->disconnect_scheduled)
+    {
+        if (dev->disconnectTimer != NULL)
+        {
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConGotConnection: disengaging disconnect timer");
+            TimerCancel(dev->disconnectTimer);
+            TimerFree(dev->disconnectTimer);
+            dev->disconnectTimer = NULL;
+        }
+        dev->disconnect_scheduled = FALSE;
+    }
+
     /* set idle timer to disconnect */
     if (dev->idle_disconnect_timeout_s > 0)
     {
@@ -296,38 +310,16 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
 static CARD32
 rdpDeferredDisconnectCallback(OsTimerPtr timer, CARD32 now, pointer arg)
 {
-    rdpPtr dev;
+    (void) timer;
+    (void) now;
+    (void) arg;
 
-    dev = (rdpPtr) arg;
-    LOG(LOG_LEVEL_TRACE, "rdpDeferredDisconnectCallback");
-    if (dev->clientConHead != NULL)
-    {
-        /* this should not happen */
-        LOG(LOG_LEVEL_INFO, "rdpDeferredDisconnectCallback: connected");
-        if (dev->disconnectTimer != NULL)
-        {
-            LOG(LOG_LEVEL_INFO,
-                "rdpDeferredDisconnectCallback: disengaging disconnect timer");
-            TimerCancel(dev->disconnectTimer);
-            TimerFree(dev->disconnectTimer);
-            dev->disconnectTimer = NULL;
-        }
-        dev->disconnect_scheduled = FALSE;
-        return 0;
-    }
-    else
-    {
-        LOG(LOG_LEVEL_TRACE, "rdpDeferredDisconnectCallback: not connected");
-    }
-    if (now - dev->disconnect_time_ms > dev->disconnect_timeout_s * 1000)
-    {
-        LOG(LOG_LEVEL_INFO, "rdpDeferredDisconnectCallback: "
-            "disconnect timeout exceeded, exiting");
-        kill(getpid(), SIGTERM);
-        return 0;
-    }
-    dev->disconnectTimer = TimerSet(dev->disconnectTimer, 0, 1000 * 10,
-                                    rdpDeferredDisconnectCallback, dev);
+    /* time's up, kill the session */
+    LOG(LOG_LEVEL_INFO,
+        "rdpDeferredDisconnectCallback: disconnect timeout exceeded, exiting");
+    kill(getpid(), SIGTERM);
+
+    /* not reached */
     return 0;
 }
 
@@ -449,20 +441,6 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
         dev->idleDisconnectTimer = NULL;
     }
 
-    if (dev->do_kill_disconnected)
-    {
-        if (dev->disconnect_scheduled == FALSE)
-        {
-            LOG(LOG_LEVEL_INFO, "rdpClientConDisconnect: "
-                "engaging disconnect timer, "
-                "exit after %d seconds", dev->disconnect_timeout_s);
-            dev->disconnectTimer = TimerSet(dev->disconnectTimer, 0, 1000 * 10,
-                                            rdpDeferredDisconnectCallback, dev);
-            dev->disconnect_scheduled = TRUE;
-        }
-        dev->disconnect_time_ms = GetTimeInMillis();
-    }
-
     rdpClientConRemoveEnabledDevice(clientCon->sck);
     g_sck_close(clientCon->sck);
     if (clientCon->maxOsBitmaps > 0)
@@ -502,6 +480,29 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
         rdpShutdownAccelAssist(dev, clientCon);
     }
     free(clientCon);
+
+    /* kill session after disconnect ? */
+    if (dev->do_kill_disconnected)
+    {
+        /* kill immediate or after timeout? */
+        if (dev->disconnect_timeout_s == 0)
+        {
+            LOG(LOG_LEVEL_INFO,
+                "rdpClientConDisconnect: disconnected, immediate session kill");
+            kill(getpid(), SIGTERM);
+        }
+        else if (dev->disconnect_scheduled == FALSE)
+        {
+            LOG(LOG_LEVEL_INFO, "rdpClientConDisconnect: "
+                "engaging disconnect timer, exit after %d seconds",
+                dev->disconnect_timeout_s);
+            dev->disconnectTimer = TimerSet(dev->disconnectTimer, 0,
+                                            dev->disconnect_timeout_s * 1000,
+                                            rdpDeferredDisconnectCallback, dev);
+            dev->disconnect_scheduled = TRUE;
+        }
+    }
+
     return 0;
 }
 
@@ -1953,15 +1954,6 @@ rdpClientConInit(rdpPtr dev)
         dev->idle_disconnect_timeout_s);
 
     /* kill disconnected */
-    ptext = getenv("XRDP_SESMAN_MAX_DISC_TIME");
-    if (ptext != 0)
-    {
-        i = atoi(ptext);
-        if (i > 0)
-        {
-            dev->disconnect_timeout_s = atoi(ptext);
-        }
-    }
     ptext = getenv("XRDP_SESMAN_KILL_DISCONNECTED");
     if (ptext != 0)
     {
@@ -1976,9 +1968,15 @@ rdpClientConInit(rdpPtr dev)
         }
     }
 
-    if (dev->do_kill_disconnected && (dev->disconnect_timeout_s < 60))
+    /* kill timeout (0 == immediate kill) */
+    ptext = getenv("XRDP_SESMAN_MAX_DISC_TIME");
+    if (ptext != 0)
     {
-        dev->disconnect_timeout_s = 60;
+        i = atoi(ptext);
+        if (i >= 0)
+        {
+            dev->disconnect_timeout_s = i;
+        }
     }
 
     LOG(LOG_LEVEL_INFO,
