@@ -117,3 +117,38 @@ jobs:
       - run: ./configure $CONF_FLAGS
       - run: make CFLAGS="$CFLAGS -O2 -Wall -Wwrite-strings -Werror"
       - run: make check
+
+  build_on_freebsd:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        freebsd-version: ["15.0", "14.4"]
+        xorg-server: ["xorg-server"]
+    name: FreeBSD ${{ matrix.freebsd-version }} Build (${{ matrix.xorg-server }})
+    env:
+      CPPFLAGS: "-I/usr/local/include"
+      LDFLAGS: "-L/usr/local/lib "
+      BUILD_TOOLS: "git autoconf automake libtool pkgconf"
+      BUILD_DEPS: "nasm"
+      TEST_DEPS: "xdpyinfo"
+      XRDP_REPO: "https://github.com/neutrinolabs/xrdp"
+      XORG_SERVER: ${{ matrix.xorg-server }}
+    steps:
+    - name: checkout sources
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
+    - name: Build xorgxrdp
+      uses: vmactions/freebsd-vm@v1
+      with:
+        release: ${{ matrix.freebsd-version }}
+        envs: 'CPPFLAGS LDFLAGS BUILD_TOOLS BUILD_DEPS TEST_DEPS XRDP_REPO XORG_SERVER'
+        prepare: |
+          pkg install -y $BUILD_TOOLS $BUILD_DEPS $TEST_DEPS $XORG_SERVER
+          git clone --depth 1 $XRDP_REPO
+        run: |
+          ./bootstrap
+          ./configure --localstatedir=/var --enable-strict-locations --enable-glamor XRDP_CFLAGS=-I`pwd`/xrdp/common
+          make -j $(nproc || echo 4)
+          make check
