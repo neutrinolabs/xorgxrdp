@@ -124,7 +124,7 @@ jobs:
       fail-fast: false
       matrix:
         freebsd-version: ["15.0", "14.4"]
-        xorg-server: ["xorg-server"]
+        xorg-server: ["xorg-server", "xlibre-server"]
     name: FreeBSD ${{ matrix.freebsd-version }} Build (${{ matrix.xorg-server }})
     env:
       CPPFLAGS: "-I/usr/local/include"
