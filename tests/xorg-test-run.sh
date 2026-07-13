@@ -71,7 +71,7 @@ if test -u $XORG_FULL; then
 fi
 
 # Find Xorg module path
-moduledir=`$XORG -showDefaultModulePath 2>&1`
+moduledir=`pkg-config --variable moduledir xorg-server`
 echo "Module directory: $moduledir"
 
 # Building the module path to include compiled modules
@@ -91,7 +91,7 @@ $XORG \
   -modulepath $moduledir \
   -config $top_srcdir/xrdpdev/xorg.conf \
   -logfile $XORG_LOG \
-  -novtswitch -sharevts -once -terminate -ac \
+  -novtswitch -sharevts -terminate -ac \
   $TEST_DISPLAY $XORG_ARGS >$XORG_OUT 2>$XORG_ERR </dev/null &
 
 # Record Xorg PID so it can be killed

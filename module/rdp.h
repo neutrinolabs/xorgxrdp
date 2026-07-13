@@ -95,6 +95,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RegionUnionRect DONOTUSE
 #endif
 
+/* NullClient is removed in Xlibre */
+#ifndef NullClient
+#define NullClient ((ClientPtr) 0)
+#endif
+
 struct image_data
 {
     int left;
