@@ -164,7 +164,7 @@ rdpScreenSleepQueueFullRefresh(rdpPtr dev);
 static int
 rdpScreenSleepSendSolid(rdpPtr dev, rdpClientCon *clientCon);
 static int
-rdpScreenSleepForceCaptureStateReset(rdpPtr dev);
+rdpScreenSleepRefreshFramebuffer(rdpPtr dev);
 static const char *
 rdpScreenSleepModeToText(int mode);
 
@@ -222,15 +222,28 @@ parse_screen_sleep_mode(const char *value, int *mode, int *refresh_ms)
         return 0;
     }
 
-    if (strncasecmp(value, "refresh:", 8) == 0)
+    if (strncasecmp(value, "refresh", 7) == 0)
     {
-        errno = 0;
-        refresh_minutes = strtol(value + 8, &endptr, 10);
-        if (errno != 0 || endptr == value + 8 || *endptr != '\0')
+        if (value[7] == ':')
         {
-            return 1;
+            errno = 0;
+            refresh_minutes = strtol(value + 8, &endptr, 10);
+            if (errno != 0 || endptr == value + 8 || *endptr != '\0')
+            {
+                return 1;
+            }
+            if (refresh_minutes < 1 || refresh_minutes > 10080)
+            {
+                /* invalid or zero: default to 5 minutes */
+                refresh_minutes = 5;
+            }
         }
-        if (refresh_minutes < 1 || refresh_minutes > 10080)
+        else if (value[7] == '\0')
+        {
+            /* bare "refresh" - default 5 minutes */
+            refresh_minutes = 5;
+        }
+        else
         {
             return 1;
         }
@@ -365,47 +378,60 @@ rdpScreenSleepScheduleForcedUpdateAll(rdpPtr dev, CARD32 delay_ms)
 }
 
 /*
- * Force the original capture pipeline to rebuild itself by toggling the
- * capture code through a different path and then restoring the original mode.
- * This reuses the existing resize/reconfigure flow which resets shm/capture
- * state and has proven to be the reliable black-screen wake-up path.
+ * Temporarily resize the screen by +/-1 pixel to trigger RRScreenSizeSet.
+ * RRScreenSizeSet broadcasts ConfigureNotify to all top-level windows,
+ * causing every application to redraw itself. This forces the framebuffer
+ * to be repopulated with the latest application content after wake.
+ *
+ * The +/-1 is imperceptible to the user and the resize is immediately
+ * restored. The framebuffer memory is reallocated on each call; any
+ * unredrawn areas appear as black and are filled as applications
+ * process the ConfigureNotify asynchronously.
  */
 static int
-rdpScreenSleepForceCaptureStateReset(rdpPtr dev)
+rdpScreenSleepRefreshFramebuffer(rdpPtr dev)
 {
-    rdpClientCon *clientCon;
-    int original_capture_code;
-    int alternate_capture_code;
+    ScrnInfoPtr pScrn;
+    int orig_width;
+    int orig_height;
 
-    clientCon = dev->clientConHead;
-    while (clientCon != NULL)
+    if (dev->pScreen == NULL)
     {
-        if (clientCon->client_info.display_sizes.session_width > 0 &&
-                clientCon->client_info.display_sizes.session_height > 0)
-        {
-            original_capture_code = clientCon->client_info.capture_code;
-            switch (original_capture_code)
-            {
-                case CC_SUF_RFX:
-                case CC_GFX_PRO:
-                    alternate_capture_code = CC_SUF_A2;
-                    break;
-                case CC_SUF_A2:
-                case CC_GFX_A2:
-                    alternate_capture_code = CC_SUF_RFX;
-                    break;
-                default:
-                    alternate_capture_code = CC_SUF_RFX;
-                    break;
-            }
-
-            clientCon->client_info.capture_code = alternate_capture_code;
-            rdpClientConResizeAllMemoryAreas(dev, clientCon);
-            clientCon->client_info.capture_code = original_capture_code;
-            rdpClientConResizeAllMemoryAreas(dev, clientCon);
-        }
-        clientCon = clientCon->next;
+        return 0;
     }
+
+    pScrn = xf86Screens[dev->pScreen->myNum];
+    orig_width = dev->width;
+    orig_height = dev->height;
+
+    if (orig_width <= 1 || orig_height <= 1)
+    {
+        return 0;
+    }
+
+    dev->allow_screen_resize = 1;
+
+    /* Step 1: shrink by 1 pixel -- triggers ConfigureNotify -> redraw */
+    RRScreenSizeSet(dev->pScreen,
+                    orig_width - 1, orig_height - 1,
+                    PixelToMM(orig_width - 1, pScrn->xDpi),
+                    PixelToMM(orig_height - 1, pScrn->yDpi));
+
+    /* Step 2: restore original size -- triggers second ConfigureNotify -> redraw */
+    RRScreenSizeSet(dev->pScreen,
+                    orig_width, orig_height,
+                    PixelToMM(orig_width, pScrn->xDpi),
+                    PixelToMM(orig_height, pScrn->yDpi));
+
+    dev->allow_screen_resize = 0;
+
+    LOG(LOG_LEVEL_INFO,
+        "rdpScreenSleepRefreshFramebuffer: [Session %s] "
+        "framebuffer refresh via resize %dx%d -> %dx%d -> %dx%d",
+        dev->uds_data,
+        orig_width, orig_height,
+        orig_width - 1, orig_height - 1,
+        orig_width, orig_height);
 
     return 0;
 }
@@ -650,10 +676,7 @@ rdpScreenSleepWake(rdpPtr dev, const char *reason)
     rdpScreenSleepStopRefreshTimer(dev);
     rdpScreenSleepStopResumeTimer(dev);
 
-    if (dev->screen_sleep_mode == XRDP_SCREEN_SLEEP_MODE_BLACK)
-    {
-        rdpScreenSleepForceCaptureStateReset(dev);
-    }
+    rdpScreenSleepRefreshFramebuffer(dev);
 
     LOG(LOG_LEVEL_INFO,
         "rdpScreenSleepWake: [Session %s] waking after %u min %u sec, reason=%s",
