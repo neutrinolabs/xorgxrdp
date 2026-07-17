@@ -109,7 +109,6 @@ rdpRRSetPixmapVisitWindow(WindowPtr window, void *data)
 }
 #endif
 
-/******************************************************************************/
 Bool
 rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
                    CARD32 mmWidth, CARD32 mmHeight)
@@ -610,4 +609,3 @@ rdpRRSetRdpOutputs(rdpPtr dev)
     }
     return rv;
 }
-
