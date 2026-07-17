@@ -3885,13 +3885,12 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     LOG(LOG_LEVEL_TRACE, "rdpDeferredUpdateCallback:");
     clientCon->updateScheduled = FALSE;
     if (clientCon->dev->screen_sleep_active &&
-            clientCon->dev->screen_sleep_overlay_pending)
+            clientCon->dev->screen_sleep_overlay_pending > 0)
     {
         if (!clientCon->suppress_output)
         {
             rdpScreenSleepSendSolid(clientCon->dev, clientCon);
-            clientCon->dev->screen_sleep_overlay_pending--;
-            if (clientCon->dev->screen_sleep_overlay_pending > 0)
+            if (--clientCon->dev->screen_sleep_overlay_pending > 0)
             {
                 rdpScreenSleepScheduleForcedUpdate(clientCon, 50);
             }
