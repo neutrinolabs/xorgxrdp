@@ -28,9 +28,11 @@ dri3
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 /* this should be before all X11 .h files */
 #include <xorg-server.h>
@@ -39,6 +41,7 @@ dri3
 /* all driver need this */
 #include <xf86.h>
 #include <xf86_OSproc.h>
+#include <xf86drm.h>
 
 #include <mipointer.h>
 #include <fb.h>
@@ -89,15 +92,39 @@ static int
 rdpDri3OpenClient(ClientPtr client, ScreenPtr screen,
                   RRProviderPtr provider, int *pfd)
 {
+    ScrnInfoPtr pScrn;
+    rdpPtr dev;
     int fd;
+    drm_magic_t magic;
 
     LOG(LOG_LEVEL_TRACE, "rdpDri3OpenClient:");
+    pScrn = xf86ScreenToScrn(screen);
+    dev = XRDPPTR(pScrn);
     fd = open(g_drm_device, O_RDWR | O_CLOEXEC);
     LOG(LOG_LEVEL_TRACE, "rdpDri3OpenClient: fd %d", fd);
     if (fd < 0)
     {
         return BadAlloc;
     }
+
+    if (drmGetMagic(fd, &magic) < 0)
+    {
+        if (errno == EACCES)
+        {
+            /* Render nodes are already as authenticated as they should be. */
+            *pfd = fd;
+            return Success;
+        }
+        close(fd);
+        return BadMatch;
+    }
+
+    if (drmAuthMagic(dev->fd, magic) < 0)
+    {
+        close(fd);
+        return BadMatch;
+    }
+
     *pfd = fd;
     return Success;
 }

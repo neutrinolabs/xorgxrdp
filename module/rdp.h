@@ -32,6 +32,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <randrstr.h>
 #include <damage.h>
 
+struct gbm_device;
+struct gbm_bo;
+
 #include "rdpPri.h"
 
 #include "xup_client_info.h"
@@ -68,6 +71,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     ((_val) < (_lo) ? (_lo) : (_val) > (_hi) ? (_hi) : (_val))
 #define RDPALIGN(_val, _al) ((((uintptr_t)(_val)) + ((_al) - 1)) & ~((_al) - 1))
 
+#define XRDP_FB_ALIGN 16
 #define XRDP_RFX_ALIGN 64
 #define XRDP_H264_ALIGN 16
 
@@ -318,9 +322,14 @@ struct _rdpRec
     int monitorCount;
     /* glamor */
     Bool glamor;
+    struct gbm_device *gbm;
+    struct gbm_bo *gbm_bo;
+    /* nvidia grid */
     Bool nvidia;
     Bool nvidia_grid;
+    /* Bounce buffer for GPU */
     PixmapPtr screenSwPixmap;
+    /* xv */
     void *xvPutImage;
     /* dri */
     int fd;

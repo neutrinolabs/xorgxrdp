@@ -50,6 +50,7 @@ RandR draw calls
 
 #if defined(XORGXRDP_GLAMOR)
 #include <glamor.h>
+#include <gbm.h>
 #endif
 
 static int g_panning = 0;
@@ -91,23 +92,134 @@ rdpRRGetInfo(ScreenPtr pScreen, Rotation *pRotations)
     return TRUE;
 }
 
-#if defined(XORGXRDP_GLAMOR)
-/*****************************************************************************/
-static int
-rdpRRSetPixmapVisitWindow(WindowPtr window, void *data)
+Bool
+rdpRRScreenDestroyBacking(ScreenPtr pScreen)
 {
-    ScreenPtr screen;
+    rdpPtr dev;
 
-    LOG(LOG_LEVEL_TRACE, "rdpRRSetPixmapVisitWindow:");
-    screen = window->drawable.pScreen;
-    if (screen->GetWindowPixmap(window) == data)
+    LOG(LOG_LEVEL_TRACE, "rdpRRScreenDestroyBacking:");
+    dev = rdpGetDevFromScreen(pScreen);
+    if (dev->pfbMemory_alloc != NULL)
     {
-        screen->SetWindowPixmap(window, screen->GetScreenPixmap(screen));
-        return WT_WALKCHILDREN;
+        free(dev->pfbMemory_alloc);
+        dev->pfbMemory_alloc = NULL;
+        dev->pfbMemory = NULL;
     }
-    return WT_DONTWALKCHILDREN;
-}
+
+    if (dev->glamor)
+    {
+#if defined(XORGXRDP_GLAMOR)
+        if (dev->screenSwPixmap)
+        {
+            pScreen->DestroyPixmap(dev->screenSwPixmap);
+            dev->screenSwPixmap = NULL;
+        }
+        if (dev->gbm_bo)
+        {
+            gbm_bo_destroy(dev->gbm_bo);
+            dev->gbm_bo = NULL;
+        }
 #endif
+    }
+    return TRUE;
+}
+
+Bool
+rdpRRScreenCreateBacking(ScreenPtr pScreen)
+{
+    PixmapPtr screenPixmap;
+    rdpPtr dev;
+    void *old_fbMemory_alloc;
+
+    LOG(LOG_LEVEL_TRACE, "rdpRRAllocatePixmaps:");
+
+    dev = rdpGetDevFromScreen(pScreen);
+    screenPixmap = pScreen->GetScreenPixmap(pScreen);
+    if (screenPixmap == NULL)
+    {
+        LOG(LOG_LEVEL_ERROR, "rdpRRScreenCreateBacking: GetScreenPixmap failed");
+        return FALSE;
+    }
+
+    /* Only create software pixmap if glamor is enabled and not already created */
+    if (dev->glamor && dev->screenSwPixmap == NULL)
+    {
+        dev->screenSwPixmap = pScreen->CreatePixmap(pScreen,
+                                                    0, 0,
+                                                    pScreen->rootDepth, 0);
+        if (dev->screenSwPixmap == NULL)
+        {
+            LOG(LOG_LEVEL_ERROR, "rdpRRScreenCreateBacking: CreatePixmap failed");
+            return FALSE;
+        }
+    }
+
+    /* Now let's allocate framebuffers for CPU access */
+    old_fbMemory_alloc = dev->pfbMemory_alloc;
+    dev->pfbMemory_alloc = g_new0(uint8_t, dev->sizeInBytes + XRDP_FB_ALIGN);
+    dev->pfbMemory = (uint8_t *) RDPALIGN(dev->pfbMemory_alloc, XRDP_FB_ALIGN);
+
+    /* Update screen pixmap header, only include pixels if no screenSwPixmap */
+    if (!pScreen->ModifyPixmapHeader(screenPixmap, dev->width, dev->height,
+                                        dev->depth, dev->bitsPerPixel,
+                                        dev->paddedWidthInBytes,
+                                        (dev->screenSwPixmap == NULL) ? dev->pfbMemory : NULL))
+    {
+        LOG(LOG_LEVEL_ERROR, "rdpRRScreenCreateBacking: ModifyPixmapHeader failed");
+        return FALSE;
+    }
+
+    if (dev->screenSwPixmap != NULL)
+    {
+        if (!pScreen->ModifyPixmapHeader(dev->screenSwPixmap, dev->width,
+                                        dev->height, dev->depth, dev->bitsPerPixel,
+                                        dev->paddedWidthInBytes, dev->pfbMemory))
+        {
+            LOG(LOG_LEVEL_ERROR, "rdpRRScreenCreateBacking: ModifyPixmapHeader for screenSwPixmap failed");
+            return FALSE;
+        }
+    }
+
+    /* Free old framebuffer memory only after new pixmap created */
+    if (old_fbMemory_alloc != NULL)
+    {
+        free(old_fbMemory_alloc);
+    }
+
+#if defined(XORGXRDP_GLAMOR)
+    if (dev->glamor)
+    {
+        struct gbm_bo *bo;
+
+        bo = gbm_bo_create(dev->gbm, dev->width, dev->height,
+                                   GBM_FORMAT_XRGB8888,
+                                   GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+        if (bo == NULL)
+        {
+            LOG(LOG_LEVEL_ERROR, "rdpRRScreenCreateBacking: gbm_bo_create failed");
+            return FALSE;
+        }
+
+        /* gbm_bo_create() does not allocate the BO with explicit modifiers. */
+        if (!glamor_egl_create_textured_pixmap_from_gbm_bo(screenPixmap, bo,
+                                                           FALSE))
+        {
+            LOG(LOG_LEVEL_ERROR, "rdpRRScreenCreateBacking: glamor_egl_create_textured_pixmap_from_gbm_bo failed");
+            gbm_bo_destroy(bo);
+            return FALSE;
+        }
+
+        /* Destory old bo */
+        if (dev->gbm_bo)
+        {
+            gbm_bo_destroy(dev->gbm_bo);
+        }
+        dev->gbm_bo = bo;
+    }
+#endif
+
+    return TRUE;
+}
 
 /******************************************************************************/
 Bool
@@ -115,7 +227,6 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
                    CARD32 mmWidth, CARD32 mmHeight)
 {
     WindowPtr root;
-    PixmapPtr screenPixmap;
     BoxRec box;
     rdpPtr dev;
 
@@ -148,40 +259,7 @@ rdpRRScreenSetSize(ScreenPtr pScreen, CARD16 width, CARD16 height,
     pScreen->mmHeight = mmHeight;
     dev->paddedWidthInBytes = PixmapBytePad(dev->width, dev->depth);
     dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
-    screenPixmap = dev->screenSwPixmap;
-    free(dev->pfbMemory_alloc);
-    dev->pfbMemory_alloc = g_new0(uint8_t, dev->sizeInBytes + 16);
-    dev->pfbMemory = (uint8_t *) RDPALIGN(dev->pfbMemory_alloc, 16);
-    pScreen->ModifyPixmapHeader(screenPixmap, width, height,
-                                -1, -1,
-                                dev->paddedWidthInBytes,
-                                dev->pfbMemory);
-    if (dev->glamor)
-    {
-#if defined(XORGXRDP_GLAMOR)
-        PixmapPtr old_screen_pixmap;
-        uint32_t screen_tex;
-        old_screen_pixmap = pScreen->GetScreenPixmap(pScreen);
-        screenPixmap = pScreen->CreatePixmap(pScreen,
-                                             pScreen->width,
-                                             pScreen->height,
-                                             pScreen->rootDepth,
-                                             GLAMOR_CREATE_NO_LARGE);
-        if (screenPixmap == NULL)
-        {
-            return FALSE;
-        }
-        screen_tex = glamor_get_pixmap_texture(screenPixmap);
-        LOG(LOG_LEVEL_INFO,
-            "rdpRRScreenSetSize: screen_tex 0x%8.8x", screen_tex);
-        pScreen->SetScreenPixmap(screenPixmap);
-        if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
-        {
-            TraverseTree(pScreen->root, rdpRRSetPixmapVisitWindow, old_screen_pixmap);
-        }
-        pScreen->DestroyPixmap(old_screen_pixmap);
-#endif
-    }
+    rdpRRScreenCreateBacking(pScreen);
     box.x1 = 0;
     box.y1 = 0;
     box.x2 = width;
@@ -610,4 +688,3 @@ rdpRRSetRdpOutputs(rdpPtr dev)
     }
     return rv;
 }
-
