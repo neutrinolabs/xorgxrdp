@@ -66,9 +66,8 @@ This is the main driver file
 #include "xrdpdri2.h"
 #include "xrdpdri3.h"
 #include "rdpEgl.h"
-#include <drm.h>
+#include <xf86drm.h>
 #include <glamor.h>
-#include <sys/ioctl.h>
 /* use environment variable XORGXRDP_DRM_DEVICE to override
  * also read from xorg.conf file */
 char g_drm_device[128] = "/dev/dri/renderD128";
@@ -169,34 +168,34 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
         strncpy(g_drm_device, getenv("XORGXRDP_DRM_DEVICE"), 127);
         g_drm_device[127] = 0;
     }
-    dev->fd = open(g_drm_device, O_RDWR, 0);
+    dev->fd = open(g_drm_device, O_RDWR | O_CLOEXEC, 0);
     if (dev->fd == -1)
     {
         LOG(LOG_LEVEL_INFO, "rdpPreInit: %s open failed", g_drm_device);
     }
     else
     {
-        struct drm_version dver;
+        drmVersionPtr dver;
         char delim[] = " ";
         char *token;
+        const char *drm_name;
+        const char *drm_date;
+        const char *drm_desc;
         LOG(LOG_LEVEL_INFO, "rdpPreInit: %s open ok, fd %d", g_drm_device, dev->fd);
-        memset(&dver, 0, sizeof(dver));
-        dver.name_len = 256;
-        dver.name = g_new0(char, dver.name_len);
-        dver.date_len = 256;
-        dver.date = g_new0(char, dver.date_len);
-        dver.desc_len = 256;
-        dver.desc = g_new0(char, dver.desc_len);
-        if (ioctl(dev->fd, DRM_IOCTL_VERSION, &dver) != -1)
+        dver = drmGetVersion(dev->fd);
+        if (dver != NULL)
         {
-            LOG(LOG_LEVEL_INFO, "rdpPreInit: name [%s]", dver.name);
-            LOG(LOG_LEVEL_INFO, "rdpPreInit: date [%s]", dver.date);
-            LOG(LOG_LEVEL_INFO, "rdpPreInit: desc [%s]", dver.desc);
+            drm_name = (dver->name != NULL) ? dver->name : "";
+            drm_date = (dver->date != NULL) ? dver->date : "";
+            drm_desc = (dver->desc != NULL) ? dver->desc : "";
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: name [%s]", drm_name);
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: date [%s]", drm_date);
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: desc [%s]", drm_desc);
             token = strtok(g_drm_allow_list, delim);
             while (token != NULL)
             {
                 LOG(LOG_LEVEL_TRACE, "rdpPreInit: token [%s]", token);
-                if (strstr(dver.name, token) != NULL)
+                if (strstr(drm_name, token) != NULL)
                 {
                     dev->glamor = TRUE;
                     LOG(LOG_LEVEL_INFO, "rdpPreInit: drm device looks ok, "
@@ -212,11 +211,12 @@ rdpPreInit(ScrnInfoPtr pScrn, int flags)
         }
         else
         {
-            LOG(LOG_LEVEL_INFO, "rdpPreInit: DRM_IOCTL_VERSION failed");
+            LOG(LOG_LEVEL_INFO, "rdpPreInit: drmGetVersion failed");
         }
-        free(dver.name);
-        free(dver.date);
-        free(dver.desc);
+        if (dver != NULL)
+        {
+            drmFreeVersion(dver);
+        }
     }
 #endif
 
@@ -547,30 +547,13 @@ rdpWakeupHandler1(void *blockData, int result)
     rdpClientConCheck((ScreenPtr)blockData);
 }
 
-#if defined(XORGXRDP_GLAMOR)
-/*****************************************************************************/
-static int
-rdpSetPixmapVisitWindow(WindowPtr window, void *data)
-{
-    ScreenPtr screen;
-
-    LOG(LOG_LEVEL_TRACE, "rdpSetPixmapVisitWindow:");
-    screen = window->drawable.pScreen;
-    if (screen->GetWindowPixmap(window) == data)
-    {
-        screen->SetWindowPixmap(window, screen->GetScreenPixmap(screen));
-        return WT_WALKCHILDREN;
-    }
-    return WT_DONTWALKCHILDREN;
-}
-#endif
-
 /*****************************************************************************/
 static Bool
 rdpCreateScreenResources(ScreenPtr pScreen)
 {
     Bool ret;
     rdpPtr dev;
+    PixmapPtr screenPixmap;
 
     LOG(LOG_LEVEL_TRACE, "rdpCreateScreenResources:");
     dev = rdpGetDevFromScreen(pScreen);
@@ -581,35 +564,18 @@ rdpCreateScreenResources(ScreenPtr pScreen)
     {
         return FALSE;
     }
-    dev->screenSwPixmap = pScreen->GetScreenPixmap(pScreen);
-    if (dev->glamor)
+
+    if (!rdpRRScreenCreateBacking(pScreen))
     {
-#if defined(XORGXRDP_GLAMOR)
-        PixmapPtr old_screen_pixmap;
-        PixmapPtr screen_pixmap;
-        uint32_t screen_tex;
-        old_screen_pixmap = dev->screenSwPixmap;
-        LOG(LOG_LEVEL_INFO,
-            "rdpCreateScreenResources: create screen pixmap w %d h %d",
-            pScreen->width, pScreen->height);
-        screen_pixmap = pScreen->CreatePixmap(pScreen,
-                                              pScreen->width,
-                                              pScreen->height,
-                                              pScreen->rootDepth,
-                                              GLAMOR_CREATE_NO_LARGE);
-        if (screen_pixmap == NULL)
-        {
-            return FALSE;
-        }
-        screen_tex = glamor_get_pixmap_texture(screen_pixmap);
-        LOG(LOG_LEVEL_INFO,
-            "rdpCreateScreenResources: screen_tex 0x%8.8x", screen_tex);
-        pScreen->SetScreenPixmap(screen_pixmap);
-        if ((pScreen->root != NULL) && (pScreen->SetWindowPixmap != NULL))
-        {
-            TraverseTree(pScreen->root, rdpSetPixmapVisitWindow, old_screen_pixmap);
-        }
-#endif
+        LOG(LOG_LEVEL_ERROR, "rdpCreateScreenResources: rdpRRScreenCreateBacking failed");
+        return FALSE;
+    }
+
+    screenPixmap = pScreen->GetScreenPixmap(pScreen);
+    if (screenPixmap == NULL)
+    {
+        LOG(LOG_LEVEL_ERROR, "rdpCreateScreenResources: GetScreenPixmap failed");
+        return FALSE;
     }
 
     return TRUE;
@@ -647,10 +613,7 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
     dev->bitsPerPixel = rdpBitsPerPixel(dev->depth);
     dev->sizeInBytes = dev->paddedWidthInBytes * dev->height;
     LOG(LOG_LEVEL_INFO, "rdpScreenInit: pfbMemory bytes %d", dev->sizeInBytes);
-    dev->pfbMemory_alloc = g_new0(uint8_t, dev->sizeInBytes + 16);
-    dev->pfbMemory = (uint8_t *) RDPALIGN(dev->pfbMemory_alloc, 16);
-    LOG(LOG_LEVEL_INFO, "rdpScreenInit: pfbMemory %p", dev->pfbMemory);
-    if (!fbScreenInit(pScreen, dev->pfbMemory,
+    if (!fbScreenInit(pScreen, NULL,
                       pScrn->virtualX, pScrn->virtualY,
                       pScrn->xDpi, pScrn->yDpi, pScrn->displayWidth,
                       pScrn->bitsPerPixel))
@@ -688,6 +651,12 @@ rdpScreenInit(ScreenPtr pScreen, int argc, char **argv)
         if (glamor_init(pScreen, GLAMOR_USE_EGL_SCREEN | GLAMOR_NO_DRI3))
         {
             LOG(LOG_LEVEL_INFO, "rdpScreenInit: glamor_init ok");
+            dev->gbm = glamor_egl_get_gbm_device(pScreen);
+            if (dev->gbm == NULL)
+            {
+                LOG(LOG_LEVEL_INFO, "rdpScreenInit: glamor_egl_get_gbm_device failed");
+                return FALSE;
+            }
         }
         else
         {
