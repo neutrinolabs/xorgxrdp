@@ -51,6 +51,7 @@ xrdp keyboard module
 #include "rdp.h"
 #include "rdpInput.h"
 #include "rdpDraw.h"
+#include "rdpClientCon.h"
 #include "rdpMisc.h"
 #include "rdpMain.h"
 
@@ -226,6 +227,41 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
 }
 
 /******************************************************************************/
+/**
+ * The lock key state the session is actually in, in TS_SYNC_* bits
+ *
+ * Read from the same places KbdSync() compares against when it applies the
+ * state the client reported.
+ */
+static int
+KbdGetLockState(rdpKeyboard *keyboard)
+{
+    int xkb_state;
+    int led_flags;
+
+    led_flags = 0;
+    if (keyboard->device == NULL || keyboard->device->key == NULL ||
+        keyboard->device->key->xkbInfo == NULL)
+    {
+        return 0;
+    }
+    xkb_state = XkbStateFieldFromRec(&(keyboard->device->key->xkbInfo->state));
+    if (xkb_state & LockMask)
+    {
+        led_flags |= TS_SYNC_CAPS_LOCK;
+    }
+    if (xkb_state & Mod2Mask)
+    {
+        led_flags |= TS_SYNC_NUM_LOCK;
+    }
+    if (keyboard->scroll_lock_state)
+    {
+        led_flags |= TS_SYNC_SCROLL_LOCK;
+    }
+    return led_flags;
+}
+
+/******************************************************************************/
 static void
 KbdSync(rdpKeyboard *keyboard, int param1)
 {
@@ -237,10 +273,15 @@ KbdSync(rdpKeyboard *keyboard, int param1)
     {
         /* Save flags to be replayed when device is ready */
         g_deferred_sync_flags = param1;
+        keyboard->last_led_flags = param1 & 0x07;
         return;
     }
 
     g_deferred_sync_flags = param1;
+    /* Whatever the session makes of this, the client already has this
+     * state. Record it as reported so the LED change that follows is not
+     * sent straight back to the client it came from. */
+    keyboard->last_led_flags = param1 & 0x07;
     xkb_state = XkbStateFieldFromRec(&(keyboard->device->key->xkbInfo->state));
 
     /* MS-RDPBCGR 2.2.8.1.1.3.1.1.5: Reset lock keys to UP state */
@@ -280,6 +321,10 @@ KbdSync(rdpKeyboard *keyboard, int param1)
         rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->x11_keycode_scroll_lock);
         keyboard->scroll_lock_state = target;
     }
+
+    /* Again, because the key events queued above may be handled after this
+     * returns rather than inside it. */
+    keyboard->last_led_flags = param1 & 0x07;
 }
 
 /******************************************************************************/
@@ -363,8 +408,39 @@ static void
 rdpkeybChangeKeyboardControl(DeviceIntPtr pDev, KeybdCtrl *ctrl)
 {
     XkbControlsPtr ctrls;
+    rdpPtr dev;
+    rdpKeyboard *keyboard;
+    int led_flags;
 
     LOG(LOG_LEVEL_TRACE, "rdpkeybChangeKeyboardControl:");
+
+    /* The X server calls this whenever keyboard control changes, the lock
+     * key LEDs among them. Anything inside the session can move those - an
+     * application calling XkbLockModifiers, an on screen keyboard, a startup
+     * script - and none of it used to reach the client, whose own lamps then
+     * disagreed with the session for the rest of it. The client cannot find
+     * out by itself: the Synchronize event travels client to server only,
+     * and only when the window takes focus.
+     *
+     * Nothing is reported before the deferred sync has run. Until then the
+     * session is still catching up with the client, and a data PDU sent
+     * while the client is renegotiating makes a strict client hang up. */
+    dev = rdpGetDevFromScreen(NULL);
+    if (g_initial_sync_completed && dev != 0)
+    {
+        keyboard = &(dev->keyboard);
+        led_flags = KbdGetLockState(keyboard);
+        if (led_flags != keyboard->last_led_flags)
+        {
+            keyboard->last_led_flags = led_flags;
+            if (dev->clientConTail != 0)
+            {
+                rdpClientConSetKeyboardIndicators(dev, dev->clientConTail,
+                                                  led_flags);
+            }
+        }
+    }
+
     ctrls = 0;
     if (pDev != 0)
     {

@@ -147,6 +147,9 @@ rdpClientConEndUpdate(rdpPtr dev, rdpClientCon *clientCon);
 extern _X_EXPORT int
 rdpClientConSetFgcolor(rdpPtr dev, rdpClientCon *clientCon, int fgcolor);
 extern _X_EXPORT int
+rdpClientConSetKeyboardIndicators(rdpPtr dev, rdpClientCon *clientCon,
+                                  int led_flags);
+extern _X_EXPORT int
 rdpClientConFillRect(rdpPtr dev, rdpClientCon *clientCon,
                      short x, short y, int cx, int cy);
 extern _X_EXPORT int

@@ -148,6 +148,15 @@ struct _rdpKeyboard
 
     int scroll_lock_down; ///< Whether key is up/down
     int scroll_lock_state; ///< Toggle state
+
+    /**
+     * Lock key state last reported to xrdp, in TS_SYNC_* bits
+     *
+     * Only changes are reported: there is no capability to negotiate for
+     * the PDU that carries them downstream, so a client which does not
+     * implement it logs every one as unhandled.
+     */
+    int last_led_flags;
     DeviceIntPtr device;
 };
 typedef struct _rdpKeyboard rdpKeyboard;

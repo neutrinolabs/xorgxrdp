@@ -2146,6 +2146,42 @@ rdpClientConScreenBlt(rdpPtr dev, rdpClientCon *clientCon,
 }
 
 /******************************************************************************/
+/**
+ * Tell xrdp the session's lock keys changed
+ *
+ * xrdp passes this to the client as a Set Keyboard Indicators PDU
+ * ([MS-RDPBCGR] 2.2.8.2.1.1), so the lamps on the keyboard in front of the
+ * user agree with the session.
+ *
+ * led_flags uses the TS_SYNC_* bits, the same ones the client sends in its
+ * Synchronize event, which KbdSync() already consumes.
+ */
+int
+rdpClientConSetKeyboardIndicators(rdpPtr dev, rdpClientCon *clientCon,
+                                  int led_flags)
+{
+    /* client_info.size stays zero until the client has sent its info for
+     * this connection. Before that the session is still being handed over. */
+    if (clientCon->connected && clientCon->client_info.size > 0)
+    {
+        LOG(LOG_LEVEL_TRACE, "rdpClientConSetKeyboardIndicators: led_flags "
+            "0x%2.2x", led_flags);
+        rdpClientConPreCheck(dev, clientCon, 8);
+        out_uint16_le(clientCon->out_s, 67); /* set keyboard indicators */
+        out_uint16_le(clientCon->out_s, 8);  /* size */
+        clientCon->count++;
+        out_uint16_le(clientCon->out_s, led_flags);
+        out_uint16_le(clientCon->out_s, 0);  /* reserved */
+        /* Nothing else is going to flush this: a lock key press need not
+         * change a single pixel, and then no drawing update follows to
+         * carry the order along. */
+        rdpClientConEndUpdate(dev, clientCon);
+    }
+
+    return 0;
+}
+
+/******************************************************************************/
 int
 rdpClientConSetClip(rdpPtr dev, rdpClientCon *clientCon,
                     short x, short y, int cx, int cy)
