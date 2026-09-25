@@ -111,6 +111,12 @@ struct image_data
     int shmem_bytes;
     int shmem_offset;
     int shmem_lineBytes;
+    int dmabuf_fd;
+    int dmabuf_width;
+    int dmabuf_height;
+    int dmabuf_stride;
+    unsigned int dmabuf_fourcc;
+    int dmabuf_size;
 };
 
 /* defined in rdpClientCon.h */

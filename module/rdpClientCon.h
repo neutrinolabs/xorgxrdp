@@ -116,6 +116,13 @@ struct _rdpClientCon
     enum shared_memory_status shmemstatus;
 
     PixmapPtr accelAssistPixmaps[16];
+    PixmapPtr dmabufPixmaps[16];
+    int dmabufFds[16];
+    int dmabufWidths[16];
+    int dmabufHeights[16];
+    int dmabufStrides[16];
+    unsigned int dmabufFourccs[16];
+    int dmabufSizes[16];
 
     OsTimerPtr updateTimer;
     CARD32 lastUpdateTime; /* millisecond timestamp */
@@ -177,6 +184,7 @@ rdpClientConAddDirtyScreen(rdpPtr dev, rdpClientCon *clientCon,
                            int x, int y, int cx, int cy);
 extern _X_EXPORT void
 rdpClientConGetScreenImageRect(rdpPtr dev, rdpClientCon *clientCon,
+                               int monitor_index,
                                struct image_data *id);
 extern _X_EXPORT int
 rdpClientConAddAllReg(rdpPtr dev, RegionPtr reg, DrawablePtr pDrawable);
