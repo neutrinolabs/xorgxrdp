@@ -36,6 +36,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <xf86_OSproc.h>
 
 #include "rdp.h"
+#include "rdpClientCon.h"
 #include "rdpDraw.h"
 #include "rdpMisc.h"
 #include "rdpFillSpans.h"
@@ -57,7 +58,14 @@ void
 rdpFillSpans(DrawablePtr pDrawable, GCPtr pGC, int nInit,
              DDXPointPtr pptInit, int *pwidthInit, int fSorted)
 {
+    rdpPtr dev;
+
     LOG(LOG_LEVEL_TRACE, "rdpFillSpans:");
+    dev = rdpGetDevFromScreen(pGC->pScreen);
+    if (rdpScreenSleepBlockDraws(dev))
+    {
+        return;
+    }
     /* do original call */
     rdpFillSpansOrg(pDrawable, pGC, nInit, pptInit, pwidthInit, fSorted);
 }

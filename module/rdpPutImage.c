@@ -73,6 +73,10 @@ rdpPutImage(DrawablePtr pDst, GCPtr pGC, int depth, int x, int y,
     LOG(LOG_LEVEL_TRACE, "rdpPutImage:");
     pScreen = pGC->pScreen;
     dev = rdpGetDevFromScreen(pGC->pScreen);
+    if (rdpScreenSleepBlockDraws(dev))
+    {
+        return;
+    }
     if ((x == 0) && (y == 0) && (w == 4) && (h == 4) && (depth >= 24) &&
         (pDst->type == DRAWABLE_PIXMAP))
     {

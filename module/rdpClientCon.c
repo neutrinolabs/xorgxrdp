@@ -29,6 +29,7 @@ Client connection to xrdp
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <signal.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -120,6 +121,570 @@ static int
 rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon);
 static int
 rdpSendAccelAssistMonitors(rdpPtr dev, rdpClientCon *clientCon);
+int
+rdpClientConResetClip(rdpPtr dev, rdpClientCon *clientCon);
+int
+rdpClientConSetOpcode(rdpPtr dev, rdpClientCon *clientCon, int opcode);
+static int
+parse_screen_sleep_time_minutes(const char *value, int *sleep_ms);
+static int
+parse_screen_sleep_mode(const char *value, int *mode, int *refresh_ms);
+static int
+rdpScreenSleepStartEnterTimer(rdpPtr dev);
+static int
+rdpScreenSleepStopEnterTimer(rdpPtr dev);
+static int
+rdpScreenSleepStartRefreshTimer(rdpPtr dev);
+static int
+rdpScreenSleepStopRefreshTimer(rdpPtr dev);
+static int
+rdpScreenSleepStartResumeTimer(rdpPtr dev, CARD32 delay_ms);
+static int
+rdpScreenSleepStopResumeTimer(rdpPtr dev);
+static int
+rdpScreenSleepEnter(rdpPtr dev, CARD32 now, const char *caller, int log_message);
+static CARD32
+rdpScreenSleepEnterCallback(OsTimerPtr timer, CARD32 now, pointer arg);
+static CARD32
+rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg);
+static CARD32
+rdpScreenSleepRefreshCallback(OsTimerPtr timer, CARD32 now, pointer arg);
+static CARD32
+rdpScreenSleepResumeCallback(OsTimerPtr timer, CARD32 now, pointer arg);
+static int
+rdpScreenSleepStartWakeRefresh(rdpPtr dev);
+static void
+rdpClientConResizeAllMemoryAreas(rdpPtr dev, rdpClientCon *clientCon);
+static int
+rdpScreenSleepScheduleForcedUpdate(rdpClientCon *clientCon, CARD32 delay_ms);
+static int
+rdpScreenSleepScheduleForcedUpdateAll(rdpPtr dev, CARD32 delay_ms);
+static int
+rdpScreenSleepQueueFullRefresh(rdpPtr dev);
+static int
+rdpScreenSleepSendSolid(rdpPtr dev, rdpClientCon *clientCon);
+static int
+rdpScreenSleepRefreshFramebuffer(rdpPtr dev);
+static const char *
+rdpScreenSleepModeToText(int mode);
+
+static int
+parse_screen_sleep_time_minutes(const char *value, int *sleep_ms)
+{
+    char *endptr;
+    long sleep_minutes;
+
+    if (value == NULL || value[0] == '\0')
+    {
+        *sleep_ms = 0;
+        return 0;
+    }
+
+    errno = 0;
+    sleep_minutes = strtol(value, &endptr, 10);
+    if (errno != 0 || endptr == value || *endptr != '\0')
+    {
+        return 1;
+    }
+
+    if (sleep_minutes < 0 || sleep_minutes > 10080)
+    {
+        return 1;
+    }
+
+    *sleep_ms = (int) sleep_minutes * 60 * 1000;
+    return 0;
+}
+
+static int
+parse_screen_sleep_mode(const char *value, int *mode, int *refresh_ms)
+{
+    char *endptr;
+    long refresh_minutes;
+
+    *mode = XRDP_SCREEN_SLEEP_MODE_BLACK;
+    *refresh_ms = 0;
+
+    if (value == NULL || value[0] == '\0')
+    {
+        return 0;
+    }
+
+    if (strcasecmp(value, "black") == 0)
+    {
+        *mode = XRDP_SCREEN_SLEEP_MODE_BLACK;
+        return 0;
+    }
+
+    if (strcasecmp(value, "last") == 0)
+    {
+        *mode = XRDP_SCREEN_SLEEP_MODE_LAST;
+        return 0;
+    }
+
+    if (strncasecmp(value, "refresh", 7) == 0)
+    {
+        if (value[7] == ':')
+        {
+            errno = 0;
+            refresh_minutes = strtol(value + 8, &endptr, 10);
+            if (errno != 0 || endptr == value + 8 || *endptr != '\0')
+            {
+                return 1;
+            }
+            if (refresh_minutes < 1 || refresh_minutes > 10080)
+            {
+                /* invalid or zero: default to 5 minutes */
+                refresh_minutes = 5;
+            }
+        }
+        else if (value[7] == '\0')
+        {
+            /* bare "refresh" - default 5 minutes */
+            refresh_minutes = 5;
+        }
+        else
+        {
+            return 1;
+        }
+        *mode = XRDP_SCREEN_SLEEP_MODE_REFRESH;
+        *refresh_ms = (int) refresh_minutes * 60 * 1000;
+        return 0;
+    }
+
+    return 1;
+}
+
+static int
+rdpScreenSleepStopEnterTimer(rdpPtr dev)
+{
+    if (dev->screen_sleep_enter_timer != NULL)
+    {
+        TimerCancel(dev->screen_sleep_enter_timer);
+        TimerFree(dev->screen_sleep_enter_timer);
+        dev->screen_sleep_enter_timer = NULL;
+    }
+
+    return 0;
+}
+
+static int
+rdpScreenSleepStopRefreshTimer(rdpPtr dev)
+{
+    if (dev->screen_sleep_refresh_timer != NULL)
+    {
+        TimerCancel(dev->screen_sleep_refresh_timer);
+        TimerFree(dev->screen_sleep_refresh_timer);
+        dev->screen_sleep_refresh_timer = NULL;
+    }
+
+    return 0;
+}
+
+static int
+rdpScreenSleepStopResumeTimer(rdpPtr dev)
+{
+    if (dev->screen_sleep_resume_timer != NULL)
+    {
+        TimerCancel(dev->screen_sleep_resume_timer);
+        TimerFree(dev->screen_sleep_resume_timer);
+        dev->screen_sleep_resume_timer = NULL;
+    }
+
+    return 0;
+}
+
+static int
+rdpScreenSleepStartEnterTimer(rdpPtr dev)
+{
+    if (dev->screen_sleep_time_ms <= 0)
+    {
+        return 0;
+    }
+
+    dev->screen_sleep_enter_timer = TimerSet(dev->screen_sleep_enter_timer, 0,
+                                             (CARD32) dev->screen_sleep_time_ms,
+                                             rdpScreenSleepEnterCallback, dev);
+    return 0;
+}
+
+static int
+rdpScreenSleepStartResumeTimer(rdpPtr dev, CARD32 delay_ms)
+{
+    dev->screen_sleep_resume_timer =
+        TimerSet(dev->screen_sleep_resume_timer, 0, delay_ms,
+                 rdpScreenSleepResumeCallback, dev);
+    return 0;
+}
+
+static int
+rdpScreenSleepStartRefreshTimer(rdpPtr dev)
+{
+    if (dev->screen_sleep_mode != XRDP_SCREEN_SLEEP_MODE_REFRESH ||
+            dev->screen_sleep_refresh_interval_ms <= 0)
+    {
+        return 0;
+    }
+
+    dev->screen_sleep_refresh_timer =
+        TimerSet(dev->screen_sleep_refresh_timer, 0,
+                 (CARD32) dev->screen_sleep_refresh_interval_ms,
+                 rdpScreenSleepRefreshCallback, dev);
+    return 0;
+}
+
+static const char *
+rdpScreenSleepModeToText(int mode)
+{
+    switch (mode)
+    {
+        case XRDP_SCREEN_SLEEP_MODE_LAST:
+            return "last";
+        case XRDP_SCREEN_SLEEP_MODE_BLACK:
+            return "black";
+        case XRDP_SCREEN_SLEEP_MODE_REFRESH:
+            return "refresh";
+        default:
+            return "unknown";
+    }
+}
+
+static int
+rdpScreenSleepScheduleForcedUpdate(rdpClientCon *clientCon, CARD32 delay_ms)
+{
+    if (clientCon == NULL || !clientCon->connected || clientCon->updateScheduled)
+    {
+        return 0;
+    }
+
+    clientCon->updateTimer = TimerSet(clientCon->updateTimer, 0, delay_ms,
+                                      rdpDeferredUpdateCallback, clientCon);
+    clientCon->updateScheduled = TRUE;
+    return 0;
+}
+
+static int
+rdpScreenSleepScheduleForcedUpdateAll(rdpPtr dev, CARD32 delay_ms)
+{
+    rdpClientCon *clientCon;
+
+    clientCon = dev->clientConHead;
+    while (clientCon != NULL)
+    {
+        rdpScreenSleepScheduleForcedUpdate(clientCon, delay_ms);
+        clientCon = clientCon->next;
+    }
+    return 0;
+}
+
+/*
+ * Temporarily resize the screen by +/-1 pixel to trigger RRScreenSizeSet.
+ * RRScreenSizeSet broadcasts ConfigureNotify to all top-level windows,
+ * causing every application to redraw itself. This forces the framebuffer
+ * to be repopulated with the latest application content after wake.
+ *
+ * The +/-1 is imperceptible to the user and the resize is immediately
+ * restored. The framebuffer memory is reallocated on each call; any
+ * unredrawn areas appear as black and are filled as applications
+ * process the ConfigureNotify asynchronously.
+ */
+static int
+rdpScreenSleepRefreshFramebuffer(rdpPtr dev)
+{
+    ScrnInfoPtr pScrn;
+    int orig_width;
+    int orig_height;
+
+    if (dev->pScreen == NULL)
+    {
+        return 0;
+    }
+
+    pScrn = xf86Screens[dev->pScreen->myNum];
+    orig_width = dev->width;
+    orig_height = dev->height;
+
+    if (orig_width <= 1 || orig_height <= 1)
+    {
+        return 0;
+    }
+
+    dev->allow_screen_resize = 1;
+
+    /* Step 1: shrink by 1 pixel -- triggers ConfigureNotify -> redraw */
+    RRScreenSizeSet(dev->pScreen,
+                    orig_width - 1, orig_height - 1,
+                    PixelToMM(orig_width - 1, pScrn->xDpi),
+                    PixelToMM(orig_height - 1, pScrn->yDpi));
+
+    /* Step 2: restore original size -- triggers second ConfigureNotify -> redraw */
+    RRScreenSizeSet(dev->pScreen,
+                    orig_width, orig_height,
+                    PixelToMM(orig_width, pScrn->xDpi),
+                    PixelToMM(orig_height, pScrn->yDpi));
+
+    dev->allow_screen_resize = 0;
+
+    LOG(LOG_LEVEL_INFO,
+        "rdpScreenSleepRefreshFramebuffer: [Session %s] "
+        "framebuffer refresh via resize %dx%d -> %dx%d -> %dx%d",
+        dev->uds_data,
+        orig_width, orig_height,
+        orig_width - 1, orig_height - 1,
+        orig_width, orig_height);
+
+    return 0;
+}
+
+static int
+rdpScreenSleepQueueFullRefresh(rdpPtr dev)
+{
+    ScreenPtr pScreen;
+    WindowPtr root;
+    BoxRec box;
+    RegionRec reg;
+
+    if (dev->clientConHead == NULL || dev->pScreen == NULL)
+    {
+        return 0;
+    }
+
+    pScreen = dev->pScreen;
+    root = pScreen->root;
+    if (root == NULL)
+    {
+        return 0;
+    }
+
+    box.x1 = 0;
+    box.y1 = 0;
+    box.x2 = dev->width;
+    box.y2 = dev->height;
+    rdpRegionInit(&reg, &box, 0);
+    rdpClientConAddAllReg(dev, &reg, &(root->drawable));
+    rdpRegionUninit(&reg);
+    return 0;
+}
+
+static int
+rdpScreenSleepSendSolid(rdpPtr dev, rdpClientCon *clientCon)
+{
+    int fgcolor;
+
+    if (!clientCon->connected)
+    {
+        return 0;
+    }
+
+    fgcolor = 0x000000;
+    rdpClientConBeginUpdate(dev, clientCon);
+    rdpClientConResetClip(dev, clientCon);
+    rdpClientConSetOpcode(dev, clientCon, GXcopy);
+    rdpClientConSetFgcolor(dev, clientCon, fgcolor);
+    rdpClientConFillRect(dev, clientCon, 0, 0, clientCon->rdp_width,
+                         clientCon->rdp_height);
+    rdpClientConEndUpdate(dev, clientCon);
+    return 0;
+}
+
+static int
+rdpScreenSleepStartWakeRefresh(rdpPtr dev)
+{
+    dev->screen_sleep_active = 0;
+    dev->screen_sleep_overlay_pending = 0;
+    dev->screen_sleep_refresh_pending = 0;
+    rdpScreenSleepStopEnterTimer(dev);
+    rdpScreenSleepStopRefreshTimer(dev);
+    rdpScreenSleepStopResumeTimer(dev);
+    rdpScreenSleepQueueFullRefresh(dev);
+    rdpScreenSleepStartEnterTimer(dev);
+    return 0;
+}
+
+static int
+rdpScreenSleepEnter(rdpPtr dev, CARD32 now, const char *caller, int log_message)
+{
+    rdpClientCon *clientCon;
+
+    if (dev->screen_sleep_active || dev->screen_sleep_time_ms <= 0)
+    {
+        return 0;
+    }
+
+    dev->screen_sleep_active = 1;
+    if (!dev->screen_sleep_refresh_pending)
+    {
+        dev->screen_sleep_start_time_ms = now;
+    }
+    dev->screen_sleep_overlay_pending =
+        (dev->screen_sleep_mode == XRDP_SCREEN_SLEEP_MODE_BLACK) ? 3 : 0;
+    dev->screen_sleep_refresh_pending = 0;
+    rdpScreenSleepStopEnterTimer(dev);
+    rdpScreenSleepStopRefreshTimer(dev);
+    rdpScreenSleepStopResumeTimer(dev);
+
+    clientCon = dev->clientConHead;
+    while (clientCon != NULL)
+    {
+        if (clientCon->updateScheduled && clientCon->updateTimer != NULL)
+        {
+            TimerCancel(clientCon->updateTimer);
+        }
+        clientCon->updateScheduled = FALSE;
+        clientCon = clientCon->next;
+    }
+
+    if (dev->screen_sleep_overlay_pending)
+    {
+        rdpScreenSleepScheduleForcedUpdateAll(dev, 1);
+    }
+    else if (dev->screen_sleep_mode == XRDP_SCREEN_SLEEP_MODE_REFRESH)
+    {
+        rdpScreenSleepStartRefreshTimer(dev);
+    }
+
+    if (log_message)
+    {
+        LOG(LOG_LEVEL_INFO,
+            "%s: [Session %s] entering screen sleep after %d minute(s), mode=%s",
+            caller, dev->uds_data, dev->screen_sleep_time_ms / (60 * 1000),
+            rdpScreenSleepModeToText(dev->screen_sleep_mode));
+    }
+
+    return 0;
+}
+
+static CARD32
+rdpScreenSleepEnterCallback(OsTimerPtr timer, CARD32 now, pointer arg)
+{
+    rdpPtr dev;
+
+    (void) timer;
+    dev = (rdpPtr) arg;
+    dev->screen_sleep_enter_timer = NULL;
+    rdpScreenSleepEnter(dev, now, "rdpScreenSleepEnterCallback", 1);
+    return 0;
+}
+
+static CARD32
+rdpScreenSleepRefreshCallback(OsTimerPtr timer, CARD32 now, pointer arg)
+{
+    rdpPtr dev;
+
+    (void) timer;
+    (void) now;
+
+    dev = (rdpPtr) arg;
+    dev->screen_sleep_refresh_timer = NULL;
+
+    if (!dev->screen_sleep_active ||
+            dev->screen_sleep_mode != XRDP_SCREEN_SLEEP_MODE_REFRESH)
+    {
+        return 0;
+    }
+
+    dev->screen_sleep_active = 0;
+    dev->screen_sleep_refresh_pending = 1;
+    dev->screen_sleep_overlay_pending = 0;
+    rdpScreenSleepQueueFullRefresh(dev);
+    rdpScreenSleepStartResumeTimer(dev, 1000);
+    return 0;
+}
+
+static CARD32
+rdpScreenSleepResumeCallback(OsTimerPtr timer, CARD32 now, pointer arg)
+{
+    rdpPtr dev;
+
+    (void) timer;
+    dev = (rdpPtr) arg;
+    dev->screen_sleep_resume_timer = NULL;
+
+    if (dev->screen_sleep_refresh_pending &&
+            dev->screen_sleep_mode == XRDP_SCREEN_SLEEP_MODE_REFRESH)
+    {
+        LOG(LOG_LEVEL_INFO,
+            "rdpScreenSleepResumeCallback: [Session %s] auto refresh screen",
+            dev->uds_data);
+        rdpScreenSleepEnter(dev, now, "rdpScreenSleepResumeCallback", 0);
+    }
+    return 0;
+}
+
+int
+rdpScreenSleepBlockUpdates(rdpPtr dev)
+{
+    return (dev != NULL) && dev->screen_sleep_active;
+}
+
+int
+rdpScreenSleepBlockDraws(rdpPtr dev)
+{
+    return (dev != NULL) && dev->screen_sleep_active;
+}
+
+int
+rdpScreenSleepActivity(rdpPtr dev, CARD32 now)
+{
+    if (dev == NULL)
+    {
+        return 0;
+    }
+
+    dev->last_event_time_ms = now;
+    rdpScreenSleepStopResumeTimer(dev);
+    dev->screen_sleep_refresh_pending = 0;
+    if (dev->screen_sleep_time_ms <= 0 || dev->clientConHead == NULL)
+    {
+        return 0;
+    }
+
+    if (!dev->screen_sleep_active)
+    {
+        rdpScreenSleepStopEnterTimer(dev);
+        rdpScreenSleepStartEnterTimer(dev);
+    }
+
+    return 0;
+}
+
+int
+rdpScreenSleepWake(rdpPtr dev, const char *reason)
+{
+    CARD32 now;
+    CARD32 slept_ms;
+    unsigned int slept_s;
+    unsigned int slept_min;
+    unsigned int rem_s;
+
+    if (dev == NULL || !dev->screen_sleep_active)
+    {
+        return 0;
+    }
+
+    now = GetTimeInMillis();
+    slept_ms = now - dev->screen_sleep_start_time_ms;
+    slept_s = slept_ms / 1000;
+    slept_min = slept_s / 60;
+    rem_s = slept_s % 60;
+
+    dev->screen_sleep_active = 0;
+    dev->screen_sleep_overlay_pending = 0;
+    dev->screen_sleep_refresh_pending = 0;
+    dev->screen_sleep_start_time_ms = 0;
+    rdpScreenSleepStopEnterTimer(dev);
+    rdpScreenSleepStopRefreshTimer(dev);
+    rdpScreenSleepStopResumeTimer(dev);
+
+    rdpScreenSleepRefreshFramebuffer(dev);
+
+    LOG(LOG_LEVEL_INFO,
+        "rdpScreenSleepWake: [Session %s] waking after %u min %u sec, reason=%s",
+        dev->uds_data, slept_min, rem_s, reason);
+
+    rdpScreenSleepStartWakeRefresh(dev);
+    return 0;
+}
 
 #if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
 
@@ -302,6 +867,8 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
 
     clientCon->dirtyRegion = rdpRegionCreate(NullBox, 0);
     clientCon->shmRegion = rdpRegionCreate(NullBox, 0);
+    rdpScreenSleepStopEnterTimer(dev);
+    rdpScreenSleepStartEnterTimer(dev);
 
     return 0;
 }
@@ -459,6 +1026,16 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     free(clientCon->osBitmaps);
 
     rdpRemoveClientConFromDev(dev, clientCon);
+    if (dev->clientConHead == NULL)
+    {
+        rdpScreenSleepStopEnterTimer(dev);
+        rdpScreenSleepStopRefreshTimer(dev);
+        rdpScreenSleepStopResumeTimer(dev);
+        dev->screen_sleep_active = 0;
+        dev->screen_sleep_overlay_pending = 0;
+        dev->screen_sleep_refresh_pending = 0;
+        dev->screen_sleep_start_time_ms = 0;
+    }
 
     rdpRegionDestroy(clientCon->dirtyRegion);
     rdpRegionDestroy(clientCon->shmRegion);
@@ -1983,6 +2560,37 @@ rdpClientConInit(rdpPtr dev)
         "rdpClientConInit: kill disconnected [%d] timeout [%d] sec",
         dev->do_kill_disconnected, dev->disconnect_timeout_s);
 
+    ptext = getenv("XRDP_SCREEN_SLEEP_TIME");
+    if (parse_screen_sleep_time_minutes(ptext, &dev->screen_sleep_time_ms) != 0)
+    {
+        LOG(LOG_LEVEL_WARNING,
+            "rdpClientConInit: [Session %s] ignoring invalid "
+            "XRDP_SCREEN_SLEEP_TIME '%s'",
+            dev->uds_data, ptext);
+        dev->screen_sleep_time_ms = 0;
+    }
+    ptext = getenv("XRDP_SCREEN_SLEEP_MODE");
+    if (parse_screen_sleep_mode(ptext, &dev->screen_sleep_mode,
+                                &dev->screen_sleep_refresh_interval_ms) != 0)
+    {
+        LOG(LOG_LEVEL_WARNING,
+            "rdpClientConInit: [Session %s] ignoring invalid "
+            "XRDP_SCREEN_SLEEP_MODE '%s', using black",
+            dev->uds_data, ptext);
+        dev->screen_sleep_mode = XRDP_SCREEN_SLEEP_MODE_BLACK;
+        dev->screen_sleep_refresh_interval_ms = 0;
+    }
+    LOG(LOG_LEVEL_INFO,
+        "rdpClientConInit: [Session %s] screen sleep timeout [%d] min mode [%s]",
+        dev->uds_data, dev->screen_sleep_time_ms / (60 * 1000),
+        rdpScreenSleepModeToText(dev->screen_sleep_mode));
+    if (dev->screen_sleep_mode == XRDP_SCREEN_SLEEP_MODE_REFRESH)
+    {
+        LOG(LOG_LEVEL_INFO,
+            "rdpClientConInit: [Session %s] screen sleep refresh interval [%d] min",
+            dev->uds_data, dev->screen_sleep_refresh_interval_ms / (60 * 1000));
+    }
+
 
     return 0;
 }
@@ -1992,6 +2600,10 @@ int
 rdpClientConDeinit(rdpPtr dev)
 {
     LOG(LOG_LEVEL_TRACE, "rdpClientConDeinit:");
+
+    rdpScreenSleepStopEnterTimer(dev);
+    rdpScreenSleepStopRefreshTimer(dev);
+    rdpScreenSleepStopResumeTimer(dev);
 
     while (dev->clientConTail != NULL)
     {
@@ -3293,6 +3905,19 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
 
     LOG(LOG_LEVEL_TRACE, "rdpDeferredUpdateCallback:");
     clientCon->updateScheduled = FALSE;
+    if (clientCon->dev->screen_sleep_active &&
+            clientCon->dev->screen_sleep_overlay_pending > 0)
+    {
+        if (!clientCon->suppress_output)
+        {
+            rdpScreenSleepSendSolid(clientCon->dev, clientCon);
+            if (--clientCon->dev->screen_sleep_overlay_pending > 0)
+            {
+                rdpScreenSleepScheduleForcedUpdate(clientCon, 50);
+            }
+        }
+        return 0;
+    }
     if (clientCon->suppress_output)
     {
         LOG(LOG_LEVEL_TRACE, "rdpDeferredUpdateCallback: suppress_output set");
@@ -3387,6 +4012,10 @@ rdpScheduleDeferredUpdate(rdpClientCon *clientCon)
     {
         return;
     }
+    if (rdpScreenSleepBlockUpdates(clientCon->dev))
+    {
+        return;
+    }
     curTime = (uint32_t) GetTimeInMillis();
     /* use two separate delays in order to limit the update rate and wait a bit
        for more changes before sending an update. Always waiting the longer
@@ -3415,6 +4044,10 @@ rdpClientConAddDirtyScreenReg(rdpPtr dev, rdpClientCon *clientCon,
                               RegionPtr reg)
 {
     LOG(LOG_LEVEL_TRACE, "rdpClientConAddDirtyScreenReg:");
+    if (rdpScreenSleepBlockUpdates(dev))
+    {
+        return 0;
+    }
     rdpRegionUnion(clientCon->dirtyRegion, clientCon->dirtyRegion, reg);
     rdpScheduleDeferredUpdate(clientCon);
     return 0;
@@ -3478,6 +4111,10 @@ rdpClientConAddAllReg(rdpPtr dev, RegionPtr reg, DrawablePtr pDrawable)
 
     drw_is_vis = XRDP_DRAWABLE_IS_VISIBLE(dev, pDrawable);
     if (!drw_is_vis)
+    {
+        return 0;
+    }
+    if (rdpScreenSleepBlockUpdates(dev))
     {
         return 0;
     }

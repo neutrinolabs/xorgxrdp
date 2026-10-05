@@ -41,6 +41,7 @@ glyph (font) calls
 #include <glyphstr.h>
 
 #include "rdp.h"
+#include "rdpClientCon.h"
 #include "rdpGlyphs.h"
 #include "rdpDraw.h"
 #include "rdpMisc.h"
@@ -98,6 +99,10 @@ rdpGlyphs(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
     LOG(LOG_LEVEL_TRACE, "rdpGlyphs:");
     pScreen = pDst->pDrawable->pScreen;
     dev = rdpGetDevFromScreen(pScreen);
+    if (rdpScreenSleepBlockDraws(dev))
+    {
+        return;
+    }
     ps = GetPictureScreen(pScreen);
     rdpGlyphsOrg(ps, dev, op, pSrc, pDst, maskFormat, xSrc, ySrc,
                  nlists, lists, glyphs);
