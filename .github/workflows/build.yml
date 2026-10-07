@@ -154,4 +154,8 @@ jobs:
           ./bootstrap
           ./configure --localstatedir=/var --enable-strict-locations --enable-glamor XRDP_CFLAGS=-I`pwd`/xrdp/common
           make -j $(nproc || echo 4)
-          make check
+          make check || {
+            test_status=$?
+            scripts/display_test_logs || :
+            exit "$test_status"
+          }
