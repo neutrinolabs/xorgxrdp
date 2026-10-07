@@ -44,6 +44,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XRDP_VERSION 1000
 
 #define RDP_MAX_TILES 4096
+/*
+ * Keep the Unicode scratch keycodes away from the normal PC keyboard range.
+ * Keycodes 127 and 128 can carry Super/Mod4 XKB actions on a stock layout even
+ * after their KeySyms are remapped, so starting at 130 avoids leaking modifier
+ * state into committed Unicode text.
+ */
+#define XRDP_UNICODE_KEYCODE_FIRST 130
+#define XRDP_UNICODE_KEYCODE_LAST 255
+#define XRDP_UNICODE_KEYCODE_COUNT \
+    ((XRDP_UNICODE_KEYCODE_LAST - XRDP_UNICODE_KEYCODE_FIRST) + 1)
 
 #define COLOR8(r, g, b) \
     ((((r) >> 5) << 0)  | (((g) >> 5) << 3) | (((b) >> 6) << 6))
@@ -148,6 +158,13 @@ struct _rdpKeyboard
 
     int scroll_lock_down; ///< Whether key is up/down
     int scroll_lock_state; ///< Toggle state
+    int ctrl_down; ///< Tracked physical modifier keycode
+    int alt_down; ///< Tracked physical modifier keycode
+    int shift_down; ///< Tracked physical modifier keycode
+    /* Cache Unicode codepoints on scratch keycodes so repeated text input does
+     * not remap the XKB keymap for every repeated character. */
+    unsigned int unicode_codepoints[XRDP_UNICODE_KEYCODE_COUNT];
+    int unicode_next_index;
     DeviceIntPtr device;
 };
 typedef struct _rdpKeyboard rdpKeyboard;

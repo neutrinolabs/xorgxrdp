@@ -58,9 +58,16 @@ xrdp keyboard module
 
 /******************************************************************************/
 /* A few hard-coded evdev keycodes (see g_evdev_str) */
+#define SHIFT_L_KEY_CODE 50
 #define CAPS_LOCK_KEY_CODE 66
 #define NUM_LOCK_KEY_CODE 77
 #define SCROLL_LOCK_KEY_CODE 78
+
+#ifndef WM_UNICODE_INPUT
+/* xrdp uses this backend message for RDP Unicode keyboard input. Some installed
+ * headers do not define it yet, so keep a local fallback for older builds. */
+#define WM_UNICODE_INPUT 19
+#endif
 
 static char g_evdev_str[] = "evdev";
 static char g_pc104_str[] = "pc104";
@@ -76,6 +83,203 @@ static void KbdSync(rdpKeyboard *keyboard, int param1);
 
 static int
 rdpLoadLayout(rdpKeyboard *keyboard, struct xup_client_info *client_info);
+
+/******************************************************************************/
+static int
+unicode_keycode_reserved(int keycode)
+{
+    /* Do not use keycodes which the default XKB map assigns to modifiers, IME
+     * controls or special keypad variants. Remapping those can leak modifier
+     * state into committed Unicode text. */
+    switch (keycode)
+    {
+        case 134: /* Brazilian keypad . */
+        case 156: /* meta keys */
+        case 211: /* Brazilian / ? */
+            return 1;
+    }
+
+    if (keycode >= 208 && keycode <= 217)
+    {
+        /* IME and XF86 keyboard-control keys on the default XKB map */
+        return 1;
+    }
+
+    return 0;
+}
+
+/******************************************************************************/
+static void
+rdpUnicodeReset(rdpKeyboard *keyboard)
+{
+    memset(keyboard->unicode_codepoints, 0,
+           sizeof(keyboard->unicode_codepoints));
+    keyboard->unicode_next_index = 0;
+}
+
+/******************************************************************************/
+static KeySym
+unicode_to_keysym(unsigned int unicode)
+{
+    /* Keep control characters as their normal X11 keysyms. Printable Unicode
+     * outside Latin-1 uses the X11 U+01000000 keysym encoding. */
+    switch (unicode)
+    {
+        case 0x08:
+            return XK_BackSpace;
+        case 0x09:
+            return XK_Tab;
+        case 0x0a:
+        case 0x0d:
+            return XK_Return;
+        case 0x1b:
+            return XK_Escape;
+    }
+
+    if (unicode == 0 || unicode > 0x10ffff ||
+            (unicode >= 0xd800 && unicode <= 0xdfff))
+    {
+        return NoSymbol;
+    }
+
+    return (unicode < 0x100) ? unicode : (0x01000000 | unicode);
+}
+
+/******************************************************************************/
+static int
+unicode_ascii_letter_needs_shift(rdpKeyboard *keyboard, unsigned int unicode)
+{
+    int is_upper;
+    int is_lower;
+    int caps_lock;
+    int xkb_state;
+
+    is_upper = unicode >= 'A' && unicode <= 'Z';
+    is_lower = unicode >= 'a' && unicode <= 'z';
+    if (!is_upper && !is_lower)
+    {
+        return 0;
+    }
+
+    /* XKB canonicalizes letter keysyms to lower/upper levels. For Unicode
+     * ASCII letters, add a temporary Shift press only when it is needed to make
+     * XLookupString return the exact character sent by the RDP client. */
+    caps_lock = 0;
+    if (keyboard != NULL && keyboard->device != NULL &&
+            keyboard->device->key != NULL &&
+            keyboard->device->key->xkbInfo != NULL)
+    {
+        xkb_state = XkbStateFieldFromRec(&(keyboard->device->key->xkbInfo->state));
+        caps_lock = (xkb_state & LockMask) != 0;
+    }
+
+    return is_upper != caps_lock;
+}
+
+/******************************************************************************/
+static int
+rdpUnicodeSetKeySym(DeviceIntPtr device, int keycode, KeySym keysym)
+{
+    KeySymsPtr keySyms;
+    int offset;
+    int index;
+    DeviceIntPtr pDev;
+
+    if (device == NULL)
+    {
+        return 1;
+    }
+
+    keySyms = XkbGetCoreMap(device);
+    if (keySyms == NULL)
+    {
+        return 1;
+    }
+
+    if (keycode < keySyms->minKeyCode || keycode > keySyms->maxKeyCode)
+    {
+        free(keySyms->map);
+        free(keySyms);
+        return 1;
+    }
+
+    offset = (keycode - keySyms->minKeyCode) * keySyms->mapWidth;
+    keySyms->map[offset] = keysym;
+    for (index = 1; index < keySyms->mapWidth; ++index)
+    {
+        keySyms->map[offset + index] = NoSymbol;
+    }
+
+    /* Update both the xrdp keyboard device and core-capable keyboard devices.
+     * X clients generally resolve keysyms through the core keyboard map, so
+     * updating only the extension device can make Unicode events disappear. */
+    XkbApplyMappingChange(device, keySyms, keycode, 1, NULL, serverClient);
+    for (pDev = inputInfo.devices; pDev; pDev = pDev->next)
+    {
+        if ((pDev->coreEvents || pDev == device) && pDev->key)
+        {
+            XkbApplyMappingChange(pDev, keySyms, keycode, 1, NULL,
+                                  serverClient);
+        }
+    }
+
+    free(keySyms->map);
+    free(keySyms);
+    return 0;
+}
+
+/******************************************************************************/
+static int
+rdpUnicodeFindKeycode(rdpKeyboard *keyboard, unsigned int unicode)
+{
+    KeySym keysym;
+    int index;
+    int keycode;
+    int attempts;
+
+    /* Reuse an existing scratch keycode for repeated characters. This keeps
+     * mobile keyboard repeats and pasted runs from constantly changing XKB. */
+    for (index = 0; index < XRDP_UNICODE_KEYCODE_COUNT; ++index)
+    {
+        keycode = XRDP_UNICODE_KEYCODE_FIRST + index;
+        if (!unicode_keycode_reserved(keycode) &&
+                keyboard->unicode_codepoints[index] == unicode)
+        {
+            return keycode;
+        }
+    }
+
+    keysym = unicode_to_keysym(unicode);
+    if (keysym == NoSymbol)
+    {
+        return 0;
+    }
+
+    for (attempts = 0; attempts < XRDP_UNICODE_KEYCODE_COUNT; ++attempts)
+    {
+        index = keyboard->unicode_next_index++;
+        if (keyboard->unicode_next_index >= XRDP_UNICODE_KEYCODE_COUNT)
+        {
+            keyboard->unicode_next_index = 0;
+        }
+
+        keycode = XRDP_UNICODE_KEYCODE_FIRST + index;
+        if (unicode_keycode_reserved(keycode))
+        {
+            continue;
+        }
+
+        /* New character: map it onto the next available scratch keycode in a
+         * small ring and post a normal key press/release for that keycode. */
+        if (rdpUnicodeSetKeySym(keyboard->device, keycode, keysym) == 0)
+        {
+            keyboard->unicode_codepoints[index] = unicode;
+            return keycode;
+        }
+    }
+
+    return 0;
+}
 
 /******************************************************************************/
 static void
@@ -112,6 +316,24 @@ sendDownUpKeyEvent(DeviceIntPtr device, int type, int x_scancode)
 static void
 check_keysa(rdpKeyboard *keyboard)
 {
+    if (keyboard->ctrl_down != 0)
+    {
+        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->ctrl_down);
+        keyboard->ctrl_down = 0;
+    }
+
+    if (keyboard->alt_down != 0)
+    {
+        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->alt_down);
+        keyboard->alt_down = 0;
+    }
+
+    if (keyboard->shift_down != 0)
+    {
+        rdpEnqueueKey(keyboard->device, KeyRelease, keyboard->shift_down);
+        keyboard->shift_down = 0;
+    }
+
     // Terminate any pause sequence in progress
     keyboard->skip_numlock = 0;
 }
@@ -161,10 +383,22 @@ KbdAddEvent(rdpKeyboard *keyboard, int down, int param1, int param2,
          * pass these on to the X server to make sense of them */
         case SCANCODE_LSHIFT_KEY:
         case SCANCODE_RSHIFT_KEY:
+            keyboard->shift_down = down ? x_keycode : 0;
+            rdpEnqueueKey(keyboard->device, type, x_keycode);
+            break;
+
         case SCANCODE_LCTRL_KEY:
         case SCANCODE_RCTRL_KEY:
+            keyboard->ctrl_down = down ? x_keycode : 0;
+            rdpEnqueueKey(keyboard->device, type, x_keycode);
+            break;
+
         case SCANCODE_LALT_KEY:
         case SCANCODE_RALT_KEY:
+            keyboard->alt_down = down ? x_keycode : 0;
+            rdpEnqueueKey(keyboard->device, type, x_keycode);
+            break;
+
         case SCANCODE_CAPS_KEY:
         case SCANCODE_NUMLOCK_KEY:
         case SCANCODE_LWIN_KEY:
@@ -283,6 +517,34 @@ KbdSync(rdpKeyboard *keyboard, int param1)
 }
 
 /******************************************************************************/
+static void
+KbdUnicodeEvent(rdpKeyboard *keyboard, unsigned int unicode)
+{
+    int x_keycode;
+    int needs_shift;
+
+    x_keycode = rdpUnicodeFindKeycode(keyboard, unicode);
+    if (x_keycode > 0)
+    {
+        /* Release tracked physical modifiers first so Unicode commits are
+         * literal text, not Ctrl/Alt/Shift shortcuts. ASCII letter case is then
+         * restored explicitly with a temporary Shift when required. */
+        check_keysa(keyboard);
+        needs_shift = unicode_ascii_letter_needs_shift(keyboard, unicode);
+        if (needs_shift)
+        {
+            rdpEnqueueKey(keyboard->device, KeyPress, SHIFT_L_KEY_CODE);
+        }
+        rdpEnqueueKey(keyboard->device, KeyPress, x_keycode);
+        rdpEnqueueKey(keyboard->device, KeyRelease, x_keycode);
+        if (needs_shift)
+        {
+            rdpEnqueueKey(keyboard->device, KeyRelease, SHIFT_L_KEY_CODE);
+        }
+    }
+}
+
+/******************************************************************************/
 static int
 rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
                  long param3, long param4)
@@ -301,7 +563,11 @@ rdpInputKeyboard(rdpPtr dev, int msg, long param1, long param2,
             KbdSync(keyboard, param1);
             break;
         case 18:
+            rdpUnicodeReset(keyboard);
             rdpLoadLayout(keyboard, (struct xup_client_info *) param1);
+            break;
+        case WM_UNICODE_INPUT:
+            KbdUnicodeEvent(keyboard, (unsigned int) param1);
             break;
 
     }
@@ -414,6 +680,7 @@ rdpkeybControl(DeviceIntPtr device, int what)
             dev = rdpGetDevFromScreen(NULL);
             dev->keyboard.device = device;
             rdpLoadLayout(&(dev->keyboard), NULL);
+            rdpUnicodeReset(&(dev->keyboard));
             rdpRegisterInputCallback(0, rdpInputKeyboard);
             break;
         case DEVICE_ON:
