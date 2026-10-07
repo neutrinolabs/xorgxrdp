@@ -29,11 +29,17 @@ c1 times 4 dd 0xFF00FF00
 c2 times 4 dd 0x00FF0000
 c3 times 4 dd 0x000000FF
 
+; s8 and d8 may have independent alignments, including between rows
 ;int
 ;a8r8g8b8_to_a8b8g8r8_box_x86_sse2(const char *s8, int src_stride,
 ;                                  char *d8, int dst_stride,
 ;                                  int width, int height);
 PROC a8r8g8b8_to_a8b8g8r8_box_x86_sse2
+    cmp dword [esp + 20], 0 ; width
+    jle return_zero
+    cmp dword [esp + 24], 0 ; height
+    jle return_zero
+
     push ebx
     RETRIEVE_RODATA
     push esi
@@ -50,35 +56,6 @@ PROC a8r8g8b8_to_a8b8g8r8_box_x86_sse2
 loop_y:
     mov ecx, [esp + 36]  ; width
 
-loop_xpre:
-    mov eax, esi         ; look for aligned
-    and eax, 0x0F        ; we can jump to next
-    mov ebp, eax
-    mov eax, edi
-    and eax, 0x0F
-    or eax, ebp
-    cmp eax, 0
-    je done_loop_xpre
-    cmp ecx, 1
-    jl done_loop_x       ; all done with this row
-    mov eax, [esi]
-    lea esi, [esi + 4]
-    mov edx, eax         ; a and g
-    and edx, 0xFF00FF00
-    mov ebp, eax         ; r
-    and ebp, 0x00FF0000
-    shr ebp, 16
-    or edx, ebp
-    mov ebp, eax         ; b
-    and ebp, 0x000000FF
-    shl ebp, 16
-    or edx, ebp
-    mov [edi], edx
-    lea edi, [edi + 4]
-    dec ecx
-    jmp loop_xpre
-done_loop_xpre:
-
     prefetchnta [esi]
 
 ; A R G B A R G B A R G B A R G B to
@@ -90,7 +67,7 @@ loop_x8:
 
     prefetchnta [esi + 32]
 
-    movdqa xmm0, [esi]
+    movdqu xmm0, [esi]
     lea esi, [esi + 16]
     movdqa xmm3, xmm0    ; a and g
     pand xmm3, xmm4
@@ -102,11 +79,11 @@ loop_x8:
     pand xmm1, xmm6
     pslld xmm1, 16
     por xmm3, xmm1
-    movdqa [edi], xmm3
+    movdqu [edi], xmm3
     lea edi, [edi + 16]
     sub ecx, 4
 
-    movdqa xmm0, [esi]
+    movdqu xmm0, [esi]
     lea esi, [esi + 16]
     movdqa xmm3, xmm0    ; a and g
     pand xmm3, xmm4
@@ -118,7 +95,7 @@ loop_x8:
     pand xmm1, xmm6
     pslld xmm1, 16
     por xmm3, xmm1
-    movdqa [edi], xmm3
+    movdqu [edi], xmm3
     lea edi, [edi + 16]
     sub ecx, 4
 
@@ -159,10 +136,11 @@ done_loop_x:
     mov [esp + 40], ecx
     jnz loop_y
 
-    mov eax, 0          ; return value
     pop ebp
     pop edi
     pop esi
     pop ebx
+return_zero:
+    mov eax, 0          ; return value
     ret
 END_OF_FILE

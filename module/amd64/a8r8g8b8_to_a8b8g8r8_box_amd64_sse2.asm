@@ -31,14 +31,23 @@ c3 times 4 dd 0x000000FF
 ;The first six integer or pointer arguments are passed in registers
 ; RDI, RSI, RDX, RCX, R8, and R9
 
-; s8 and d8 do not need to be aligned but they should match
-; in the lsb nibble, ie. s8 & 0xf == d8 & 0xf
-; if not, it won't make use of the simd
+; s8 and d8 may have independent alignments, including between rows
 ;int
 ;a8r8g8b8_to_a8b8g8r8_box_amd64_sse2(const char *s8, int src_stride,
 ;                                    char *d8, int dst_stride,
 ;                                    int width, int height);
 PROC a8r8g8b8_to_a8b8g8r8_box_amd64_sse2
+    test r8d, r8d
+    jle return_zero
+    test r9d, r9d
+    jle return_zero
+
+    ; The stride, width and height arguments are signed 32-bit integers
+    movsxd rsi, esi
+    movsxd rcx, ecx
+    movsxd r8, r8d
+    movsxd r9, r9d
+
     push rbx
     push rbp
 
@@ -68,35 +77,6 @@ PROC a8r8g8b8_to_a8b8g8r8_box_amd64_sse2
 loop_y:
     mov rcx, [rsp + 16]  ; width
 
-loop_xpre:
-    mov rax, rsi         ; look for aligned
-    and rax, 0x0F        ; we can jump to next
-    mov rbx, rax
-    mov rax, rdi
-    and rax, 0x0F
-    or rax, rbx
-    cmp rax, 0
-    je done_loop_xpre
-    cmp rcx, 1
-    jl done_loop_x       ; all done with this row
-    mov eax, [rsi]
-    lea rsi, [rsi + 4]
-    mov edx, eax         ; a and g
-    and edx, 0xFF00FF00
-    mov ebx, eax         ; r
-    and ebx, 0x00FF0000
-    shr ebx, 16
-    or edx, ebx
-    mov ebx, eax         ; b
-    and ebx, 0x000000FF
-    shl ebx, 16
-    or edx, ebx
-    mov [rdi], edx
-    lea rdi, [rdi + 4]
-    dec rcx
-    jmp loop_xpre
-done_loop_xpre:
-
 ; A R G B A R G B A R G B A R G B to
 ; A B G R A B G R A B G R A B G R
 
@@ -104,7 +84,7 @@ loop_x8:
     cmp rcx, 8
     jl done_loop_x8
 
-    movdqa xmm0, [rsi]
+    movdqu xmm0, [rsi]
     lea rsi, [rsi + 16]
     movdqa xmm3, xmm0    ; a and g
     pand xmm3, xmm4
@@ -116,11 +96,11 @@ loop_x8:
     pand xmm1, xmm6
     pslld xmm1, 16
     por xmm3, xmm1
-    movdqa [rdi], xmm3
+    movdqu [rdi], xmm3
     lea rdi, [rdi + 16]
     sub rcx, 4
 
-    movdqa xmm0, [rsi]
+    movdqu xmm0, [rsi]
     lea rsi, [rsi + 16]
     movdqa xmm3, xmm0    ; a and g
     pand xmm3, xmm4
@@ -132,7 +112,7 @@ loop_x8:
     pand xmm1, xmm6
     pslld xmm1, 16
     por xmm3, xmm1
-    movdqa [rdi], xmm3
+    movdqu [rdi], xmm3
     lea rdi, [rdi + 16]
     sub rcx, 4
 
@@ -173,9 +153,10 @@ done_loop_x:
     mov [rsp + 24], rcx
     jnz loop_y
 
-    mov eax, 0          ; return value
     add rsp, 48
     pop rbp
     pop rbx
+return_zero:
+    mov eax, 0          ; return value
     ret
 END_OF_FILE

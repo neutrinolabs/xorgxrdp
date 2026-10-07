@@ -121,6 +121,12 @@ static int
 rdpSendMemoryAllocationComplete(rdpPtr dev, rdpClientCon *clientCon);
 static int
 rdpSendAccelAssistMonitors(rdpPtr dev, rdpClientCon *clientCon);
+static int
+rdpStartAccelAssist(rdpPtr dev, rdpClientCon *clientCon);
+static int
+rdpClientConFlushTransport(rdpClientCon *clientCon);
+static int
+rdpClientConFinishTransport(rdpClientCon *clientCon);
 int
 rdpClientConResetClip(rdpPtr dev, rdpClientCon *clientCon);
 int
@@ -733,6 +739,59 @@ rdpClientConRemoveEnabledDevice(int fd)
 #endif
 
 /******************************************************************************/
+/* AddEnabledDevice() only watches reads on older Xorg servers. Arm a timer
+ * only while there is pending output; modern servers use write readiness. */
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
+static CARD32
+rdpClientConTransportCallback(OsTimerPtr timer, CARD32 now, pointer arg)
+{
+    rdpClientCon *clientCon = (rdpClientCon *) arg;
+
+    (void) timer;
+    (void) now;
+    if (rdpClientConFlushTransport(clientCon) == 0)
+    {
+        rdpClientConFinishTransport(clientCon);
+    }
+    /* Flush/finish already rearm or cancel this timer through
+     * UpdateWriteInterest(). Do not also request a callback repeat. */
+    return 0;
+}
+#endif
+
+static void
+rdpClientConUpdateWriteInterest(rdpClientCon *clientCon)
+{
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
+    if (clientCon->connected && (rdpTransportPending(&clientCon->transport) ||
+                                clientCon->transport_switch_pending))
+    {
+        clientCon->transportTimer = TimerSet(clientCon->transportTimer, 0, 10,
+                                             rdpClientConTransportCallback,
+                                             clientCon);
+    }
+    else if (clientCon->transportTimer != NULL)
+    {
+        TimerCancel(clientCon->transportTimer);
+    }
+#else
+    int mask = (clientCon->connected && clientCon->transport_switch_pending) ?
+               0 : X_NOTIFY_READ;
+    if (clientCon->connected && (rdpTransportPending(&clientCon->transport) ||
+                                clientCon->transport_switch_pending))
+    {
+        mask |= X_NOTIFY_WRITE;
+    }
+    if (mask != clientCon->transport_notify_mask)
+    {
+        SetNotifyFd(clientCon->sck, rdpClientConNotifyFdProcPtr, mask,
+                     clientCon->dev->pScreen);
+        clientCon->transport_notify_mask = mask;
+    }
+#endif
+}
+
+/******************************************************************************/
 static void
 rdpAddClientConToDev(rdpPtr dev, rdpClientCon *clientCon)
 {
@@ -820,6 +879,9 @@ rdpClientConGotConnection(ScreenPtr pScreen, rdpPtr dev)
         dev->conNumber++;
         clientCon->conNumber = dev->conNumber;
         rdpClientConAddEnabledDevice(pScreen, clientCon->sck);
+#if XORG_VERSION_CURRENT >= XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
+        clientCon->transport_notify_mask = X_NOTIFY_READ;
+#endif
     }
 
 #if 1
@@ -1009,6 +1071,12 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
     }
 
     rdpClientConRemoveEnabledDevice(clientCon->sck);
+    if (clientCon->transportTimer != NULL)
+    {
+        TimerCancel(clientCon->transportTimer);
+        TimerFree(clientCon->transportTimer);
+    }
+    rdpTransportDestroy(&clientCon->transport);
     g_sck_close(clientCon->sck);
     if (clientCon->maxOsBitmaps > 0)
     {
@@ -1088,9 +1156,6 @@ rdpClientConDisconnect(rdpPtr dev, rdpClientCon *clientCon)
 static int
 rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
 {
-    int sent;
-    int retries = 0;
-
     LOG(LOG_LEVEL_TRACE, "rdpClientConSend - sending %d bytes", len);
 
     if (!clientCon->connected)
@@ -1098,46 +1163,99 @@ rdpClientConSend(rdpPtr dev, rdpClientCon *clientCon, const char *data, int len)
         return 1;
     }
 
-    while (len > 0)
+    if (len == 0)
     {
-        sent = g_sck_send(clientCon->sck, data, len, 0);
+        return 0;
+    }
+    if (len < 0)
+    {
+        errno = EINVAL;
+    }
+    if (len < 0 || rdpTransportQueue(&clientCon->transport, data, len, -1) != 0)
+    {
+        LOG(LOG_LEVEL_ERROR, "rdpClientConSend: cannot queue output: %s",
+            strerror(errno));
+        clientCon->connected = FALSE;
+        return 1;
+    }
+    return rdpClientConFlushTransport(clientCon);
+}
 
-        if (sent == -1)
+/******************************************************************************/
+static void
+rdpClientConUpdateSentFrame(rdpClientCon *clientCon)
+{
+    if (clientCon->frame_tx_serial != 0 &&
+            clientCon->transport.completed_serial >= clientCon->frame_tx_serial)
+    {
+        clientCon->rect_id_sent = clientCon->frame_tx_id;
+        clientCon->frame_tx_serial = 0;
+    }
+}
+
+/******************************************************************************/
+static int
+rdpClientConFlushTransport(rdpClientCon *clientCon)
+{
+    if (!clientCon->connected)
+    {
+        return 1;
+    }
+    if (rdpTransportFlush(&clientCon->transport, clientCon->sck) != 0)
+    {
+        LOG(LOG_LEVEL_ERROR, "rdpClientConFlushTransport: %s", strerror(errno));
+        clientCon->connected = FALSE;
+        rdpClientConUpdateWriteInterest(clientCon);
+        return 1;
+    }
+    rdpClientConUpdateSentFrame(clientCon);
+    rdpClientConUpdateWriteInterest(clientCon);
+    return 0;
+}
+
+/******************************************************************************/
+/* Only call from an event-loop dispatch point, after a producer has finished
+ * queuing both its protocol command and any following descriptor marker. */
+static int
+rdpClientConFinishTransport(rdpClientCon *clientCon)
+{
+    if (clientCon->transport_switch_pending &&
+            !rdpTransportPending(&clientCon->transport))
+    {
+        clientCon->transport_switch_pending = FALSE;
+        if (rdpStartAccelAssist(clientCon->dev, clientCon) != 0)
         {
-            if (g_sck_last_error_would_block(clientCon->sck))
-            {
-                // Just because we couldn't after 100 retries
-                // does not mean we're disconnected.
-                if (retries > 100)
-                {
-                    return 0;
-                }
-                ++retries;
-                g_sleep(1);
-            }
-            else
-            {
-                LOG(LOG_LEVEL_INFO,
-                    "rdpClientConSend: g_tcp_send failed(returned -1)");
-                clientCon->connected = FALSE;
-                return 1;
-            }
-        }
-        else if (sent == 0)
-        {
-            LOG(LOG_LEVEL_INFO,
-                "rdpClientConSend: g_tcp_send failed(returned zero)");
             clientCon->connected = FALSE;
+            rdpClientConUpdateWriteInterest(clientCon);
             return 1;
         }
-        else
-        {
-            data += sent;
-            len -= sent;
-        }
+        rdpScheduleDeferredUpdate(clientCon);
     }
-
     return 0;
+}
+
+/******************************************************************************/
+static int
+rdpClientConSendFd(rdpClientCon *clientCon, int fd)
+{
+    if (!clientCon->connected)
+    {
+        return 1;
+    }
+    /* Duplicate now: cursor callers unmap and close the original immediately.
+     * The descriptor marker must follow every byte queued before it. */
+    if (fd < 0)
+    {
+        errno = EBADF;
+    }
+    if (fd < 0 || rdpTransportQueue(&clientCon->transport, "int", 4, fd) != 0)
+    {
+        LOG(LOG_LEVEL_ERROR, "rdpClientConSendFd: cannot queue descriptor: %s",
+            strerror(errno));
+        clientCon->connected = FALSE;
+        return 1;
+    }
+    return rdpClientConFlushTransport(clientCon);
 }
 
 /******************************************************************************/
@@ -1202,90 +1320,31 @@ rdpClientConSendPending(rdpPtr dev, rdpClientCon *clientCon)
 }
 
 /******************************************************************************/
-/* returns error */
-static int
-rdpClientConRecv(rdpPtr dev, rdpClientCon *clientCon, char *data, int len)
-{
-    int rcvd;
-
-    if (!clientCon->connected)
-    {
-        return 1;
-    }
-
-    while (len > 0)
-    {
-        rcvd = g_sck_recv(clientCon->sck, data, len, 0);
-
-        if (rcvd == -1)
-        {
-            if (g_sck_last_error_would_block(clientCon->sck))
-            {
-                g_sleep(1);
-            }
-            else
-            {
-                LOG(LOG_LEVEL_INFO,
-                    "rdpClientConRecv: g_sck_recv failed(returned -1)");
-                clientCon->connected = FALSE;
-                return 1;
-            }
-        }
-        else if (rcvd == 0)
-        {
-            LOG(LOG_LEVEL_INFO,
-                "rdpClientConRecv: g_sck_recv failed(returned 0)");
-            clientCon->connected = FALSE;
-            return 1;
-        }
-        else
-        {
-            data += rcvd;
-            len -= rcvd;
-        }
-    }
-
-    return 0;
-}
-
-/******************************************************************************/
+/* 1 = complete message, 0 = await more bytes, -1 = disconnected/error */
 static int
 rdpClientConRecvMsg(rdpPtr dev, rdpClientCon *clientCon)
 {
-    int len;
+    const uint8_t *data;
+    size_t bytes;
     int rv;
-    struct stream *s;
+    struct stream *s = clientCon->in_s;
 
-    rv = 1;
-
-    s = clientCon->in_s;
-    if (s != 0)
+    if (!clientCon->connected)
     {
-        init_stream(s, 4);
-        rv = rdpClientConRecv(dev, clientCon, s->data, 4);
-
-        if (rv == 0)
-        {
-            s->end = s->data + 4;
-            in_uint32_le(s, len);
-
-            if (len > 3)
-            {
-                init_stream(s, len);
-                rv = rdpClientConRecv(dev, clientCon, s->data, len - 4);
-                if (rv == 0)
-                {
-                    s->end = s->data + len;
-                }
-            }
-        }
+        return -1;
     }
-
-    if (rv != 0)
+    rv = rdpTransportReceive(&clientCon->transport, clientCon->sck, &data, &bytes);
+    if (rv < 0)
     {
-        LOG(LOG_LEVEL_INFO, "rdpClientConRecvMsg: error");
+        LOG(LOG_LEVEL_ERROR, "rdpClientConRecvMsg: %s", strerror(errno));
+        clientCon->connected = FALSE;
     }
-
+    else if (rv > 0)
+    {
+        init_stream(s, bytes);
+        memcpy(s->data, data, bytes);
+        s->end = s->data + bytes;
+    }
     return rv;
 }
 
@@ -1696,13 +1755,31 @@ rdpStartAccelAssist(rdpPtr dev, rdpClientCon *clientCon)
     int spair[2];
     int index;
 
+    if (!clientCon->connected)
+    {
+        return 1;
+    }
     // Accel assist is already running, don't attempt to initialize it again.
     if (clientCon->accel_assist_pid > 0)
     {
         return 0;
     }
 
-    socketpair(AF_UNIX, SOCK_STREAM, 0, spair);
+    /* Finish the original stream before handing its socket to the helper. */
+    if (rdpTransportPending(&clientCon->transport))
+    {
+        clientCon->transport_switch_pending = TRUE;
+        rdpClientConUpdateWriteInterest(clientCon);
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
+        RemoveEnabledDevice(clientCon->sck);
+#endif
+        return 0;
+    }
+
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, spair) != 0)
+    {
+        return 1;
+    }
 
     clientCon->accel_assist_pid = fork();
     if (clientCon->accel_assist_pid == -1)
@@ -1710,6 +1787,7 @@ rdpStartAccelAssist(rdpPtr dev, rdpClientCon *clientCon)
         /* error */
         close(spair[0]);
         close(spair[1]);
+        return 1;
     }
     else if (clientCon->accel_assist_pid == 0)
     {
@@ -1753,6 +1831,10 @@ rdpStartAccelAssist(rdpPtr dev, rdpClientCon *clientCon)
         clientCon->sck = spair[1];
         g_sck_set_non_blocking(clientCon->sck);
         rdpClientConAddEnabledDevice(dev->pScreen, clientCon->sck);
+#if XORG_VERSION_CURRENT >= XORG_VERSION_NUMERIC(1, 18, 5, 0, 0)
+        clientCon->transport_notify_mask = X_NOTIFY_READ;
+#endif
+        return rdpSendAccelAssistMonitors(dev, clientCon);
     }
     return 0;
 }
@@ -2069,8 +2151,10 @@ rdpClientConProcessMsgClientInfo(rdpPtr dev, rdpClientCon *clientCon)
     if (rdpClientConUseAccelAssist(dev, clientCon))
     {
         clientCon->use_accel_assist = 1;
-        rdpStartAccelAssist(dev, clientCon);
-        rdpSendAccelAssistMonitors(dev, clientCon);
+        if (rdpStartAccelAssist(dev, clientCon) != 0)
+        {
+            clientCon->connected = FALSE;
+        }
     }
 
     return 0;
@@ -2094,6 +2178,10 @@ rdpClientConProcessMsgClientRegion(rdpPtr dev, rdpClientCon *clientCon)
 
     in_uint32_le(s, flags);
     in_uint32_le(s, clientCon->rect_id_ack);
+    if (clientCon->rect_id_ack > clientCon->rect_id_sent)
+    {
+        clientCon->rect_id_ack = clientCon->rect_id_sent;
+    }
     in_uint32_le(s, x);
     in_uint32_le(s, y);
     in_uint32_le(s, cx);
@@ -2131,10 +2219,12 @@ rdpClientConProcessMsgClientRegionEx(rdpPtr dev, rdpClientCon *clientCon)
 
     in_uint32_le(s, flags);
     in_uint32_le(s, clientCon->rect_id_ack);
-    if (clientCon->rect_id_ack == INT_MAX)
+    if (clientCon->rect_id_ack == INT_MAX ||
+            clientCon->rect_id_ack > clientCon->rect_id_sent)
     {
-        // Client just wishes to ack all in-flight frames
-        clientCon->rect_id_ack = clientCon->rect_id;
+        /* ACK_ALL releases only transmitted frames, not buffered frames
+         * whose shared pixels the peer has not had an opportunity to read. */
+        clientCon->rect_id_ack = clientCon->rect_id_sent;
     }
     LOG(LOG_LEVEL_TRACE,
         "rdpClientConProcessMsgClientRegionEx: flags 0x%8.8x", flags);
@@ -2216,16 +2306,25 @@ static int
 rdpClientConGotData(ScreenPtr pScreen, rdpPtr dev, rdpClientCon *clientCon)
 {
     int rv;
+    int count;
 
     LOG(LOG_LEVEL_TRACE, "rdpClientConGotData:");
 
-    rv = rdpClientConRecvMsg(dev, clientCon);
-    if (rv == 0)
+    /* Leave additional messages in the socket so read readiness continues
+     * after this bounded batch, without starving Xorg drawing and timers. */
+    for (count = 0; count < 32 && !clientCon->transport_switch_pending; ++count)
     {
-        rv = rdpClientConProcessMsg(dev, clientCon);
+        rv = rdpClientConRecvMsg(dev, clientCon);
+        if (rv <= 0)
+        {
+            return rv < 0;
+        }
+        if (rdpClientConProcessMsg(dev, clientCon) != 0 || !clientCon->connected)
+        {
+            return 1;
+        }
     }
-
-    return rv;
+    return 0;
 }
 
 /******************************************************************************/
@@ -2254,6 +2353,7 @@ rdpClientConCheck(ScreenPtr pScreen)
     rdpClientCon *clientCon;
     rdpClientCon *nextCon;
     fd_set rfds;
+    fd_set wfds;
     struct timeval time;
     int max;
     int sel;
@@ -2265,6 +2365,7 @@ rdpClientConCheck(ScreenPtr pScreen)
     time.tv_sec = 0;
     time.tv_usec = 0;
     FD_ZERO(&rfds);
+    FD_ZERO(&wfds);
     count = 0;
     max = 0;
 
@@ -2296,7 +2397,15 @@ rdpClientConCheck(ScreenPtr pScreen)
         if (clientCon->sck > 0)
         {
             count++;
-            FD_SET(LTOUI32(clientCon->sck), &rfds);
+            if (!clientCon->transport_switch_pending)
+            {
+                FD_SET(LTOUI32(clientCon->sck), &rfds);
+            }
+            if (rdpTransportPending(&clientCon->transport) ||
+                    clientCon->transport_switch_pending)
+            {
+                FD_SET(LTOUI32(clientCon->sck), &wfds);
+            }
             max = RDPMAX(clientCon->sck, max);
         }
         if (clientCon->sckControl > 0)
@@ -2319,7 +2428,7 @@ rdpClientConCheck(ScreenPtr pScreen)
     }
     else
     {
-        sel = select(max + 1, &rfds, 0, 0, &time);
+        sel = select(max + 1, &rfds, &wfds, 0, &time);
     }
     if (sel < 1)
     {
@@ -2360,6 +2469,17 @@ rdpClientConCheck(ScreenPtr pScreen)
     {
         if (clientCon->sck > 0)
         {
+            /* A completed flush can switch to the accel-assist socket. */
+            int checked_sck = clientCon->sck;
+            if (FD_ISSET(LTOUI32(checked_sck), &wfds))
+            {
+                if (rdpClientConFlushTransport(clientCon) != 0 ||
+                        rdpClientConFinishTransport(clientCon) != 0 ||
+                        clientCon->sck != checked_sck)
+                {
+                    continue;
+                }
+            }
             if (FD_ISSET(LTOUI32(clientCon->sck), &rfds))
             {
                 if (rdpClientConGotData(pScreen, dev, clientCon) != 0)
@@ -3183,9 +3303,9 @@ rdpClientConSetCursorShmFd(rdpPtr dev, rdpClientCon *clientCon,
         memcpy(shmemptr, cur_data, width * height * Bpp);
         memcpy(shmemptr + width * height * Bpp, cur_mask, width * height / 8);
         rdpClientConSendPending(clientCon->dev, clientCon);
-        rv = g_sck_send_fd_set(clientCon->sck, "int", 4, &fd, 1);
+        rv = rdpClientConSendFd(clientCon, fd);
         LOG(LOG_LEVEL_TRACE,
-            "rdpClientConSetCursorShmFd: g_sck_send_fd_set rv %d", rv);
+            "rdpClientConSetCursorShmFd: queue descriptor rv %d", rv);
         g_free_unmap_fd(shmemptr, fd, shmsize);
     }
     return rv;
@@ -3678,7 +3798,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
             out_uint16_le(s, clientCon->cap_height);
         }
         rdpClientConSendPending(clientCon->dev, clientCon);
-        g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
+        rdpClientConSendFd(clientCon, id->shmem_fd);
     }
     else if (capture_code == CC_GFX_PRO) /* gfx pro rfx */
     {
@@ -3745,7 +3865,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         {
             out_uint32_le(s, id->shmem_bytes);  /* shmem_bytes */
             rdpClientConSendPending(clientCon->dev, clientCon);
-            g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
+            rdpClientConSendFd(clientCon, id->shmem_fd);
         }
         else
         {
@@ -3816,7 +3936,7 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
         {
             out_uint32_le(s, id->shmem_bytes);  /* shmem_bytes */
             rdpClientConSendPending(clientCon->dev, clientCon);
-            g_sck_send_fd_set(clientCon->sck, "int", 4, &(id->shmem_fd), 1);
+            rdpClientConSendFd(clientCon, id->shmem_fd);
         }
         else
         {
@@ -3825,6 +3945,12 @@ rdpClientConSendPaintRectShmFd(rdpPtr dev, rdpClientCon *clientCon,
     }
 
     rdpClientConEndUpdate(dev, clientCon);
+    if (clientCon->connected)
+    {
+        clientCon->frame_tx_id = clientCon->rect_id;
+        clientCon->frame_tx_serial = clientCon->transport.queued_serial;
+        rdpClientConUpdateSentFrame(clientCon);
+    }
 
     return 0;
 }
@@ -3841,23 +3967,14 @@ rdpCapRect(rdpClientCon *clientCon, BoxPtr cap_rect, int mon,
     RegionPtr cap_dirty;
     RegionPtr cap_dirty_save;
     BoxPtr rects;
-    BoxRec rect;
     int num_rects;
 
     cap_dirty = rdpRegionCreate(cap_rect, 0);
     LOG(LOG_LEVEL_TRACE, "rdpCapRect: cap_rect x1 %d y1 %d x2 %d y2 %d",
         cap_rect->x1, cap_rect->y1, cap_rect->x2, cap_rect->y2);
     rdpRegionIntersect(cap_dirty, cap_dirty, clientCon->dirtyRegion);
+    rdpRegionCoalesce(cap_dirty, MAX_CAPTURE_RECTS);
     num_rects = REGION_NUM_RECTS(cap_dirty);
-    if (num_rects > MAX_CAPTURE_RECTS)
-    {
-        /* the dirty region is too complex, just get a rect that
-           covers the whole region */
-        rect = *rdpRegionExtents(cap_dirty);
-        rdpRegionDestroy(cap_dirty);
-        cap_dirty = rdpRegionCreate(&rect, 0);
-        num_rects = REGION_NUM_RECTS(cap_dirty);
-    }
     /* make a copy of cap_dirty because it may get altered */
     cap_dirty_save = rdpRegionCreate(NullBox, 0);
     rdpRegionCopy(cap_dirty_save, cap_dirty);
@@ -3921,6 +4038,18 @@ rdpDeferredUpdateCallback(OsTimerPtr timer, CARD32 now, pointer arg)
     if (clientCon->suppress_output)
     {
         LOG(LOG_LEVEL_TRACE, "rdpDeferredUpdateCallback: suppress_output set");
+        return 0;
+    }
+    /* The old socket must drain before capture is handed to accel assist. */
+    if (clientCon->transport_switch_pending)
+    {
+        return 0;
+    }
+    /* An ACK or a previously scheduled timer may arrive after the last
+     * damage was consumed. Do not move the frame deadline for an empty
+     * update. Forced sleep overlays are handled above. */
+    if (!rdpRegionNotEmpty(clientCon->dirtyRegion))
+    {
         return 0;
     }
     if (clientCon->shmemstatus == SHM_UNINITIALIZED || clientCon->shmemstatus == SHM_RESIZING) {
@@ -4013,6 +4142,12 @@ rdpScheduleDeferredUpdate(rdpClientCon *clientCon)
         return;
     }
     if (rdpScreenSleepBlockUpdates(clientCon->dev))
+    {
+        return;
+    }
+    /* ACKs release the capture buffer, but only pending damage needs a
+     * new capture. Sleep overlays use their separate forced timer. */
+    if (!rdpRegionNotEmpty(clientCon->dirtyRegion))
     {
         return;
     }

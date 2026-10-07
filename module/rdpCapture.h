@@ -29,7 +29,7 @@ capture
 #include <xorgVersion.h>
 #include <xf86.h>
 
-/* maximum rects in the dirty region before the extents is used */
+/* maximum rects in the dirty region after area-aware coalescing */
 #define MAX_CAPTURE_RECTS 15
 
 extern _X_EXPORT Bool

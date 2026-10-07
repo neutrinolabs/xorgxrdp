@@ -29,6 +29,7 @@ Client connection to xrdp
 #include <xf86.h>
 
 #include "xup_client_info.h"
+#include "rdpTransport.h"
 
 #define XRDP_SCREEN_SLEEP_MODE_LAST 0
 #define XRDP_SCREEN_SLEEP_MODE_BLACK 1
@@ -74,6 +75,10 @@ struct _rdpClientCon
     int sckControl;
     struct stream *out_s;
     struct stream *in_s;
+    struct rdpTransport transport;
+    OsTimerPtr transportTimer; /* write readiness fallback for older Xorg */
+    int transport_notify_mask;
+    int transport_switch_pending; /* drain xrdp bytes before accel-assist */
 
     int connected; /* boolean. Set to False when I/O fails */
     int begin; /* boolean */
@@ -117,6 +122,9 @@ struct _rdpClientCon
     RegionPtr shmRegion;
     int rect_id;
     int rect_id_ack;
+    int rect_id_sent; /* latest frame fully written, including descriptor */
+    int frame_tx_id;
+    uint64_t frame_tx_serial;
     enum shared_memory_status shmemstatus;
 
     PixmapPtr accelAssistPixmaps[16];

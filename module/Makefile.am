@@ -46,6 +46,7 @@ AM_CFLAGS = \
 noinst_HEADERS = \
   rdpCapture.h \
   rdpClientCon.h \
+  rdpCoalesce.h \
   rdpComposite.h \
   rdpCopyArea.h \
   rdpCopyPlane.h \
@@ -83,6 +84,7 @@ noinst_HEADERS = \
   rdpSimd.h \
   rdpTrapezoids.h \
   rdpTriangles.h \
+  rdpTransport.h \
   rdpCompositeRects.h \
   rdpXv.h \
   amd64/funcs_amd64.h \
@@ -104,7 +106,7 @@ rdpPolyText16.c rdpImageText8.c rdpImageText16.c rdpImageGlyphBlt.c \
 rdpPolyGlyphBlt.c rdpPushPixels.c rdpCursor.c rdpMain.c rdpRandR.c \
 rdpRandRGrid.c \
 rdpMisc.c rdpReg.c rdpComposite.c rdpGlyphs.c rdpPixmap.c rdpInput.c \
-rdpClientCon.c rdpCapture.c rdpTrapezoids.c rdpTriangles.c \
+rdpClientCon.c rdpCapture.c rdpCoalesce.c rdpTransport.c rdpTrapezoids.c rdpTriangles.c \
 rdpCompositeRects.c rdpXv.c rdpSimd.c $(EXTRA_SOURCES)
 
 libxorgxrdp_la_LIBADD = $(ASMLIB) $(EGLLIB)
