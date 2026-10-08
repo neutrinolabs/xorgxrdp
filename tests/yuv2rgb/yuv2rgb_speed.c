@@ -103,9 +103,9 @@ a8r8g8b8_to_nv12_box(char *s8, int src_stride,
     int lheight;
     int *s32a;
     int *s32b;
-    char *d8ya;
-    char *d8yb;
-    char *d8uv;
+    unsigned char *d8ya;
+    unsigned char *d8yb;
+    unsigned char *d8uv;
 
     /* must be even */
     lwidth = width & ~1;
@@ -114,9 +114,9 @@ a8r8g8b8_to_nv12_box(char *s8, int src_stride,
     {
         s32a = (int *) (s8 + src_stride * jndex);
         s32b = (int *) (s8 + src_stride * (jndex + 1));
-        d8ya = d8_y + dst_stride_y * jndex;
-        d8yb = d8_y + dst_stride_y * (jndex + 1);
-        d8uv = d8_uv + dst_stride_uv * (jndex / 2);
+        d8ya = (unsigned char *) d8_y + dst_stride_y * jndex;
+        d8yb = (unsigned char *) d8_y + dst_stride_y * (jndex + 1);
+        d8uv = (unsigned char *) d8_uv + dst_stride_uv * (jndex / 2);
         for (index = 0; index < lwidth; index += 2)
         {
             U_sum = 0;

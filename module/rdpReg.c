@@ -38,6 +38,7 @@ to deal with regions changing in xorg versions
 #include <xf86_OSproc.h>
 
 #include "rdpReg.h"
+#include "rdpCoalesce.h"
 
 /*
 miRegionCopy      ->      RegionCopy
@@ -268,4 +269,66 @@ rdpRegionPixelCount(RegionPtr pReg)
         rv += (box.x2 - box.x1) * (box.y2 - box.y1);
     }
     return rv;
+}
+
+/*****************************************************************************/
+/* Bound capture complexity without covering distant damage with one box. */
+void
+rdpRegionCoalesce(RegionPtr pReg, int max_rects)
+{
+    struct rdp_coalesce_box *boxes;
+    RegionRec result;
+    RegionRec rect_region;
+    BoxRec extents;
+    BoxRec box;
+    BoxPtr rects;
+    int count;
+    int index;
+    Bool ok;
+
+    count = REGION_NUM_RECTS(pReg);
+    if (count <= max_rects || count == 0)
+    {
+        return;
+    }
+    extents = *rdpRegionExtents(pReg);
+    if (max_rects < 1 || (size_t)count > SIZE_MAX / sizeof(*boxes))
+    {
+        rdpRegionReset(pReg, &extents);
+        return;
+    }
+    boxes = malloc((size_t)count * sizeof(*boxes));
+    if (boxes == NULL)
+    {
+        rdpRegionReset(pReg, &extents);
+        return;
+    }
+    rects = REGION_RECTS(pReg);
+    for (index = 0; index < count; ++index)
+    {
+        boxes[index].x1 = rects[index].x1;
+        boxes[index].y1 = rects[index].y1;
+        boxes[index].x2 = rects[index].x2;
+        boxes[index].y2 = rects[index].y2;
+    }
+    count = rdpCoalesceRects(boxes, count, boxes, max_rects);
+    rdpRegionInit(&result, NULL, 0);
+    ok = count >= 0;
+    for (index = 0; index < count && ok; ++index)
+    {
+        box.x1 = boxes[index].x1;
+        box.y1 = boxes[index].y1;
+        box.x2 = boxes[index].x2;
+        box.y2 = boxes[index].y2;
+        rdpRegionInit(&rect_region, &box, 0);
+        ok = rdpRegionUnion(&result, &result, &rect_region);
+        rdpRegionUninit(&rect_region);
+    }
+    free(boxes);
+    if (!ok || !rdpRegionCopy(pReg, &result))
+    {
+        /* Retain the previous allocation-failure behavior: capture extents. */
+        rdpRegionReset(pReg, &extents);
+    }
+    rdpRegionUninit(&result);
 }

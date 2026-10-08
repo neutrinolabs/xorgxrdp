@@ -55,6 +55,7 @@ AX_GCC_FUNC_ATTRIBUTE([format])
 PKG_CHECK_MODULES([XORG_SERVER], [xorg-server >= 0], [],
   [AC_MSG_ERROR([please install xserver-xorg-dev, xorg-x11-server-sdk or xorg-x11-server-devel])])
 echo "Xorg version is :"$(pkg-config --modversion xorg-server)
+PKG_CHECK_MODULES([PIXMAN], [pixman-1 >= 0.27.2])
 if test "x${enable_glamor}" = "xyes"; then
   PKG_CHECK_MODULES([XORG_SERVER_GLAMOR], [xorg-server >= 1.19.0])
   PKG_CHECK_MODULES([LIBDRM], [libdrm >= 0], [], [AC_MSG_ERROR([please install libdrm-dev or libdrm-devel])])
@@ -152,4 +153,3 @@ AC_CONFIG_FILES([Makefile
 ])
 
 AC_OUTPUT
-

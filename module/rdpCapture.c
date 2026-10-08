@@ -1168,9 +1168,6 @@ rdpCaptureGfxPro(rdpClientCon *clientCon, RegionPtr in_reg, BoxPtr *out_rects,
             if (rcode == rgnOUT)
             {
                 LOG(LOG_LEVEL_TRACE, "rdpCaptureGfxPro: rgnOUT");
-                rdpRegionInit(&tile_reg, &rect, 0);
-                rdpRegionSubtract(in_reg, in_reg, &tile_reg);
-                rdpRegionUninit(&tile_reg);
             }
             else
             {

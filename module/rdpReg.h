@@ -64,5 +64,7 @@ extern _X_EXPORT void
 rdpRegionUnionRect(RegionPtr pReg, BoxPtr prect);
 extern _X_EXPORT int
 rdpRegionPixelCount(RegionPtr pReg);
+extern _X_EXPORT void
+rdpRegionCoalesce(RegionPtr pReg, int max_rects);
 
 #endif
